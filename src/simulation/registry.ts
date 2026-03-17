@@ -1,0 +1,51 @@
+import { CounterBlock, COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
+import { DisplayBlock, DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
+import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
+import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
+
+/**
+ * Block registry utilities.
+ *
+ * Purpose:
+ * - Centralize block registration and lookup.
+ * - Keep construction deterministic and explicit for reproducible runtimes.
+ * - Enforce duplicate-type protection during startup wiring.
+ */
+
+/**
+ * Minimal default registry used by P0 runtime.
+ */
+export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
+  [COUNTER_BLOCK_TYPE]: CounterBlock,
+  [DISPLAY_BLOCK_TYPE]: DisplayBlock,
+  [SCOPE_BLOCK_TYPE]: ScopeBlock,
+};
+
+/**
+ * Create a safe registry from a list of definitions.
+ * Throws on duplicate `type` to prevent accidental override.
+ */
+export function createBlockRegistry(
+  definitions: SimulationBlockDefinition[]
+): BlockRegistry {
+  const registry: BlockRegistry = {};
+
+  for (const definition of definitions) {
+    if (registry[definition.type]) {
+      throw new Error(`Duplicate block registration for type '${definition.type}'.`);
+    }
+    registry[definition.type] = definition;
+  }
+
+  return registry;
+}
+
+/**
+ * Retrieve a block definition from a registry.
+ */
+export function getBlockDefinition(
+  registry: BlockRegistry,
+  type: string
+): SimulationBlockDefinition | undefined {
+  return registry[type];
+}
