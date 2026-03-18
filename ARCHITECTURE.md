@@ -148,3 +148,19 @@ Constraints for P0:
 - **Counter:** Hide internal value; logic runs in background.
 - **Scope (Interactive Modal):** The block on the canvas is a simple icon. Double-click opens a high-fidelity modal window with interactive charting (zoom, pan, cursors, measurement tools).
 
+
+## Iteration 2: UI/UX Precision & Industrial Refinement (P2)
+
+### 1) Aesthetic Overhaul (Color & Iconography)
+- **Palette Shift:** Migrate block colors to an industrial palette: **Orange (#f97316)** for sources (Counter) and **Light Blue (#0ea5e9)** for sinks/processing.
+- **Iconic Blocks:** Replace text-heavy blocks with compact, icon-only representations. The Counter block should be a small square with a "123" or "Σ" icon.
+
+### 2) Interaction & Connectivity
+- **Enhanced Handles:** Increase the visual and hit-box size of connection dots (handles). Implement a hover scale-up effect to ensure easy "latching" for users.
+- **Edge Deletion:** Explicitly enable the selection and deletion of connection lines (edges).
+
+### 3) Scope Modal (The "Oscilloscope" Window)
+- **Visuals:** Solid, high-contrast background (no transparency).
+- **Responsive Window:** Resizable/adaptive modal container that feels like a standalone window.
+- **Real-time Following:** Implement "Auto-scroll" logic on the X-axis (time) so the graph follows the latest data point once the buffer exceeds the visible window.
+

@@ -308,31 +308,44 @@ export default function Home() {
   }, []);
 
   /**
-   * Delete action for selected nodes.
+   * Delete action for selected nodes and selected edges.
    *
    * Selection sources:
    * - Explicit click-tracked node (`selectedNodeId`) for inspector-driven interactions.
-   * - React Flow native selected flags for marquee / multi-select interactions.
+   * - React Flow native selected flags for nodes/edges.
+   *
+   * Industrial UX directive:
+   * - Operators must be able to select/delete wires directly.
+   *   We therefore merge node-based and edge-based deletion paths in one deterministic routine.
    */
   const deleteSelectedNodes = useCallback(() => {
-    const selectedIds = nodes.filter((node) => node.selected).map((node) => node.id);
-    if (selectedNodeId && !selectedIds.includes(selectedNodeId)) {
-      selectedIds.push(selectedNodeId);
+    const selectedNodeIds = nodes.filter((node) => node.selected).map((node) => node.id);
+    if (selectedNodeId && !selectedNodeIds.includes(selectedNodeId)) {
+      selectedNodeIds.push(selectedNodeId);
     }
 
-    if (selectedIds.length === 0) {
+    const selectedEdgeIdsFromCanvas = edges
+      .filter((edge) => edge.selected)
+      .map((edge) => edge.id);
+
+    if (selectedNodeIds.length === 0 && selectedEdgeIdsFromCanvas.length === 0) {
       return;
     }
 
-    const selectedSet = new Set(selectedIds);
-    setNodes((currentNodes) => currentNodes.filter((node) => !selectedSet.has(node.id)));
+    const selectedNodeSet = new Set(selectedNodeIds);
+    const selectedEdgeSet = new Set(selectedEdgeIdsFromCanvas);
+
+    setNodes((currentNodes) => currentNodes.filter((node) => !selectedNodeSet.has(node.id)));
     setEdges((currentEdges) =>
       currentEdges.filter(
-        (edge) => !selectedSet.has(edge.source) && !selectedSet.has(edge.target)
+        (edge) =>
+          !selectedEdgeSet.has(edge.id) &&
+          !selectedNodeSet.has(edge.source) &&
+          !selectedNodeSet.has(edge.target)
       )
     );
     setSelectedNodeId(null);
-  }, [nodes, selectedNodeId, setEdges, setNodes]);
+  }, [edges, nodes, selectedNodeId, setEdges, setNodes]);
 
   /**
    * Keyboard parity for deletion.
@@ -416,9 +429,17 @@ export default function Home() {
     [nodes, selectedNodeId]
   );
 
+  const selectedEdgeIds = useMemo(
+    () => edges.filter((edge) => edge.selected).map((edge) => edge.id),
+    [edges]
+  );
+
   const hasSelection = useMemo(
-    () => Boolean(selectedNodeId) || nodes.some((node) => node.selected),
-    [nodes, selectedNodeId]
+    () =>
+      Boolean(selectedNodeId) ||
+      nodes.some((node) => node.selected) ||
+      selectedEdgeIds.length > 0,
+    [nodes, selectedEdgeIds.length, selectedNodeId]
   );
 
   const selectedCounterData = useMemo<CounterInspectorData | null>(() => {
@@ -671,7 +692,11 @@ export default function Home() {
                   key={block.type}
                   draggable
                   onDragStart={(event) => onLibraryDragStart(event, block.type)}
-                  className="cursor-grab rounded-md border border-slate-200 bg-slate-50 px-3 py-2 active:cursor-grabbing"
+                  className={`cursor-grab rounded-md border px-3 py-2 active:cursor-grabbing ${
+                    block.type === COUNTER_BLOCK_TYPE
+                      ? "border-orange-300 bg-orange-50 text-orange-700"
+                      : "border-sky-300 bg-sky-50 text-sky-700"
+                  }`}
                 >
                   {block.label}
                 </li>
@@ -710,6 +735,7 @@ export default function Home() {
               zoomOnPinch
               zoomOnScroll
               selectionOnDrag={false}
+              connectionRadius={44}
             >
               <Background
                 variant={BackgroundVariant.Dots}
@@ -721,7 +747,7 @@ export default function Home() {
               <Controls showInteractive={false} />
               <Panel position="top-left">
                 <div className="rounded-md bg-white/90 px-2 py-1 text-xs text-slate-600 shadow-sm">
-                  Drag blocks from Library. Use Delete button or Delete/Backspace keys.
+                  Drag blocks from Library. Select nodes/edges, then use Delete or Backspace.
                 </div>
               </Panel>
             </ReactFlow>

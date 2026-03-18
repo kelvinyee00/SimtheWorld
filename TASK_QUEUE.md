@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P1 tasks focus on "Simulink Copycat" refinement.
+- P2 tasks prioritize UI/UX and industrial refinement.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,40 +14,25 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
-## P1 Queue (Simulink Copycat Refinement)
-- [x] P1-1 Block Library Sidebar
-- [x] P1-2 Advanced Simulation Controls
-  - Add numeric inputs for 'Stop Time' and 'Step Time (Ts)' to the toolbar.
-  - Bind these inputs to the Zustand runtime store.
-  - Ensure simulation timing logic updates dynamically based on these inputs.
+## P2 Queue (Iteration 2: Industrial Refinement)
+- [x] P2-1 Aesthetic Shift (Orange/Blue & Icons)
+  - Counter block moved to industrial orange (#f97316); sink blocks themed light blue (#0ea5e9).
+  - Counter redesigned as compact icon block ("123") with no descriptive subtext.
 
-- [x] P1-3 Matlab Aesthetics & Grid
-  - Update canvas background to light gray with a persistent dot grid.
-  - Style block nodes with 3D-effect shadow borders and white backgrounds.
-  - Ensure all connections use the `straight` edge type by default.
+- [x] P2-2 Connectivity & Interaction
+  - Connection handles enlarged with larger visual targets and hover-scale feedback.
+  - Edge interaction width increased and direct edge deletion enabled (Delete/Backspace + UI button).
 
-- [x] P1-4 Scope Interactive Modal
-  - Convert the Scope block on the canvas to a simple icon.
-  - Implement a double-click handler on the Scope node to open a full-screen modal.
-  - Within the modal, implement advanced charting via Recharts (zoom, pan, cursor tracking).
+- [x] P2-3 Scope Modal Overhaul (The "Oscilloscope" Window)
+  - Scope modal converted to solid, non-transparent window styling.
+  - Resizable standalone window behavior implemented.
+  - Auto-scroll X-axis follow mode implemented with manual zoom override and "Follow latest" recovery.
 
-- [x] P1-5 Counter Refinement
-  - Update Counter block UI to hide the live numeric value (logic runs in background).
-  - Add basic property editing in the Inspector (Start, Step, Mode).
+- [x] P2-4 Final Validation & Deployment
+  - Validation completed: `npm run lint` ✅, `npm run build` ✅.
+  - Commit + push completed to `origin/master`.
 
 ## Completed
-- [x] P0-1 Project scaffold
-- [x] P0-2 Simulation core engine
-- [x] P0-3 Block system foundation
-- [x] P0-4 Visualization blocks
-- [x] P0-5 Canvas + mobile interaction
-- [x] P0-6 End-to-end Counter demo + validation
-- [x] P1-1 Block Library Sidebar verified (DnD + deletion implemented).
-
-- [x] P1-2 Advanced Simulation Controls verified (Stop Time/Ts bound to runtime scheduler).
-
-- [x] P1-3 Matlab Aesthetics & Grid verified (gray dot-grid + 3D white blocks + straight edge enforcement).
-
-- [x] P1-4 Scope Interactive Modal verified (icon scope + double-click modal + zoom/cursor/measurement).
-
-- [x] P1-5 Counter Refinement verified (counter value hidden + inspector Start/Step/Mode editing).
+- [x] P0 Initial Prototype complete.
+- [x] P1 Simulink Refinement complete.
+- [x] P2 Industrial UI/UX refinement complete.

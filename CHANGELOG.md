@@ -225,3 +225,41 @@
 - Inspector edits patch node data safely and feed existing graph->runtime synchronization.
 - Validation re-run in main session: `npm run lint` ✅, `npm run build` ✅.
 - All P1 tasks (P1-1..P1-5) complete and ready for commit/push.
+
+-----
+**Date/Time:** 2026-03-18 09:12 CET
+**Task Executed:** P2-1 Aesthetic Shift initiated and implemented
+**Files Modified/Created:** `src/canvas/customBlockNode.tsx`, `app/page.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Applied industrial palette: source blocks orange (#f97316), sink blocks light blue (#0ea5e9).
+- Counter block redesigned to compact icon-only square ("123") with subtext removed.
+- Updated library block styling to reflect source/sink color semantics.
+
+-----
+**Date/Time:** 2026-03-18 09:15 CET
+**Task Executed:** P2-2 Connectivity & interaction hardening
+**Files Modified/Created:** `src/canvas/customBlockNode.tsx`, `src/canvas/edgeDefaults.ts`, `app/page.tsx`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Enlarged connection handles and hover-scale feedback for easier latching.
+- Increased edge interaction corridor (`interactionWidth`) for easier edge targeting.
+- Added direct edge deletion path via existing Delete/Backspace flow and toolbar Delete action.
+
+-----
+**Date/Time:** 2026-03-18 09:18 CET
+**Task Executed:** P2-3 Scope modal oscilloscope overhaul
+**Files Modified/Created:** `src/simulation/blocks/scopeBlock.tsx`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Converted modal to solid-background standalone window style.
+- Added resizable container behavior for desktop workflow.
+- Added auto-scroll follow mode on X-axis with Brush zoom + "Follow latest" reset.
+- Preserved double-click launch flow and measurement readout (cursor t/y).
+
+-----
+**Date/Time:** 2026-03-18 09:20 CET
+**Task Executed:** P2-4 Final validation and deployment
+**Files Modified/Created:** `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Validation gates passed in main session:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Ready for commit + push to `origin/master`.
