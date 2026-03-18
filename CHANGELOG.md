@@ -134,3 +134,94 @@
 - Confirmed default model wiring (Counter -> Display + Scope) on application load.
 - Final validation in main session: `npm run lint` ✅, `npm run build` ✅.
 - **P0 PHASE COMPLETE.** The prototype is functional, documented, and mobile-reactive.
+
+-----
+**Date/Time:** 2026-03-18 00:20 CET
+**Task Executed:** P1-1 Block Library Sidebar verified
+**Files Modified/Created:** `app/page.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Replaced Components placeholder with functional Block Library.
+- Implemented HTML5 Drag & Drop for block instantiation.
+- Added block deletion via UI button and Delete/Backspace keys.
+- Straight-edge policy and high-density documentation maintained.
+- Validation: `npm run lint` ✅, `npm run build` ✅.
+- Moving to P1-2 Simulation Control Panel.
+
+-----
+**Date/Time:** 2026-03-18 00:26 CET
+**Task Executed:** Delegated P1-2 Advanced Simulation Controls
+**Files Modified/Created:** `CHANGELOG.md`
+**Notes/Bugs:**
+- Sub-agent label: `web-simulink-p1-2-controls-20260318-0026` (unique per lock-management protocol).
+- Model pinned to `openai-codex/gpt-5.3-codex`.
+- Scope: Stop Time + Step Time toolbar controls, runtime store binding, speed behavior verification.
+
+-----
+**Date/Time:** 2026-03-18 00:31 CET
+**Task Executed:** P1-2 Advanced Simulation Controls verified
+**Files Modified/Created:** `app/page.tsx`, `src/store/simulationRuntimeStore.ts`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Added Stop Time + Step Time inputs for desktop/mobile toolbar.
+- Bound UI controls to runtime timing via `setTiming` (seconds↔milliseconds conversion).
+- Updated runtime timing policy to safely restart scheduler on timing edits during run.
+- Validation: `npm run lint` ✅, `npm run build` ✅.
+- Proceeding to P1-3 Matlab Aesthetics & Grid.
+
+-----
+**Date/Time:** 2026-03-18 00:32 CET
+**Task Executed:** Delegated P1-3 Matlab Aesthetics & Grid
+**Files Modified/Created:** `CHANGELOG.md`
+**Notes/Bugs:**
+- Sub-agent label: `web-simulink-p1-3-aesthetic-grid-20260318-0032` (unique per lock-management protocol).
+- Model pinned to `openai-codex/gpt-5.3-codex`.
+- Scope: Simulink light-gray dot-grid canvas + 3D white block styling while preserving straight edges.
+
+-----
+**Date/Time:** 2026-03-18 00:34 CET
+**Task Executed:** P1-3 Matlab Aesthetics & Grid verified
+**Files Modified/Created:** `app/page.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Applied Simulink-like light-gray canvas with persistent dot grid.
+- Upgraded block appearance to white 3D-style visuals with refined typography.
+- Hardened straight-edge policy for initial and newly created edges.
+- Validation: `npm run lint` ✅, `npm run build` ✅.
+- Proceeding to P1-4 Scope Interactive Modal.
+
+-----
+**Date/Time:** 2026-03-18 00:35 CET
+**Task Executed:** Delegated P1-4 Scope Interactive Modal
+**Files Modified/Created:** `CHANGELOG.md`
+**Notes/Bugs:**
+- Sub-agent label: `web-simulink-p1-4-scope-modal-20260318-0035` (unique per lock-management protocol).
+- Model pinned to `openai-codex/gpt-5.3-codex`.
+- Scope includes icon block + double-click modal + cursor/zoom/measurement behaviors.
+
+-----
+**Date/Time:** 2026-03-18 01:29 CET
+**Task Executed:** P1-4 Scope Interactive Modal verified
+**Files Modified/Created:** `src/simulation/blocks/scopeBlock.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Scope block now compact icon-style on canvas with double-click modal launch.
+- Modal includes cursor/crosshair behavior, brush-based zoom, and measurement readout.
+- Validation: `npm run lint` ✅, `npm run build` ✅.
+- Proceeding to P1-5 Counter Refinement.
+
+-----
+**Date/Time:** 2026-03-18 01:30 CET
+**Task Executed:** Delegated P1-5 Counter Refinement
+**Files Modified/Created:** `CHANGELOG.md`
+**Notes/Bugs:**
+- Sub-agent label: `web-simulink-p1-5-counter-refinement-20260318-0130` (unique per lock-management protocol).
+- Model pinned to `openai-codex/gpt-5.3-codex`.
+- Scope: hide counter value on canvas + Inspector editing for Start/Step/Mode.
+
+-----
+**Date/Time:** 2026-03-18 01:34 CET
+**Task Executed:** P1-5 Counter Refinement verified (P1 COMPLETE)
+**Files Modified/Created:** `app/page.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- Counter node now hides live numeric value on canvas; acts as background source.
+- Added Inspector editing for Counter Start/Step/Mode (desktop + mobile inspector paths).
+- Inspector edits patch node data safely and feed existing graph->runtime synchronization.
+- Validation re-run in main session: `npm run lint` ✅, `npm run build` ✅.
+- All P1 tasks (P1-1..P1-5) complete and ready for commit/push.

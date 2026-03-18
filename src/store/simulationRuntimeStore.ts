@@ -64,12 +64,33 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
 
     setTiming: ({ simulationTimeMs, stepTimeMs }) => {
       const current = get().runtime;
+      const wasRunning = current.status === "running";
+
+      /**
+       * Timing update policy (critical runtime-control seam):
+       * - Any Stop Time / Ts edit re-materializes a fresh snapshot via createInitialSnapshot
+       *   so timing constraints are validated in one canonical place.
+       * - We intentionally preserve graph + registry and only reset runtime tick/time, matching
+       *   desktop simulation tooling expectations after model-wide timing changes.
+       * - If the model was actively running, we restart the scheduler immediately so Ts edits
+       *   take effect without requiring an extra Run click.
+       */
+      clearScheduler();
       const next = createInitialSnapshot({
         simulationTimeMs: simulationTimeMs ?? current.simulationTimeMs,
         stepTimeMs: stepTimeMs ?? current.stepTimeMs,
       });
 
-      set({ runtime: next });
+      set({
+        runtime: {
+          ...next,
+          status: wasRunning ? "running" : next.status,
+        },
+      });
+
+      if (wasRunning) {
+        scheduleNextTick();
+      }
     },
 
     stepOnce: () => {

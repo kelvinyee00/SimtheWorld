@@ -4,14 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
+  BackgroundVariant,
   Connection,
   Controls,
   Edge,
-  NodeTypes,
   MiniMap,
   Node,
+  NodeTypes,
   OnConnect,
   Panel,
+  ReactFlowInstance,
   useEdgesState,
   useNodesState,
 } from "reactflow";
@@ -59,11 +61,13 @@ const INITIAL_EDGES: Edge[] = [
     id: "counter-1->display-1",
     source: "counter-1",
     target: "display-1",
+    type: "straight",
   },
   {
     id: "counter-1->scope-1",
     source: "counter-1",
     target: "scope-1",
+    type: "straight",
   },
 ];
 
@@ -72,6 +76,20 @@ const NODE_TYPES: NodeTypes = {
   [DISPLAY_BLOCK_TYPE]: CustomBlockNode,
   [SCOPE_BLOCK_TYPE]: CustomBlockNode,
 };
+
+/**
+ * Sidebar source of truth for blocks the editor can instantiate.
+ *
+ * High-density documentation standard:
+ * - `label` is strictly presentation text used in the library list.
+ * - `type` must match simulation block type constants and React Flow node mapping.
+ * - Any future library entries should keep this list as the single insertion point.
+ */
+const LIBRARY_BLOCKS = [
+  { label: "Counter", type: COUNTER_BLOCK_TYPE },
+  { label: "Display", type: DISPLAY_BLOCK_TYPE },
+  { label: "Scope", type: SCOPE_BLOCK_TYPE },
+] as const;
 
 /**
  * Runtime-safe id generator for newly created edges.
@@ -86,17 +104,101 @@ function makeEdgeId(source: string, target: string): string {
   return `${source}->${target}-${Date.now()}`;
 }
 
+/**
+ * Runtime-safe id generator for newly created nodes.
+ */
+function makeNodeId(type: string): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${type}-${crypto.randomUUID()}`;
+  }
+  return `${type}-${Date.now()}`;
+}
+
+/**
+ * Canonical default node payloads for drag-created blocks.
+ *
+ * Why switch here:
+ * - Keeps library drag/drop behavior deterministic.
+ * - Ensures each created block has required runtime fields from first render.
+ */
+function makeNodeData(type: string): Record<string, unknown> {
+  switch (type) {
+    case COUNTER_BLOCK_TYPE:
+      return { label: "Counter", start: 0, step: 1, mode: "inc" };
+    case DISPLAY_BLOCK_TYPE:
+      return { label: "Display" };
+    case SCOPE_BLOCK_TYPE:
+      return { label: "Scope", maxPoints: 240 };
+    default:
+      return { label: "Block" };
+  }
+}
+
+type CounterMode = "inc" | "dec";
+
+interface CounterInspectorData {
+  start: number;
+  step: number;
+  mode: CounterMode;
+}
+
+const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
+  start: 0,
+  step: 1,
+  mode: "inc",
+};
+
+const MS_PER_SECOND = 1_000;
+const MIN_TIMING_SECONDS = 0.001;
+
+/**
+ * Canvas visual policy (P1-3 Matlab/Simulink-inspired aesthetics).
+ *
+ * Critical styling directives:
+ * - Keep the viewport on a light neutral gray to mirror engineering CAD/block-diagram tools.
+ * - Persist a dotted guide grid at all times so alignment cues are available during pan/zoom.
+ * - Keep contrast restrained: grid must remain visible without competing with nodes/edges.
+ */
+const CANVAS_STYLE: React.CSSProperties = {
+  touchAction: "none",
+  backgroundColor: "#eceff3",
+};
+
+/**
+ * Dot grid tuning.
+ * - Slightly cool gray dots preserve professional hierarchy behind white nodes.
+ * - Spacing 20 approximates common schematic-grid rhythm while avoiding visual noise.
+ */
+const CANVAS_GRID_COLOR = "#c2c9d2";
+const CANVAS_GRID_GAP = 20;
+const CANVAS_GRID_DOT_SIZE = 1.2;
+
+function formatMsAsSeconds(ms: number): string {
+  return String(ms / MS_PER_SECOND);
+}
+
 export default function Home() {
-  const [nodes, , onNodesChange] = useNodesState(INITIAL_NODES);
+  const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
+  const setTiming = useSimulationRuntimeStore((state) => state.setTiming);
   const run = useSimulationRuntimeStore((state) => state.run);
   const pause = useSimulationRuntimeStore((state) => state.pause);
   const reset = useSimulationRuntimeStore((state) => state.reset);
+
+  const [stopTimeSecondsInput, setStopTimeSecondsInput] = useState(() =>
+    formatMsAsSeconds(runtime.simulationTimeMs)
+  );
+  const [stepTimeSecondsInput, setStepTimeSecondsInput] = useState(() =>
+    formatMsAsSeconds(runtime.stepTimeMs)
+  );
+  const [isEditingStopTime, setIsEditingStopTime] = useState(false);
+  const [isEditingStepTime, setIsEditingStepTime] = useState(false);
 
   /**
    * One-way synchronization from React Flow state -> runtime store graph.
@@ -123,6 +225,53 @@ export default function Home() {
     });
   }, [edges, nodes, setGraph]);
 
+  const stopTimeInputValue = isEditingStopTime
+    ? stopTimeSecondsInput
+    : formatMsAsSeconds(runtime.simulationTimeMs);
+  const stepTimeInputValue = isEditingStepTime
+    ? stepTimeSecondsInput
+    : formatMsAsSeconds(runtime.stepTimeMs);
+
+  /**
+   * Timing control binding contract (critical UI->runtime path):
+   * - Inputs are edited in seconds to match simulation nomenclature users expect (Stop Time/Ts).
+   * - Runtime store consumes milliseconds, so conversion is centralized here to avoid split logic.
+   * - Commit-on-blur / Enter guarantees drag/connect/deletion keyboard behavior remains unchanged
+   *   because we do not dispatch store updates on every keypress.
+   * - Invalid values are normalized back to the currently effective runtime values, preventing
+   *   accidental NaN/zero timing from destabilizing the fixed-step scheduler.
+   */
+  const commitTimingValue = useCallback(
+    (field: "stop" | "step", rawValue: string) => {
+      const parsedSeconds = Number(rawValue);
+      if (!Number.isFinite(parsedSeconds) || parsedSeconds < MIN_TIMING_SECONDS) {
+        setStopTimeSecondsInput(formatMsAsSeconds(runtime.simulationTimeMs));
+        setStepTimeSecondsInput(formatMsAsSeconds(runtime.stepTimeMs));
+        return;
+      }
+
+      const nextMs = Math.round(parsedSeconds * MS_PER_SECOND);
+      if (field === "stop") {
+        setTiming({ simulationTimeMs: nextMs });
+        return;
+      }
+
+      setTiming({ stepTimeMs: nextMs });
+    },
+    [runtime.simulationTimeMs, runtime.stepTimeMs, setTiming]
+  );
+
+  const onTimingInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>, field: "stop" | "step") => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.currentTarget.blur();
+      commitTimingValue(field, event.currentTarget.value);
+    },
+    [commitTimingValue]
+  );
+
   /**
    * Connection handler (node wiring).
    *
@@ -136,6 +285,8 @@ export default function Home() {
           {
             ...connection,
             id: makeEdgeId(connection.source ?? "source", connection.target ?? "target"),
+            // Belt-and-suspenders safety: preserve straight-edge policy even if call-sites evolve.
+            type: DEFAULT_EDGE_OPTIONS.type ?? "straight",
           },
           currentEdges
         )
@@ -156,10 +307,279 @@ export default function Home() {
     setIsMobileInspectorOpen(true);
   }, []);
 
+  /**
+   * Delete action for selected nodes.
+   *
+   * Selection sources:
+   * - Explicit click-tracked node (`selectedNodeId`) for inspector-driven interactions.
+   * - React Flow native selected flags for marquee / multi-select interactions.
+   */
+  const deleteSelectedNodes = useCallback(() => {
+    const selectedIds = nodes.filter((node) => node.selected).map((node) => node.id);
+    if (selectedNodeId && !selectedIds.includes(selectedNodeId)) {
+      selectedIds.push(selectedNodeId);
+    }
+
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    const selectedSet = new Set(selectedIds);
+    setNodes((currentNodes) => currentNodes.filter((node) => !selectedSet.has(node.id)));
+    setEdges((currentEdges) =>
+      currentEdges.filter(
+        (edge) => !selectedSet.has(edge.source) && !selectedSet.has(edge.target)
+      )
+    );
+    setSelectedNodeId(null);
+  }, [nodes, selectedNodeId, setEdges, setNodes]);
+
+  /**
+   * Keyboard parity for deletion.
+   *
+   * Supports Delete/Backspace while avoiding interference with text-entry controls.
+   */
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName.toLowerCase();
+      const isTextEntryTarget =
+        target?.isContentEditable || tagName === "input" || tagName === "textarea";
+
+      if (isTextEntryTarget) {
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        deleteSelectedNodes();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deleteSelectedNodes]);
+
+  /**
+   * HTML5 drag source initializer for library items.
+   */
+  const onLibraryDragStart = useCallback(
+    (event: React.DragEvent<HTMLLIElement>, type: string) => {
+      event.dataTransfer.setData("application/reactflow", type);
+      event.dataTransfer.effectAllowed = "move";
+    },
+    []
+  );
+
+  /**
+   * Canvas drop target policy. Required to allow browser drop events.
+   */
+  const onCanvasDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  /**
+   * Library drop handler.
+   *
+   * Converts pointer screen coordinates to flow-space coordinates and appends
+   * a fully-initialized node of the dragged block type.
+   */
+  const onCanvasDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow");
+      if (!type || !reactFlowInstance) {
+        return;
+      }
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      setNodes((currentNodes) =>
+        currentNodes.concat({
+          id: makeNodeId(type),
+          type,
+          position,
+          data: makeNodeData(type),
+        })
+      );
+    },
+    [reactFlowInstance, setNodes]
+  );
+
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
   );
+
+  const hasSelection = useMemo(
+    () => Boolean(selectedNodeId) || nodes.some((node) => node.selected),
+    [nodes, selectedNodeId]
+  );
+
+  const selectedCounterData = useMemo<CounterInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== COUNTER_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const start =
+      typeof raw.start === "number" && Number.isFinite(raw.start)
+        ? raw.start
+        : DEFAULT_COUNTER_INSPECTOR_DATA.start;
+    const step =
+      typeof raw.step === "number" && Number.isFinite(raw.step)
+        ? raw.step
+        : DEFAULT_COUNTER_INSPECTOR_DATA.step;
+    const mode: CounterMode = raw.mode === "dec" ? "dec" : "inc";
+
+    return { start, step, mode };
+  }, [selectedNode]);
+
+  /**
+   * Inspector -> graph node-data write path.
+   *
+   * High-density contract notes:
+   * - We patch only the selected node and preserve every other node object reference.
+   *   This keeps React Flow diffing cheap and avoids unnecessary rerenders/selection churn.
+   * - Node data remains a plain serializable object because the runtime graph bridge
+   *   (useEffect(setGraph)) depends on object fields, not methods/classes.
+   * - We always merge on top of prior data so unrelated fields (e.g. label, future
+   *   block params) survive inspector edits.
+   * - Using selectedNodeId as the sole target ensures edits are explicit and do not leak
+   *   into marquee-selected nodes.
+   */
+  const patchSelectedNodeData = useCallback(
+    (patch: Record<string, unknown>) => {
+      if (!selectedNodeId) {
+        return;
+      }
+
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          if (node.id !== selectedNodeId) {
+            return node;
+          }
+
+          const previousData = (node.data as Record<string, unknown> | undefined) ?? {};
+          return {
+            ...node,
+            data: {
+              ...previousData,
+              ...patch,
+            },
+          };
+        })
+      );
+    },
+    [selectedNodeId, setNodes]
+  );
+
+  /**
+   * Counter numeric field commit logic shared by Start/Step.
+   *
+   * We normalize invalid user input to the currently effective value instead of writing
+   * NaN/Infinity into node data. This keeps runtime stepping deterministic and aligns with
+   * the counter block's numeric param expectations.
+   */
+  const commitCounterNumericField = useCallback(
+    (field: "start" | "step", rawValue: string) => {
+      if (!selectedCounterData) {
+        return;
+      }
+
+      const parsed = Number(rawValue);
+      const safeValue = Number.isFinite(parsed) ? parsed : selectedCounterData[field];
+      patchSelectedNodeData({ [field]: safeValue });
+    },
+    [patchSelectedNodeData, selectedCounterData]
+  );
+
+  const renderInspectorCore = (params: { mobile: boolean }): React.ReactNode => {
+    const { mobile } = params;
+
+    if (!selectedNode) {
+      return mobile ? (
+        <p className="mt-3 text-sm text-slate-500">No node selected.</p>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">
+          Select a node from the canvas to inspect its properties.
+        </p>
+      );
+    }
+
+    return (
+      <div className="mt-3 space-y-2 text-sm text-slate-600">
+        <p>
+          <span className="font-medium text-slate-700">Node ID:</span> {selectedNode.id}
+        </p>
+        <p>
+          <span className="font-medium text-slate-700">Label:</span>{" "}
+          {String(selectedNode.data?.label ?? "Untitled")}
+        </p>
+        <p>
+          <span className="font-medium text-slate-700">Position:</span> x=
+          {Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
+        </p>
+
+        {selectedCounterData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Counter Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Start
+              <input
+                type="number"
+                value={String(selectedCounterData.start)}
+                onBlur={(event) => commitCounterNumericField("start", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitCounterNumericField("start", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Step
+              <input
+                type="number"
+                value={String(selectedCounterData.step)}
+                onBlur={(event) => commitCounterNumericField("step", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitCounterNumericField("step", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Mode
+              <select
+                value={selectedCounterData.mode}
+                onChange={(event) => {
+                  const mode: CounterMode = event.target.value === "dec" ? "dec" : "inc";
+                  patchSelectedNodeData({ mode });
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              >
+                <option value="inc">inc</option>
+                <option value="dec">dec</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -173,6 +593,42 @@ export default function Home() {
               <h1 className="text-lg font-semibold">Block Diagram Editor</h1>
             </div>
             <div className="hidden items-center gap-2 sm:flex">
+              <label className="flex items-center gap-1 text-xs text-slate-600">
+                Stop Time
+                <input
+                  type="number"
+                  min={MIN_TIMING_SECONDS}
+                  step="0.001"
+                  value={stopTimeInputValue}
+                  onFocus={() => setIsEditingStopTime(true)}
+                  onChange={(event) => setStopTimeSecondsInput(event.target.value)}
+                  onBlur={(event) => {
+                    commitTimingValue("stop", event.target.value);
+                    setIsEditingStopTime(false);
+                  }}
+                  onKeyDown={(event) => onTimingInputKeyDown(event, "stop")}
+                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700"
+                />
+                <span className="text-slate-500">s</span>
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-600">
+                Step Time (Ts)
+                <input
+                  type="number"
+                  min={MIN_TIMING_SECONDS}
+                  step="0.001"
+                  value={stepTimeInputValue}
+                  onFocus={() => setIsEditingStepTime(true)}
+                  onChange={(event) => setStepTimeSecondsInput(event.target.value)}
+                  onBlur={(event) => {
+                    commitTimingValue("step", event.target.value);
+                    setIsEditingStepTime(false);
+                  }}
+                  onKeyDown={(event) => onTimingInputKeyDown(event, "step")}
+                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700"
+                />
+                <span className="text-slate-500">s</span>
+              </label>
               <button
                 type="button"
                 onClick={run}
@@ -194,18 +650,36 @@ export default function Home() {
               >
                 Reset
               </button>
+              <button
+                type="button"
+                onClick={deleteSelectedNodes}
+                disabled={!hasSelection}
+                className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </header>
 
         <main className="relative flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:flex-row">
           <aside className="order-2 rounded-xl border border-slate-200 bg-white p-4 lg:order-1 lg:w-72">
-            <h2 className="text-sm font-semibold text-slate-700">Components</h2>
+            <h2 className="text-sm font-semibold text-slate-700">Library</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li className="rounded-md border border-slate-200 px-3 py-2">Counter</li>
-              <li className="rounded-md border border-slate-200 px-3 py-2">Display</li>
-              <li className="rounded-md border border-slate-200 px-3 py-2">Scope</li>
+              {LIBRARY_BLOCKS.map((block) => (
+                <li
+                  key={block.type}
+                  draggable
+                  onDragStart={(event) => onLibraryDragStart(event, block.type)}
+                  className="cursor-grab rounded-md border border-slate-200 bg-slate-50 px-3 py-2 active:cursor-grabbing"
+                >
+                  {block.label}
+                </li>
+              ))}
             </ul>
+            <p className="mt-3 text-xs text-slate-500">
+              Drag a block onto the canvas to create a node.
+            </p>
             <p className="mt-3 text-xs text-slate-500">
               Runtime status: <span className="font-medium">{runtime.status}</span>
             </p>
@@ -216,10 +690,13 @@ export default function Home() {
             <ReactFlow
               nodes={nodes}
               edges={edges}
+              onInit={setReactFlowInstance}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onDragOver={onCanvasDragOver}
+              onDrop={onCanvasDrop}
               defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
               nodeTypes={NODE_TYPES}
               fitView
@@ -228,18 +705,23 @@ export default function Home() {
                * - `touch-action: none` prevents browser scroll hijacking during node drag/pan.
                * - panOnDrag + zoomOnPinch keeps one-finger/gesture interactions predictable.
                */
-              style={{ touchAction: "none" }}
+              style={CANVAS_STYLE}
               panOnDrag
               zoomOnPinch
               zoomOnScroll
               selectionOnDrag={false}
             >
-              <Background />
+              <Background
+                variant={BackgroundVariant.Dots}
+                color={CANVAS_GRID_COLOR}
+                gap={CANVAS_GRID_GAP}
+                size={CANVAS_GRID_DOT_SIZE}
+              />
               <MiniMap pannable zoomable />
               <Controls showInteractive={false} />
               <Panel position="top-left">
                 <div className="rounded-md bg-white/90 px-2 py-1 text-xs text-slate-600 shadow-sm">
-                  Tap/click nodes to inspect. Drag from a handle to connect.
+                  Drag blocks from Library. Use Delete button or Delete/Backspace keys.
                 </div>
               </Panel>
             </ReactFlow>
@@ -247,34 +729,52 @@ export default function Home() {
 
           <aside className="order-3 hidden rounded-xl border border-slate-200 bg-white p-4 lg:block lg:w-72">
             <h2 className="text-sm font-semibold text-slate-700">Inspector</h2>
-            {selectedNode ? (
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
-                <p>
-                  <span className="font-medium text-slate-700">Node ID:</span> {selectedNode.id}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-700">Label:</span>{" "}
-                  {String(selectedNode.data?.label ?? "Untitled")}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-700">Position:</span> x=
-                  {Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
-                </p>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-slate-500">
-                Select a node from the canvas to inspect its properties.
-              </p>
-            )}
+            {renderInspectorCore({ mobile: false })}
           </aside>
         </main>
 
         {/*
-          Compact mobile command bar.
-          Fixed bottom placement keeps primary simulation actions reachable on phones while
-          preserving vertical space for canvas gestures.
+          Compact mobile timing + command bars.
+          Keeping timing fields and transport controls in separate rows avoids cramped hit-targets
+          and still preserves the touch-first drag/pan experience on the canvas.
         */}
-        <div className="fixed inset-x-3 bottom-3 z-20 grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg sm:hidden">
+        <div className="fixed inset-x-3 bottom-16 z-20 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg sm:hidden">
+          <label className="text-xs text-slate-600">
+            Stop Time (s)
+            <input
+              type="number"
+              min={MIN_TIMING_SECONDS}
+              step="0.001"
+              value={stopTimeInputValue}
+              onFocus={() => setIsEditingStopTime(true)}
+              onChange={(event) => setStopTimeSecondsInput(event.target.value)}
+              onBlur={(event) => {
+                commitTimingValue("stop", event.target.value);
+                setIsEditingStopTime(false);
+              }}
+              onKeyDown={(event) => onTimingInputKeyDown(event, "stop")}
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700"
+            />
+          </label>
+          <label className="text-xs text-slate-600">
+            Step Time (Ts)
+            <input
+              type="number"
+              min={MIN_TIMING_SECONDS}
+              step="0.001"
+              value={stepTimeInputValue}
+              onFocus={() => setIsEditingStepTime(true)}
+              onChange={(event) => setStepTimeSecondsInput(event.target.value)}
+              onBlur={(event) => {
+                commitTimingValue("step", event.target.value);
+                setIsEditingStepTime(false);
+              }}
+              onKeyDown={(event) => onTimingInputKeyDown(event, "step")}
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700"
+            />
+          </label>
+        </div>
+        <div className="fixed inset-x-3 bottom-3 z-20 grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg sm:hidden">
           <button
             type="button"
             onClick={run}
@@ -296,6 +796,14 @@ export default function Home() {
           >
             Reset
           </button>
+          <button
+            type="button"
+            onClick={deleteSelectedNodes}
+            disabled={!hasSelection}
+            className="rounded-md bg-rose-100 px-2 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            Delete
+          </button>
         </div>
 
         {/*
@@ -313,23 +821,7 @@ export default function Home() {
             >
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-200" />
               <h2 className="text-sm font-semibold text-slate-700">Inspector</h2>
-              {selectedNode ? (
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <p>
-                    <span className="font-medium text-slate-700">Node ID:</span> {selectedNode.id}
-                  </p>
-                  <p>
-                    <span className="font-medium text-slate-700">Label:</span>{" "}
-                    {String(selectedNode.data?.label ?? "Untitled")}
-                  </p>
-                  <p>
-                    <span className="font-medium text-slate-700">Position:</span> x=
-                    {Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-500">No node selected.</p>
-              )}
+              {renderInspectorCore({ mobile: true })}
             </div>
           </div>
         )}

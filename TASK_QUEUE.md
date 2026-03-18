@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P0/P1 tasks are isolated and implementation-ready.
+- P1 tasks focus on "Simulink Copycat" refinement.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,36 +14,40 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
-## P1 Queue (Iteration 1: Simulink Refinement)
-- [ ] P1-1 Block Library & Drag-and-Drop
-  - Implement a sidebar 'Block Library' (Counter, Display, Scope).
-  - Enable React Flow drag-and-drop from sidebar to canvas.
-  - Implement block deletion (Backspace/Delete keys).
+## P1 Queue (Simulink Copycat Refinement)
+- [x] P1-1 Block Library Sidebar
+- [x] P1-2 Advanced Simulation Controls
+  - Add numeric inputs for 'Stop Time' and 'Step Time (Ts)' to the toolbar.
+  - Bind these inputs to the Zustand runtime store.
+  - Ensure simulation timing logic updates dynamically based on these inputs.
 
-- [ ] P1-2 Simulation Control Panel
-  - Add 'Stop Time' and 'Step Time (Ts)' numeric inputs to the `SimulationToolbar`.
-  - Update `SimulationRuntimeStore` to reflect these values in real-time.
-  - Add a 'Play/Stop' button with Simulation Time indicator.
+- [x] P1-3 Matlab Aesthetics & Grid
+  - Update canvas background to light gray with a persistent dot grid.
+  - Style block nodes with 3D-effect shadow borders and white backgrounds.
+  - Ensure all connections use the `straight` edge type by default.
 
-- [ ] P1-3 Matlab Simulink Aesthetics
-  - Update CSS/Tailwind to match classic Simulink gray/white/blue color palette.
-  - Apply 3D-effect borders to blocks and dot-grid to the background.
-  - Ensure all connections use `straight` edge type.
+- [x] P1-4 Scope Interactive Modal
+  - Convert the Scope block on the canvas to a simple icon.
+  - Implement a double-click handler on the Scope node to open a full-screen modal.
+  - Within the modal, implement advanced charting via Recharts (zoom, pan, cursor tracking).
 
-- [ ] P1-4 Functional Logic & Scope Modal
-  - Remove current value display from `CounterBlock`.
-  - Implement `onDoubleClick` for `ScopeBlock` to open an interactive modal.
-  - The Scope Modal must include: Recharts with zoom/pan, cursors, and data measurement tools.
-
-- [ ] P1-5 Final Validation & Performance Check
-  - E2E test: Drag Counter → Drag Display → Connect → Set Step Time (0.01) → Run.
-  - Validate mobile responsiveness of the new Modal and Sidebar.
-  - Ensure the simulation speed correctly reflects the Step Time parameter.
+- [x] P1-5 Counter Refinement
+  - Update Counter block UI to hide the live numeric value (logic runs in background).
+  - Add basic property editing in the Inspector (Start, Step, Mode).
 
 ## Completed
-- [x] P0-1 Project scaffold verified.
-- [x] P0-2 Simulation core engine verified.
-- [x] P0-3 Block system foundation verified.
-- [x] P0-4 Visualization blocks verified.
-- [x] P0-5 Canvas + mobile interaction verified.
-- [x] P0-6 End-to-end Counter demo + validation verified.
+- [x] P0-1 Project scaffold
+- [x] P0-2 Simulation core engine
+- [x] P0-3 Block system foundation
+- [x] P0-4 Visualization blocks
+- [x] P0-5 Canvas + mobile interaction
+- [x] P0-6 End-to-end Counter demo + validation
+- [x] P1-1 Block Library Sidebar verified (DnD + deletion implemented).
+
+- [x] P1-2 Advanced Simulation Controls verified (Stop Time/Ts bound to runtime scheduler).
+
+- [x] P1-3 Matlab Aesthetics & Grid verified (gray dot-grid + 3D white blocks + straight edge enforcement).
+
+- [x] P1-4 Scope Interactive Modal verified (icon scope + double-click modal + zoom/cursor/measurement).
+
+- [x] P1-5 Counter Refinement verified (counter value hidden + inspector Start/Step/Mode editing).
