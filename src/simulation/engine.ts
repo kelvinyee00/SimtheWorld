@@ -59,7 +59,13 @@ export function stepSimulation(params: {
     };
   }
 
-  const executionOrder = getTopologicalOrder(graph);
+  const feedbackSourceNodeIds = new Set(
+    graph.nodes
+      .filter((node) => registry[node.type]?.breaksAlgebraicLoop === true)
+      .map((node) => node.id)
+  );
+
+  const executionOrder = getTopologicalOrder(graph, { feedbackSourceNodeIds });
   const nextOutputs: SimulationRuntimeSnapshot["nodeOutputs"] = {
     ...snapshot.nodeOutputs,
   };

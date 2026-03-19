@@ -16,6 +16,8 @@ import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
+import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -31,6 +33,8 @@ import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 interface BlockNodeData {
   label?: string;
   gain?: number;
+  initialCondition?: number;
+  initialValue?: number;
   format?: "json" | "csv";
   fileName?: string;
 }
@@ -97,8 +101,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isGain = type === GAIN_BLOCK_TYPE;
   const isSum = type === SUM_BLOCK_TYPE;
   const isProduct = type === PRODUCT_BLOCK_TYPE;
+  const isIntegrator = type === INTEGRATOR_BLOCK_TYPE;
+  const isUnitDelay = type === UNIT_DELAY_BLOCK_TYPE;
   const isToFile = type === TO_FILE_BLOCK_TYPE;
-  const isMathNode = isGain || isSum || isProduct;
+  const isMathNode = isGain || isSum || isProduct || isIntegrator || isUnitDelay;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -116,7 +122,17 @@ export const CustomBlockNode = memo(function CustomBlockNode({
       : "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(14,165,233,0.32),0_8px_18px_rgba(2,132,199,0.22)]"
     : "";
 
-  const symbol = isGain ? "×" : isSum ? "Σ" : isProduct ? "Π" : "";
+  const symbol = isGain
+    ? "×"
+    : isSum
+      ? "Σ"
+      : isProduct
+        ? "Π"
+        : isIntegrator
+          ? "∫"
+          : isUnitDelay
+            ? "z⁻¹"
+            : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -170,6 +186,22 @@ export const CustomBlockNode = memo(function CustomBlockNode({
               <p className="text-2xl font-black leading-none text-sky-700">{symbol}</p>
               {isGain ? (
                 <p className="text-sm font-semibold tabular-nums text-slate-700">k={gainValue}</p>
+              ) : isIntegrator ? (
+                <p className="text-[11px] text-slate-500">
+                  x₀={
+                    typeof data.initialCondition === "number" && Number.isFinite(data.initialCondition)
+                      ? data.initialCondition
+                      : 0
+                  }
+                </p>
+              ) : isUnitDelay ? (
+                <p className="text-[11px] text-slate-500">
+                  y₀={
+                    typeof data.initialValue === "number" && Number.isFinite(data.initialValue)
+                      ? data.initialValue
+                      : 0
+                  }
+                </p>
               ) : (
                 <p className="text-[11px] text-slate-500">multi-input</p>
               )}
@@ -187,10 +219,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay) && (
           <Handle
             type="target"
-            id={isGain ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"

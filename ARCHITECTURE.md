@@ -209,3 +209,13 @@ Constraints for P0:
   - On transition to completed runtime state, each To File node writes one archival record.
   - Duplicate completion writes are guarded by a completion signature (`tick:timeMs`).
 - Inspector supports ad-hoc immediate download of latest captured run for selected To File node.
+
+### 6) Integrator + Unit Delay (P3-3 cycle-safe foundation)
+- Added stateful feedback blocks:
+  - **Integrator** (forward-Euler discrete accumulator)
+  - **Unit Delay** (`z^-1` memory element)
+- Extended block-definition contract with `breaksAlgebraicLoop` metadata.
+- Scheduler now computes topological order with feedback-edge relaxation:
+  - Outgoing edges from loop-breaking blocks are excluded from same-tick dependency indegree.
+  - Enables deterministic execution of feedback models that include memory/delay elements.
+- Unsupported pure algebraic cycles still fail fast with actionable guidance.

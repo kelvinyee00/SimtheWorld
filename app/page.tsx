@@ -27,6 +27,8 @@ import { SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
+import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -92,6 +94,8 @@ const NODE_TYPES: NodeTypes = {
   [GAIN_BLOCK_TYPE]: CustomBlockNode,
   [SUM_BLOCK_TYPE]: CustomBlockNode,
   [PRODUCT_BLOCK_TYPE]: CustomBlockNode,
+  [INTEGRATOR_BLOCK_TYPE]: CustomBlockNode,
+  [UNIT_DELAY_BLOCK_TYPE]: CustomBlockNode,
   [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
 };
 
@@ -108,6 +112,8 @@ const LIBRARY_BLOCKS = [
   { label: "Gain", type: GAIN_BLOCK_TYPE },
   { label: "Sum", type: SUM_BLOCK_TYPE },
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
+  { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
+  { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
@@ -153,6 +159,10 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Sum" };
     case PRODUCT_BLOCK_TYPE:
       return { label: "Product" };
+    case INTEGRATOR_BLOCK_TYPE:
+      return { label: "Integrator", initialCondition: 0 };
+    case UNIT_DELAY_BLOCK_TYPE:
+      return { label: "Unit Delay", initialValue: 0 };
     case TO_FILE_BLOCK_TYPE:
       return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000 };
     case DISPLAY_BLOCK_TYPE:
@@ -183,6 +193,14 @@ interface ToFileInspectorData {
   sampleCount: number;
 }
 
+interface IntegratorInspectorData {
+  initialCondition: number;
+}
+
+interface UnitDelayInspectorData {
+  initialValue: number;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
@@ -193,6 +211,13 @@ const DEFAULT_GAIN_INSPECTOR_DATA: GainInspectorData = {
   gain: 1,
 };
 
+const DEFAULT_INTEGRATOR_INSPECTOR_DATA: IntegratorInspectorData = {
+  initialCondition: 0,
+};
+
+const DEFAULT_UNIT_DELAY_INSPECTOR_DATA: UnitDelayInspectorData = {
+  initialValue: 0,
+};
 
 const MS_PER_SECOND = 1_000;
 const MIN_TIMING_SECONDS = 0.001;
@@ -645,6 +670,34 @@ export default function Home() {
     };
   }, [runtime.nodeInternalState, selectedNode]);
 
+  const selectedIntegratorData = useMemo<IntegratorInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== INTEGRATOR_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const initialCondition =
+      typeof raw.initialCondition === "number" && Number.isFinite(raw.initialCondition)
+        ? raw.initialCondition
+        : DEFAULT_INTEGRATOR_INSPECTOR_DATA.initialCondition;
+
+    return { initialCondition };
+  }, [selectedNode]);
+
+  const selectedUnitDelayData = useMemo<UnitDelayInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== UNIT_DELAY_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const initialValue =
+      typeof raw.initialValue === "number" && Number.isFinite(raw.initialValue)
+        ? raw.initialValue
+        : DEFAULT_UNIT_DELAY_INSPECTOR_DATA.initialValue;
+
+    return { initialValue };
+  }, [selectedNode]);
+
   /**
    * Inspector -> graph node-data write path.
    *
@@ -733,6 +786,36 @@ export default function Home() {
       patchSelectedNodeData({ maxRows: safeValue });
     },
     [patchSelectedNodeData, selectedToFileData]
+  );
+
+  const commitIntegratorInitialCondition = useCallback(
+    (rawValue: string) => {
+      if (!selectedIntegratorData) {
+        return;
+      }
+
+      const parsed = Number(rawValue);
+      const safeValue = Number.isFinite(parsed)
+        ? parsed
+        : selectedIntegratorData.initialCondition;
+      patchSelectedNodeData({ initialCondition: safeValue });
+    },
+    [patchSelectedNodeData, selectedIntegratorData]
+  );
+
+  const commitUnitDelayInitialValue = useCallback(
+    (rawValue: string) => {
+      if (!selectedUnitDelayData) {
+        return;
+      }
+
+      const parsed = Number(rawValue);
+      const safeValue = Number.isFinite(parsed)
+        ? parsed
+        : selectedUnitDelayData.initialValue;
+      patchSelectedNodeData({ initialValue: safeValue });
+    },
+    [patchSelectedNodeData, selectedUnitDelayData]
   );
 
   const exportSelectedToFile = useCallback(() => {
@@ -855,6 +938,52 @@ export default function Home() {
                   }
                 }}
                 onChange={(event) => commitGainField(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedIntegratorData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Integrator Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Initial Condition
+              <input
+                type="number"
+                value={String(selectedIntegratorData.initialCondition)}
+                onBlur={(event) => commitIntegratorInitialCondition(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitIntegratorInitialCondition(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedUnitDelayData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Unit Delay Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Initial Value
+              <input
+                type="number"
+                value={String(selectedUnitDelayData.initialValue)}
+                onBlur={(event) => commitUnitDelayInitialValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitUnitDelayInitialValue(event.target.value)}
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
               />
             </label>

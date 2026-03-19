@@ -5,6 +5,8 @@ import { GainBlock, GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SumBlock, SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { ProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { ToFileBlock, TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
+import { IntegratorBlock, INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
+import { UnitDelayBlock, UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -27,6 +29,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [SUM_BLOCK_TYPE]: SumBlock,
   [PRODUCT_BLOCK_TYPE]: ProductBlock,
   [TO_FILE_BLOCK_TYPE]: ToFileBlock,
+  [INTEGRATOR_BLOCK_TYPE]: IntegratorBlock,
+  [UNIT_DELAY_BLOCK_TYPE]: UnitDelayBlock,
 };
 
 /**

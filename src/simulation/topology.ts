@@ -15,7 +15,12 @@ import { SimulationGraph } from "./types";
  * - Replace lexical ordering with a stable priority tuple
  *   (subsystemDepth, userPriority, lexicalId) if subsystem scheduling is introduced.
  */
-export function getTopologicalOrder(graph: SimulationGraph): string[] {
+export function getTopologicalOrder(
+  graph: SimulationGraph,
+  options?: { feedbackSourceNodeIds?: Set<string> }
+): string[] {
+  const feedbackSourceNodeIds = options?.feedbackSourceNodeIds ?? new Set<string>();
+
   const indegree = new Map<string, number>();
   const adjacency = new Map<string, string[]>();
 
@@ -29,6 +34,12 @@ export function getTopologicalOrder(graph: SimulationGraph): string[] {
       throw new Error(
         `Invalid edge '${edge.id}': source/target missing from graph nodes.`
       );
+    }
+
+    // Feedback edges emitted from memory/delay blocks are intentionally excluded from
+    // topological dependency constraints so cyclic models can execute deterministically.
+    if (feedbackSourceNodeIds.has(edge.source)) {
+      continue;
     }
 
     adjacency.get(edge.source)?.push(edge.target);
@@ -67,7 +78,7 @@ export function getTopologicalOrder(graph: SimulationGraph): string[] {
 
   if (ordered.length !== graph.nodes.length) {
     throw new Error(
-      "Graph contains a cycle. P0 runtime supports acyclic graphs only."
+      "Graph contains an unsupported cycle. Insert Unit Delay/Integrator blocks to break algebraic loops."
     );
   }
 

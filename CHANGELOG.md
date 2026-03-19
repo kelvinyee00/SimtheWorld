@@ -322,3 +322,27 @@
 - Validation gates passed:
   - `npm run lint` ✅
   - `npm run build` ✅
+
+-----
+**Date/Time:** 2026-03-19 09:36 CET
+**Task Executed:** P3-3 Integrator + Unit Delay foundation implemented and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/integratorBlock.ts` (new)
+- `src/simulation/blocks/unitDelayBlock.ts` (new)
+- `src/simulation/types.ts`
+- `src/simulation/topology.ts`
+- `src/simulation/engine.ts`
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added Integrator and Unit Delay blocks with deterministic state-first output semantics.
+- Added `breaksAlgebraicLoop` block metadata and scheduler feedback-edge relaxation support.
+- Preserved hard failure for unsupported algebraic loops without memory elements.
+- Added library/canvas/inspector support for new blocks while preserving industrial UI conventions.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅

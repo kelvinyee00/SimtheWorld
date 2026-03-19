@@ -106,6 +106,14 @@ export interface SimulationBlockDefinition {
    */
   initialize?: (params: Record<string, unknown>) => unknown;
   /**
+   * Marks blocks whose outputs are sourced from persisted state (not direct-feedthrough).
+   *
+   * Scheduling implication:
+   * - Outgoing edges from these blocks can be treated as feedback edges during topological
+   *   planning, allowing cycle-safe execution for models that include delay/memory operators.
+   */
+  breaksAlgebraicLoop?: boolean;
+  /**
    * Deterministic per-tick step function.
    *
    * Contract:
