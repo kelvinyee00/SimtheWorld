@@ -33,7 +33,7 @@
   - Add pre-run graph validation for invalid handles, unknown block types, and unsupported cycles.
   - Surface actionable validation errors in runtime UI.
 
-- [ ] P3-5 Model Persistence v2
+- [x] P3-5 Model Persistence v2
   - Add export/import for graph + timing + block params with schema versioning.
   - Add local persistence/autosave workflow without breaking deterministic runtime.
 

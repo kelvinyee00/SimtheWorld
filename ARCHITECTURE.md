@@ -229,3 +229,14 @@ Constraints for P0:
   - Illegal wiring into blocks without input ports
   - Unsupported algebraic cycles
 - Validation errors are surfaced in runtime status UI as actionable diagnostics.
+
+### 8) Model Persistence v2 (P3-5)
+- Added schema-versioned model document pipeline (`schemaVersion: 2`).
+- Persisted payload includes:
+  - Node set (`id`, `type`, `position`, `data`)
+  - Edge set (`id`, endpoints, handles, edge type)
+  - Timing (`simulationTimeMs`, `stepTimeMs`)
+  - Metadata (`app`, `savedAtMs`)
+- Added compatibility migration path for legacy v1 model shape.
+- Added local autosave/load path using browser `localStorage` for model continuity between sessions.
+- Added user-triggered export/import controls in UI without altering runtime determinism.

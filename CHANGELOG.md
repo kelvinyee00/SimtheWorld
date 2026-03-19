@@ -364,3 +364,21 @@
 - Validation gates passed:
   - `npm run lint` ✅
   - `npm run build` ✅
+
+-----
+**Date/Time:** 2026-03-19 09:54 CET
+**Task Executed:** P3-5 Model persistence v2 implemented and verified
+**Files Modified/Created:**
+- `src/persistence/modelPersistence.ts` (new)
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added schema-versioned model document serializer/parser (`schemaVersion: 2`).
+- Added legacy v1 migration support in parser.
+- Added localStorage autosave + startup restore workflow.
+- Added model export/import controls in desktop toolbar + sidebar.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅

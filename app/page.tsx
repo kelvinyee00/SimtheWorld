@@ -40,6 +40,12 @@ import {
   PersistedSimulationRunRecord,
   saveSimulationRunRecord,
 } from "@/src/persistence/simulationRunStore";
+import {
+  loadModelFromLocalStorage,
+  parseModelDocument,
+  saveModelToLocalStorage,
+  serializeModelV2,
+} from "@/src/persistence/modelPersistence";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -274,7 +280,10 @@ export default function Home() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
   const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
+  const [modelActionMessage, setModelActionMessage] = useState<string | null>(null);
   const lastPersistedCompletionRef = useRef<string | null>(null);
+  const modelFileInputRef = useRef<HTMLInputElement | null>(null);
+  const hasInitializedModelPersistenceRef = useRef(false);
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
@@ -603,6 +612,70 @@ export default function Home() {
     };
   }, [nodes, runtime.nodeInternalState, runtime.status, runtime.tick, runtime.timeMs]);
 
+  useEffect(() => {
+    const persisted = loadModelFromLocalStorage();
+    if (persisted) {
+      setNodes(
+        persisted.nodes.map((node) => ({
+          id: node.id,
+          type: node.type,
+          position: node.position,
+          data: node.data,
+        }))
+      );
+      setEdges(
+        persisted.edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          type: edge.type ?? "straight",
+        }))
+      );
+      setTiming({
+        simulationTimeMs: persisted.timing.simulationTimeMs,
+        stepTimeMs: persisted.timing.stepTimeMs,
+      });
+      setModelActionMessage("Loaded persisted model snapshot (schema v2).");
+    }
+
+    hasInitializedModelPersistenceRef.current = true;
+  }, [setEdges, setNodes, setTiming]);
+
+  useEffect(() => {
+    if (!hasInitializedModelPersistenceRef.current) {
+      return;
+    }
+
+    try {
+      const serialized = serializeModelV2({
+        nodes: nodes.map((node) => ({
+          id: node.id,
+          type: node.type ?? "default",
+          position: node.position,
+          data: (node.data as Record<string, unknown> | undefined) ?? {},
+        })),
+        edges: edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle ?? undefined,
+          targetHandle: edge.targetHandle ?? undefined,
+          type: edge.type ?? "straight",
+        })),
+        timing: {
+          simulationTimeMs: runtime.simulationTimeMs,
+          stepTimeMs: runtime.stepTimeMs,
+        },
+      });
+
+      saveModelToLocalStorage(serialized);
+    } catch {
+      setModelActionMessage("Failed to persist model snapshot to local storage.");
+    }
+  }, [edges, nodes, runtime.simulationTimeMs, runtime.stepTimeMs]);
+
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
@@ -841,6 +914,90 @@ export default function Home() {
       `Exported ${parsedState.samples.length} sample(s) as ${payload.extension.toUpperCase()}.`
     );
   }, [runtime.nodeInternalState, selectedNode]);
+
+  const exportModelDocument = useCallback(() => {
+    try {
+      const serialized = serializeModelV2({
+        nodes: nodes.map((node) => ({
+          id: node.id,
+          type: node.type ?? "default",
+          position: node.position,
+          data: (node.data as Record<string, unknown> | undefined) ?? {},
+        })),
+        edges: edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle ?? undefined,
+          targetHandle: edge.targetHandle ?? undefined,
+          type: edge.type ?? "straight",
+        })),
+        timing: {
+          simulationTimeMs: runtime.simulationTimeMs,
+          stepTimeMs: runtime.stepTimeMs,
+        },
+      });
+
+      triggerTextDownload({
+        fileName: `web-simulink-model-${Date.now()}`,
+        extension: "json",
+        mimeType: "application/json;charset=utf-8",
+        content: serialized,
+      });
+
+      setModelActionMessage("Exported model document (schema v2).");
+    } catch {
+      setModelActionMessage("Failed to export model document.");
+    }
+  }, [edges, nodes, runtime.simulationTimeMs, runtime.stepTimeMs]);
+
+  const openModelImportPicker = useCallback(() => {
+    modelFileInputRef.current?.click();
+  }, []);
+
+  const importModelDocument = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const raw = await file.text();
+        const parsed = parseModelDocument(raw);
+
+        setNodes(
+          parsed.nodes.map((node) => ({
+            id: node.id,
+            type: node.type,
+            position: node.position,
+            data: node.data,
+          }))
+        );
+        setEdges(
+          parsed.edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
+            type: edge.type ?? "straight",
+          }))
+        );
+        setTiming({
+          simulationTimeMs: parsed.timing.simulationTimeMs,
+          stepTimeMs: parsed.timing.stepTimeMs,
+        });
+        setSelectedNodeId(null);
+        setModelActionMessage("Imported model document successfully.");
+      } catch {
+        setModelActionMessage("Import failed: invalid or unsupported model file.");
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [setEdges, setNodes, setTiming]
+  );
 
   const renderInspectorCore = (params: { mobile: boolean }): React.ReactNode => {
     const { mobile } = params;
@@ -1098,6 +1255,20 @@ export default function Home() {
               </label>
               <button
                 type="button"
+                onClick={exportModelDocument}
+                className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700"
+              >
+                Export Model
+              </button>
+              <button
+                type="button"
+                onClick={openModelImportPicker}
+                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700"
+              >
+                Import Model
+              </button>
+              <button
+                type="button"
                 onClick={run}
                 className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
               >
@@ -1156,8 +1327,27 @@ export default function Home() {
             </p>
             <p className="mt-1 text-xs text-slate-500">Tick: {runtime.tick}</p>
             <p className="mt-1 text-xs text-slate-500">IndexedDB runs: {recentRunRecords.length}</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={exportModelDocument}
+                className="rounded-md border border-sky-300 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700"
+              >
+                Export Model
+              </button>
+              <button
+                type="button"
+                onClick={openModelImportPicker}
+                className="rounded-md border border-indigo-300 bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700"
+              >
+                Import Model
+              </button>
+            </div>
             {runtime.error ? (
               <p className="mt-1 text-xs text-rose-700">{runtime.error}</p>
+            ) : null}
+            {modelActionMessage ? (
+              <p className="mt-1 text-xs text-indigo-700">{modelActionMessage}</p>
             ) : null}
             {toFileActionMessage ? (
               <p className="mt-1 text-xs text-sky-700">{toFileActionMessage}</p>
@@ -1284,6 +1474,14 @@ export default function Home() {
             Delete
           </button>
         </div>
+
+        <input
+          ref={modelFileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={importModelDocument}
+        />
 
         {/*
           Mobile Inspector bottom sheet.
