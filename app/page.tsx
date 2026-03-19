@@ -24,6 +24,9 @@ import { DEFAULT_EDGE_OPTIONS } from "@/src/canvas/edgeDefaults";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
+import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
+import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
+import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -75,6 +78,9 @@ const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
   [DISPLAY_BLOCK_TYPE]: CustomBlockNode,
   [SCOPE_BLOCK_TYPE]: CustomBlockNode,
+  [GAIN_BLOCK_TYPE]: CustomBlockNode,
+  [SUM_BLOCK_TYPE]: CustomBlockNode,
+  [PRODUCT_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -87,6 +93,9 @@ const NODE_TYPES: NodeTypes = {
  */
 const LIBRARY_BLOCKS = [
   { label: "Counter", type: COUNTER_BLOCK_TYPE },
+  { label: "Gain", type: GAIN_BLOCK_TYPE },
+  { label: "Sum", type: SUM_BLOCK_TYPE },
+  { label: "Product", type: PRODUCT_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
 ] as const;
@@ -125,6 +134,12 @@ function makeNodeData(type: string): Record<string, unknown> {
   switch (type) {
     case COUNTER_BLOCK_TYPE:
       return { label: "Counter", start: 0, step: 1, mode: "inc" };
+    case GAIN_BLOCK_TYPE:
+      return { label: "Gain", gain: 1 };
+    case SUM_BLOCK_TYPE:
+      return { label: "Sum" };
+    case PRODUCT_BLOCK_TYPE:
+      return { label: "Product" };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
     case SCOPE_BLOCK_TYPE:
@@ -142,10 +157,18 @@ interface CounterInspectorData {
   mode: CounterMode;
 }
 
+interface GainInspectorData {
+  gain: number;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
   mode: "inc",
+};
+
+const DEFAULT_GAIN_INSPECTOR_DATA: GainInspectorData = {
+  gain: 1,
 };
 
 const MS_PER_SECOND = 1_000;
@@ -461,6 +484,20 @@ export default function Home() {
     return { start, step, mode };
   }, [selectedNode]);
 
+  const selectedGainData = useMemo<GainInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== GAIN_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const gain =
+      typeof raw.gain === "number" && Number.isFinite(raw.gain)
+        ? raw.gain
+        : DEFAULT_GAIN_INSPECTOR_DATA.gain;
+
+    return { gain };
+  }, [selectedNode]);
+
   /**
    * Inspector -> graph node-data write path.
    *
@@ -518,6 +555,21 @@ export default function Home() {
       patchSelectedNodeData({ [field]: safeValue });
     },
     [patchSelectedNodeData, selectedCounterData]
+  );
+
+  const commitGainField = useCallback(
+    (rawValue: string) => {
+      if (!selectedGainData) {
+        return;
+      }
+
+      const parsed = Number(rawValue);
+      const safeValue = Number.isFinite(parsed)
+        ? parsed
+        : selectedGainData.gain;
+      patchSelectedNodeData({ gain: safeValue });
+    },
+    [patchSelectedNodeData, selectedGainData]
   );
 
   const renderInspectorCore = (params: { mobile: boolean }): React.ReactNode => {
@@ -595,6 +647,29 @@ export default function Home() {
                 <option value="inc">inc</option>
                 <option value="dec">dec</option>
               </select>
+            </label>
+          </div>
+        ) : null}
+
+        {selectedGainData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Gain Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Gain (k)
+              <input
+                type="number"
+                value={String(selectedGainData.gain)}
+                onBlur={(event) => commitGainField(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitGainField(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
             </label>
           </div>
         ) : null}

@@ -125,6 +125,18 @@ function sanitizeMs(value: number, fallback: number): number {
   return Math.floor(value);
 }
 
+/**
+ * Collect resolved input values for a target node.
+ *
+ * P3-1 routing upgrade:
+ * - Preserve deterministic ordering for multi-wire fan-in by sorting incoming edges.
+ * - Preserve all incoming values even when multiple edges target the same handle by
+ *   synthesizing suffix keys (`in1__2`, `default__3`, ...).
+ *
+ * Backward compatibility:
+ * - First arrival for each handle keeps the base key (`default`, `in`, `in1`, ...),
+ *   so existing single-input blocks continue to work unchanged.
+ */
 function collectInputs(params: {
   nodeId: string;
   graph: SimulationGraph;
@@ -132,17 +144,49 @@ function collectInputs(params: {
 }): Record<string, SignalValue> {
   const { nodeId, graph, outputs } = params;
 
+  const incomingEdges = graph.edges
+    .filter((edge) => edge.target === nodeId)
+    .slice()
+    .sort((left, right) => {
+      const leftTarget = left.targetHandle ?? "default";
+      const rightTarget = right.targetHandle ?? "default";
+
+      const byTarget = leftTarget.localeCompare(rightTarget);
+      if (byTarget !== 0) {
+        return byTarget;
+      }
+
+      const bySource = left.source.localeCompare(right.source);
+      if (bySource !== 0) {
+        return bySource;
+      }
+
+      const leftSourceHandle = left.sourceHandle ?? "default";
+      const rightSourceHandle = right.sourceHandle ?? "default";
+      const bySourceHandle = leftSourceHandle.localeCompare(rightSourceHandle);
+      if (bySourceHandle !== 0) {
+        return bySourceHandle;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+
   const inputValues: Record<string, SignalValue> = {};
+  const handleCounts: Record<string, number> = {};
 
-  for (const edge of graph.edges) {
-    if (edge.target !== nodeId) {
-      continue;
-    }
-
+  for (const edge of incomingEdges) {
     const sourceOutputs = outputs[edge.source] ?? {};
     const sourceKey = edge.sourceHandle ?? "default";
-    const targetKey = edge.targetHandle ?? "default";
-    inputValues[targetKey] = sourceOutputs[sourceKey] ?? null;
+    const targetBaseKey = edge.targetHandle ?? "default";
+
+    const previousCount = handleCounts[targetBaseKey] ?? 0;
+    const nextCount = previousCount + 1;
+    handleCounts[targetBaseKey] = nextCount;
+
+    const resolvedTargetKey =
+      nextCount === 1 ? targetBaseKey : `${targetBaseKey}__${nextCount}`;
+
+    inputValues[resolvedTargetKey] = sourceOutputs[sourceKey] ?? null;
   }
 
   return inputValues;

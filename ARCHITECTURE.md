@@ -164,3 +164,29 @@ Constraints for P0:
 - **Responsive Window:** Resizable/adaptive modal container that feels like a standalone window.
 - **Real-time Following:** Implement "Auto-scroll" logic on the X-axis (time) so the graph follows the latest data point once the buffer exceeds the visible window.
 
+
+## Iteration 3: Advanced Signal Routing (P3)
+
+### 1) Math Block Family
+- Added deterministic scalar math operators:
+  - **Gain** (`y = k * u`)
+  - **Sum** (`y = Σu_i`)
+  - **Product** (`y = Πu_i`)
+- Output convention remains `default` for compatibility with existing wiring and sink blocks.
+
+### 2) Multi-Input Routing Contract (Engine)
+- Input collection for each node now:
+  1. Filters incoming edges by target node.
+  2. Sorts by `(targetHandle, sourceId, sourceHandle, edgeId)` for deterministic ordering.
+  3. Preserves duplicate fan-in to the same target handle by key synthesis:
+     - First value keeps the base key (`in1`, `default`, ...)
+     - Additional values become `<base>__2`, `<base>__3`, ...
+- This prevents silent overwrites in fan-in topologies and enables robust multi-signal blocks.
+
+### 3) Canvas Integration & UX
+- Library now includes Gain/Sum/Product entries.
+- Sum/Product nodes expose two explicit left-side input handles (`in1`, `in2`) and one right-side output handle (`default`).
+- Gain exposes one left-side input handle (`in`) and one right-side output handle (`default`).
+- Industrial visual language retained:
+  - Counter remains source orange (#f97316)
+  - Routing/processing/sink nodes remain sink blue (#0ea5e9)

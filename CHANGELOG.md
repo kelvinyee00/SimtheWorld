@@ -263,3 +263,31 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Ready for commit + push to `origin/master`.
+
+-----
+**Date/Time:** 2026-03-19 03:40 CET
+**Task Executed:** P3-1 Signal Routing Logic implemented and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/gainBlock.ts` (new)
+- `src/simulation/blocks/sumBlock.ts` (new)
+- `src/simulation/blocks/productBlock.ts` (new)
+- `src/simulation/engine.ts`
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added deterministic math block family: **Gain**, **Sum**, **Product**.
+- Upgraded engine input collection for multi-wire fan-in:
+  - Stable incoming-edge sort for deterministic routing.
+  - Duplicate target-handle preservation via synthetic keys (`<handle>__N`).
+  - Backward compatibility retained for existing single-input blocks (`default`/`in`).
+- Added library/canvas integration for new blocks:
+  - Gain, Sum, Product appear in draggable library.
+  - New nodes keep industrial sink-blue visual language.
+  - Sum/Product expose dual input handles (`in1`, `in2`) for explicit multi-input composition.
+  - Gain exposes input (`in`) and editable scalar parameter (`gain`) in Inspector.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅

@@ -14,23 +14,14 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
-## P2 Queue (Iteration 2: Industrial Refinement)
-- [x] P2-1 Aesthetic Shift (Orange/Blue & Icons)
-  - Counter block moved to industrial orange (#f97316); sink blocks themed light blue (#0ea5e9).
-  - Counter redesigned as compact icon block ("123") with no descriptive subtext.
-
-- [x] P2-2 Connectivity & Interaction
-  - Connection handles enlarged with larger visual targets and hover-scale feedback.
-  - Edge interaction width increased and direct edge deletion enabled (Delete/Backspace + UI button).
-
-- [x] P2-3 Scope Modal Overhaul (The "Oscilloscope" Window)
-  - Scope modal converted to solid, non-transparent window styling.
-  - Resizable standalone window behavior implemented.
-  - Auto-scroll X-axis follow mode implemented with manual zoom override and "Follow latest" recovery.
-
-- [x] P2-4 Final Validation & Deployment
-  - Validation completed: `npm run lint` ✅, `npm run build` ✅.
-  - Commit + push completed to `origin/master`.
+## P3 Queue (Advanced Simulation Features)
+- [x] P3-1 Signal Routing Logic
+  - Implemented math blocks: Gain, Sum, Product.
+  - Added deterministic multi-input routing support in simulation engine (fan-in key preservation).
+  - Added canvas/library support for new blocks with industrial styling and multi-input handles.
+- [ ] P3-2 Signal Logging & Export
+  - Add "To File" block for CSV/JSON export of simulation runs.
+  - Implement persistent storage for simulation results in IndexedDB.
 
 ## Completed
 - [x] P0 Initial Prototype complete.

@@ -1,6 +1,9 @@
 import { CounterBlock, COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DisplayBlock, DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
+import { GainBlock, GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
+import { SumBlock, SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
+import { ProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -19,6 +22,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [COUNTER_BLOCK_TYPE]: CounterBlock,
   [DISPLAY_BLOCK_TYPE]: DisplayBlock,
   [SCOPE_BLOCK_TYPE]: ScopeBlock,
+  [GAIN_BLOCK_TYPE]: GainBlock,
+  [SUM_BLOCK_TYPE]: SumBlock,
+  [PRODUCT_BLOCK_TYPE]: ProductBlock,
 };
 
 /**
