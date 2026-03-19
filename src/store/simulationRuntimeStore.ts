@@ -1,6 +1,10 @@
 import { create } from "zustand";
 
 import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
+import {
+  formatGraphValidationIssues,
+  validateSimulationGraph,
+} from "@/src/simulation/validation";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import {
   BlockRegistry,
@@ -112,8 +116,20 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     run: () => {
-      const { runtime } = get();
+      const { graph, registry, runtime } = get();
       if (runtime.status === "running" || runtime.status === "completed") {
+        return;
+      }
+
+      const issues = validateSimulationGraph({ graph, registry });
+      if (issues.length > 0) {
+        set({
+          runtime: {
+            ...runtime,
+            status: "idle",
+            error: formatGraphValidationIssues(issues),
+          },
+        });
         return;
       }
 

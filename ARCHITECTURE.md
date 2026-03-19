@@ -219,3 +219,13 @@ Constraints for P0:
   - Outgoing edges from loop-breaking blocks are excluded from same-tick dependency indegree.
   - Enables deterministic execution of feedback models that include memory/delay elements.
 - Unsupported pure algebraic cycles still fail fast with actionable guidance.
+
+### 7) Graph Validation Gate (P3-4)
+- Added pre-run validation pass before scheduler activation.
+- Guardrails now detect and report:
+  - Unknown block types
+  - Invalid edge endpoints (missing source/target)
+  - Invalid source/target handle usage
+  - Illegal wiring into blocks without input ports
+  - Unsupported algebraic cycles
+- Validation errors are surfaced in runtime status UI as actionable diagnostics.

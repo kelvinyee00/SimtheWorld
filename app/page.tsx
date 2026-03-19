@@ -1156,6 +1156,9 @@ export default function Home() {
             </p>
             <p className="mt-1 text-xs text-slate-500">Tick: {runtime.tick}</p>
             <p className="mt-1 text-xs text-slate-500">IndexedDB runs: {recentRunRecords.length}</p>
+            {runtime.error ? (
+              <p className="mt-1 text-xs text-rose-700">{runtime.error}</p>
+            ) : null}
             {toFileActionMessage ? (
               <p className="mt-1 text-xs text-sky-700">{toFileActionMessage}</p>
             ) : null}

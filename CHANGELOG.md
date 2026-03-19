@@ -346,3 +346,21 @@
 - Validation gates passed:
   - `npm run lint` ✅
   - `npm run build` ✅
+
+-----
+**Date/Time:** 2026-03-19 09:44 CET
+**Task Executed:** P3-4 Graph validation + guardrails implemented and verified
+**Files Modified/Created:**
+- `src/simulation/validation.ts` (new)
+- `src/store/simulationRuntimeStore.ts`
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added pre-run graph validation gate integrated into `run()`.
+- Added actionable diagnostics for unknown blocks, invalid endpoints/handles, unsupported cycles.
+- Added runtime error surfacing in sidebar status panel.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅

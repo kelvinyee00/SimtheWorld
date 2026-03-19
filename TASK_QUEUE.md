@@ -29,7 +29,7 @@
   - Added algebraic-loop breaker metadata and feedback-edge-aware topological scheduling.
   - Added library/canvas/inspector integration while preserving industrial aesthetic.
 
-- [ ] P3-4 Graph Validation & Signal-Type Guardrails
+- [x] P3-4 Graph Validation & Signal-Type Guardrails
   - Add pre-run graph validation for invalid handles, unknown block types, and unsupported cycles.
   - Surface actionable validation errors in runtime UI.
 
