@@ -19,9 +19,9 @@
   - Implemented math blocks: Gain, Sum, Product.
   - Added deterministic multi-input routing support in simulation engine (fan-in key preservation).
   - Added canvas/library support for new blocks with industrial styling and multi-input handles.
-- [ ] P3-2 Signal Logging & Export
-  - Add "To File" block for CSV/JSON export of simulation runs.
-  - Implement persistent storage for simulation results in IndexedDB.
+- [x] P3-2 Signal Logging & Export
+  - Added "To File" block with JSON/CSV export payload support and inspector-triggered file download.
+  - Implemented IndexedDB persistence for completed simulation run exports.
 
 ## Completed
 - [x] P0 Initial Prototype complete.

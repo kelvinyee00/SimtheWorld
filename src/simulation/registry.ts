@@ -4,6 +4,7 @@ import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock
 import { GainBlock, GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SumBlock, SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { ProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import { ToFileBlock, TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -25,6 +26,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [GAIN_BLOCK_TYPE]: GainBlock,
   [SUM_BLOCK_TYPE]: SumBlock,
   [PRODUCT_BLOCK_TYPE]: ProductBlock,
+  [TO_FILE_BLOCK_TYPE]: ToFileBlock,
 };
 
 /**

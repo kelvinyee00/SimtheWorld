@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -27,6 +27,17 @@ import { SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import {
+  buildToFilePayload,
+  TO_FILE_BLOCK_TYPE,
+  ToFileExportFormat,
+  toToFileState,
+} from "@/src/simulation/blocks/toFileBlock";
+import {
+  listRecentSimulationRunRecords,
+  PersistedSimulationRunRecord,
+  saveSimulationRunRecord,
+} from "@/src/persistence/simulationRunStore";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -81,6 +92,7 @@ const NODE_TYPES: NodeTypes = {
   [GAIN_BLOCK_TYPE]: CustomBlockNode,
   [SUM_BLOCK_TYPE]: CustomBlockNode,
   [PRODUCT_BLOCK_TYPE]: CustomBlockNode,
+  [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -96,6 +108,7 @@ const LIBRARY_BLOCKS = [
   { label: "Gain", type: GAIN_BLOCK_TYPE },
   { label: "Sum", type: SUM_BLOCK_TYPE },
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
+  { label: "To File", type: TO_FILE_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
 ] as const;
@@ -140,6 +153,8 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Sum" };
     case PRODUCT_BLOCK_TYPE:
       return { label: "Product" };
+    case TO_FILE_BLOCK_TYPE:
+      return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000 };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
     case SCOPE_BLOCK_TYPE:
@@ -161,6 +176,13 @@ interface GainInspectorData {
   gain: number;
 }
 
+interface ToFileInspectorData {
+  format: ToFileExportFormat;
+  fileName: string;
+  maxRows: number;
+  sampleCount: number;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
@@ -170,6 +192,7 @@ const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
 const DEFAULT_GAIN_INSPECTOR_DATA: GainInspectorData = {
   gain: 1,
 };
+
 
 const MS_PER_SECOND = 1_000;
 const MIN_TIMING_SECONDS = 0.001;
@@ -200,12 +223,33 @@ function formatMsAsSeconds(ms: number): string {
   return String(ms / MS_PER_SECOND);
 }
 
+function triggerTextDownload(params: {
+  fileName: string;
+  extension: "json" | "csv";
+  mimeType: string;
+  content: string;
+}): void {
+  const safeBase = params.fileName.trim().length > 0 ? params.fileName.trim() : "simulation-log";
+  const blob = new Blob([params.content], { type: params.mimeType });
+  const url = URL.createObjectURL(blob);
+
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${safeBase}.${params.extension}`;
+  anchor.click();
+
+  URL.revokeObjectURL(url);
+}
+
 export default function Home() {
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
+  const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
+  const lastPersistedCompletionRef = useRef<string | null>(null);
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
@@ -447,6 +491,93 @@ export default function Home() {
     [reactFlowInstance, setNodes]
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    listRecentSimulationRunRecords(12)
+      .then((records) => {
+        if (!cancelled) {
+          setRecentRunRecords(records);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setToFileActionMessage("IndexedDB unavailable: run history disabled.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (runtime.status !== "completed") {
+      lastPersistedCompletionRef.current = null;
+      return;
+    }
+
+    const completionSignature = `${runtime.tick}:${runtime.timeMs}`;
+    if (lastPersistedCompletionRef.current === completionSignature) {
+      return;
+    }
+
+    const toFileNodes = nodes.filter((node) => node.type === TO_FILE_BLOCK_TYPE);
+    if (toFileNodes.length === 0) {
+      lastPersistedCompletionRef.current = completionSignature;
+      return;
+    }
+
+    let cancelled = false;
+
+    const persist = async () => {
+      const saved: PersistedSimulationRunRecord[] = [];
+
+      for (const node of toFileNodes) {
+        const nodeParams = (node.data as Record<string, unknown> | undefined) ?? {};
+        const parsedState = toToFileState(runtime.nodeInternalState[node.id], nodeParams);
+        const payload = buildToFilePayload({
+          format: parsedState.format,
+          samples: parsedState.samples,
+        });
+
+        const savedRecord = await saveSimulationRunRecord({
+          nodeId: node.id,
+          fileName: parsedState.fileName,
+          format: parsedState.format,
+          sampleCount: parsedState.samples.length,
+          payload: payload.content,
+        });
+
+        if (savedRecord) {
+          saved.push(savedRecord);
+        }
+      }
+
+      if (cancelled || saved.length === 0) {
+        return;
+      }
+
+      const latest = await listRecentSimulationRunRecords(12);
+      if (!cancelled) {
+        setRecentRunRecords(latest);
+        setToFileActionMessage(`Persisted ${saved.length} To File run(s) to IndexedDB.`);
+      }
+    };
+
+    lastPersistedCompletionRef.current = completionSignature;
+
+    persist().catch(() => {
+      if (!cancelled) {
+        setToFileActionMessage("Failed to persist run outputs to IndexedDB.");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nodes, runtime.nodeInternalState, runtime.status, runtime.tick, runtime.timeMs]);
+
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
@@ -497,6 +628,22 @@ export default function Home() {
 
     return { gain };
   }, [selectedNode]);
+
+  const selectedToFileData = useMemo<ToFileInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== TO_FILE_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const parsedState = toToFileState(runtime.nodeInternalState[selectedNode.id], raw);
+
+    return {
+      format: parsedState.format,
+      fileName: parsedState.fileName,
+      maxRows: parsedState.maxRows,
+      sampleCount: parsedState.samples.length,
+    };
+  }, [runtime.nodeInternalState, selectedNode]);
 
   /**
    * Inspector -> graph node-data write path.
@@ -571,6 +718,46 @@ export default function Home() {
     },
     [patchSelectedNodeData, selectedGainData]
   );
+
+  const commitToFileMaxRows = useCallback(
+    (rawValue: string) => {
+      if (!selectedToFileData) {
+        return;
+      }
+
+      const parsed = Number(rawValue);
+      const safeValue =
+        Number.isFinite(parsed) && parsed > 0
+          ? Math.floor(parsed)
+          : selectedToFileData.maxRows;
+      patchSelectedNodeData({ maxRows: safeValue });
+    },
+    [patchSelectedNodeData, selectedToFileData]
+  );
+
+  const exportSelectedToFile = useCallback(() => {
+    if (!selectedNode || selectedNode.type !== TO_FILE_BLOCK_TYPE) {
+      return;
+    }
+
+    const nodeParams = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const parsedState = toToFileState(runtime.nodeInternalState[selectedNode.id], nodeParams);
+    const payload = buildToFilePayload({
+      format: parsedState.format,
+      samples: parsedState.samples,
+    });
+
+    triggerTextDownload({
+      fileName: parsedState.fileName,
+      extension: payload.extension,
+      mimeType: payload.mimeType,
+      content: payload.content,
+    });
+
+    setToFileActionMessage(
+      `Exported ${parsedState.samples.length} sample(s) as ${payload.extension.toUpperCase()}.`
+    );
+  }, [runtime.nodeInternalState, selectedNode]);
 
   const renderInspectorCore = (params: { mobile: boolean }): React.ReactNode => {
     const { mobile } = params;
@@ -671,6 +858,61 @@ export default function Home() {
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
               />
             </label>
+          </div>
+        ) : null}
+
+        {selectedToFileData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              To File Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Format
+              <select
+                value={selectedToFileData.format}
+                onChange={(event) => {
+                  const format: ToFileExportFormat = event.target.value === "csv" ? "csv" : "json";
+                  patchSelectedNodeData({ format });
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              >
+                <option value="json">json</option>
+                <option value="csv">csv</option>
+              </select>
+            </label>
+            <label className="block text-xs text-slate-600">
+              File Name
+              <input
+                type="text"
+                value={selectedToFileData.fileName}
+                onChange={(event) => patchSelectedNodeData({ fileName: event.target.value })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Max Rows
+              <input
+                type="number"
+                min={1}
+                value={String(selectedToFileData.maxRows)}
+                onBlur={(event) => commitToFileMaxRows(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitToFileMaxRows(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <p className="text-xs text-slate-500">Captured Samples: {selectedToFileData.sampleCount}</p>
+            <button
+              type="button"
+              onClick={exportSelectedToFile}
+              className="w-full rounded-md border border-sky-300 bg-sky-100 px-2 py-1.5 text-xs font-semibold text-sky-700"
+            >
+              Export Latest Run
+            </button>
           </div>
         ) : null}
       </div>
@@ -784,6 +1026,10 @@ export default function Home() {
               Runtime status: <span className="font-medium">{runtime.status}</span>
             </p>
             <p className="mt-1 text-xs text-slate-500">Tick: {runtime.tick}</p>
+            <p className="mt-1 text-xs text-slate-500">IndexedDB runs: {recentRunRecords.length}</p>
+            {toFileActionMessage ? (
+              <p className="mt-1 text-xs text-sky-700">{toFileActionMessage}</p>
+            ) : null}
           </aside>
 
           <section className="order-1 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-slate-300 bg-white lg:order-2 lg:min-h-[560px]">

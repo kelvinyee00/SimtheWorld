@@ -16,6 +16,10 @@ import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import {
+  TO_FILE_BLOCK_TYPE,
+  toToFileState,
+} from "@/src/simulation/blocks/toFileBlock";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -27,6 +31,8 @@ import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 interface BlockNodeData {
   label?: string;
   gain?: number;
+  format?: "json" | "csv";
+  fileName?: string;
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -91,7 +97,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isGain = type === GAIN_BLOCK_TYPE;
   const isSum = type === SUM_BLOCK_TYPE;
   const isProduct = type === PRODUCT_BLOCK_TYPE;
+  const isToFile = type === TO_FILE_BLOCK_TYPE;
   const isMathNode = isGain || isSum || isProduct;
+  const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
@@ -126,7 +134,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isDisplay || isScope || isMathNode) && (
+        {(isDisplay || isScope || isMathNode || isToFile) && (
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-600">
             {data.label ?? type ?? "Block"}
           </p>
@@ -139,6 +147,20 @@ export const CustomBlockNode = memo(function CustomBlockNode({
         {isScope ? (
           <div onDoubleClick={() => setIsScopeModalOpen(true)} className="cursor-zoom-in">
             <ScopeBlockView state={internalState} className="border-sky-200 bg-sky-50/70" />
+          </div>
+        ) : null}
+
+        {isToFile ? (
+          <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xl font-black leading-none text-sky-700">⤓</p>
+              <p className="text-[11px] text-slate-500 uppercase tracking-[0.08em]">
+                {String(data.format ?? "json")}
+              </p>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              {toToFileState(internalState, data as Record<string, unknown>).samples.length} samples
+            </p>
           </div>
         ) : null}
 
@@ -165,7 +187,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isDisplay || isScope || isGain) && (
+        {(isSinkNode || isGain) && (
           <Handle
             type="target"
             id={isGain ? "in" : "default"}
