@@ -190,3 +190,22 @@ Constraints for P0:
 - Industrial visual language retained:
   - Counter remains source orange (#f97316)
   - Routing/processing/sink nodes remain sink blue (#0ea5e9)
+
+### 4) Signal Logging & Export Contract (P3-2)
+- Added **To File** sink block with deterministic sample buffering in node-local runtime state.
+- Supported export encodings:
+  - **JSON**: structured tick/time/value-handle payload.
+  - **CSV**: tabular header (`tick,timeMs,<handle...>`) for spreadsheet workflows.
+- Kept simulation engine pure:
+  - No file or IndexedDB side effects inside `step()`.
+  - Export/persistence is orchestrated by client UI after run completion.
+
+### 5) Persistent Run Archive (IndexedDB)
+- Browser persistence adapter stores run exports in IndexedDB object store:
+  - DB: `web-simulink`
+  - Store: `simulationRunExports`
+  - Indexed field: `createdAtMs`
+- Persist-on-complete policy:
+  - On transition to completed runtime state, each To File node writes one archival record.
+  - Duplicate completion writes are guarded by a completion signature (`tick:timeMs`).
+- Inspector supports ad-hoc immediate download of latest captured run for selected To File node.

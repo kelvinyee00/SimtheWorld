@@ -291,3 +291,34 @@
 - Validation gates passed:
   - `npm run lint` ✅
   - `npm run build` ✅
+
+-----
+**Date/Time:** 2026-03-19 08:38 CET
+**Task Executed:** P3-2 Signal Logging & Export implemented and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/toFileBlock.ts` (new)
+- `src/persistence/simulationRunStore.ts` (new)
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added **To File** sink block:
+  - Captures deterministic per-tick numeric input snapshots keyed by handle.
+  - Supports export formats: JSON / CSV.
+  - Supports configurable `fileName` and `maxRows`.
+- Added export payload serializers:
+  - JSON serializer for structured sample history.
+  - CSV serializer with dynamic handle columns.
+- Added client-side IndexedDB persistence adapter:
+  - DB `web-simulink`, store `simulationRunExports`.
+  - Stores run payload, format, fileName, sampleCount, nodeId, timestamp.
+- Added UI/Inspector integration:
+  - Library includes **To File** block.
+  - Inspector edits format/file name/max rows and can export latest run immediately.
+  - Runtime completion auto-persists To File outputs to IndexedDB with duplicate-write guard.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅
