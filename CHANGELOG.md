@@ -395,3 +395,26 @@
   - `npm run build` ✅
 - Marked P3-6 complete and closed P3 phase in task queue.
 - Repository prepared for final push synchronization.
+
+-----
+**Date/Time:** 2026-03-21 00:38 CET
+**Task Executed:** P4-1 Regression Safety Net implemented and verified
+**Files Modified/Created:**
+- `package.json` (updated scripts)
+- `vitest.config.ts` (new)
+- `src/simulation/__tests__/engine.determinism.test.ts` (new)
+- `src/simulation/__tests__/validation.test.ts` (new)
+- `src/persistence/__tests__/modelPersistence.test.ts` (new)
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Integrated Vitest as the primary test runner for deterministic engine and validation logic.
+- Added comprehensive unit tests for:
+  - Deterministic engine stepping with feedback loops (Unit Delay).
+  - Pre-run graph validation (unknown blocks, invalid wiring, algebraic loops).
+  - Model persistence v1 -> v2 migration and serialization round-trips.
+- Verified all 10 tests pass consistently.
+- Validation gates passed:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+  - `npm run test` ✅
