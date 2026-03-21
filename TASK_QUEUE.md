@@ -20,7 +20,7 @@
 - [x] P5-3 Vector Signal System v1 (vector ports + Mux/Demux blocks)
 - [x] P5-4 Runtime Trace & Debug Panel (tick-level probes and event timeline)
 - [x] P5-5 Persistence v3 + Migration Path (hierarchy/vector metadata compatibility)
-- [ ] P5-6 Final Verification + Deployment [IN PROGRESS]
+- [x] P5-6 Final Verification + Deployment
 
 ## P4 Queue (Hierarchical & Multi-Rate)
 - [x] P4-1 Regression Safety Net (Engine + Canvas)
@@ -45,3 +45,4 @@
 - [x] P3 Advanced simulation phase complete.
 - [x] P4 Hierarchical & Multi-Rate phase complete.
 - [x] P5 Kickoff and priorities formalized.
+- [x] P5 Scalability, Debuggability & Modeling phase complete.

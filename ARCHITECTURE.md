@@ -317,3 +317,15 @@ Constraints for P0:
   - vector-to-number direct wiring now fails validation
   - vector-to-vector wiring accepted (`Mux -> Demux`)
 - Added canvas + subsystem-editor integration for Mux/Demux block instantiation and wiring.
+
+
+### 16) Runtime Trace & Debug Panel (P5-4)
+- Added tick-level execution instrumentation in the Zustand runtime store.
+- Introduced `RuntimeTraceEvent` to capture tick index, simulation time, execution duration, and status notes.
+- Added sidebar summary for rapid "pulse" monitoring of the engine.
+- Implemented a full-fidelity "Simulation Trace" modal providing a tabular historical view of all engine events (last 120 ticks).
+
+### 17) Model Persistence v3 (P5-5)
+- Upgraded model schema to version 3 to include enhanced metadata (model name, description).
+- Implemented a robust migration layer that transparently promotes v1 and v2 models to v3 on load.
+- Added localStorage cross-key fallback to ensure seamless user transition between schema generations.
