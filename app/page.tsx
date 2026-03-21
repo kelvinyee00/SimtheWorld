@@ -55,7 +55,7 @@ import {
   loadModelFromLocalStorage,
   parseModelDocument,
   saveModelToLocalStorage,
-  serializeModelV2,
+  serializeModelV3,
 } from "@/src/persistence/modelPersistence";
 import {
   validateConnectionCandidate,
@@ -725,7 +725,7 @@ export default function Home() {
         simulationTimeMs: persisted.timing.simulationTimeMs,
         stepTimeMs: persisted.timing.stepTimeMs,
       });
-      setModelActionMessage("Loaded persisted model snapshot (schema v2).");
+      setModelActionMessage("Loaded persisted model snapshot (schema v3).");
     }
 
     hasInitializedModelPersistenceRef.current = true;
@@ -737,7 +737,7 @@ export default function Home() {
     }
 
     try {
-      const serialized = serializeModelV2({
+      const serialized = serializeModelV3({
         nodes: nodes.map((node) => ({
           id: node.id,
           type: node.type ?? "default",
@@ -1088,7 +1088,7 @@ export default function Home() {
 
   const exportModelDocument = useCallback(() => {
     try {
-      const serialized = serializeModelV2({
+      const serialized = serializeModelV3({
         nodes: nodes.map((node) => ({
           id: node.id,
           type: node.type ?? "default",
@@ -1116,7 +1116,7 @@ export default function Home() {
         content: serialized,
       });
 
-      setModelActionMessage("Exported model document (schema v2).");
+      setModelActionMessage("Exported model document (schema v3).");
     } catch {
       setModelActionMessage("Failed to export model document.");
     }

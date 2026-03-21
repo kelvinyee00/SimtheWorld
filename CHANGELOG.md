@@ -664,3 +664,24 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Advanced queue to P5-5 `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-21 15:05 CET
+**Task Executed:** P5-5 Persistence v3 + Migration Path completed and verified
+**Files Modified/Created:**
+- `src/persistence/modelPersistence.ts`
+- `app/page.tsx`
+- `src/persistence/__tests__/modelPersistence.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Upgraded model persistence to **schema version 3**.
+- Added `modelName` and `description` fields to model metadata for better model identification.
+- Implemented robust migration path in `parseModelDocument` for v1 -> v3 and v2 -> v3.
+- Added localStorage fallback to v2 key during initial v3 migration to ensure continuity.
+- Updated persistence unit tests to verify v1/v2 migration and v3 serialization integrity.
+- Validation gates passed:
+  - `npm run test` ✅ (25 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Advanced queue to P5-6 `[IN PROGRESS]`.

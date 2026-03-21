@@ -19,8 +19,8 @@
 - [x] P5-2 Subsystem UX v2 (I/O mapping guardrails + editor ergonomics)
 - [x] P5-3 Vector Signal System v1 (vector ports + Mux/Demux blocks)
 - [x] P5-4 Runtime Trace & Debug Panel (tick-level probes and event timeline)
-- [ ] P5-5 Persistence v3 + Migration Path (hierarchy/vector metadata compatibility) [IN PROGRESS]
-- [ ] P5-6 Final Verification + Deployment
+- [x] P5-5 Persistence v3 + Migration Path (hierarchy/vector metadata compatibility)
+- [ ] P5-6 Final Verification + Deployment [IN PROGRESS]
 
 ## P4 Queue (Hierarchical & Multi-Rate)
 - [x] P4-1 Regression Safety Net (Engine + Canvas)

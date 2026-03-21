@@ -1,6 +1,6 @@
 import {
   parseModelDocument,
-  serializeModelV2,
+  serializeModelV3,
 } from "../modelPersistence";
 
 describe("modelPersistence", () => {
@@ -25,21 +25,48 @@ describe("modelPersistence", () => {
       simulationTimeMs: 5000,
       stepTimeMs: 50,
     },
+    modelName: "Test Model",
+    description: "A test description",
   };
 
-  it("serializes and parses a v2 model document correctly", () => {
-    const serialized = serializeModelV2(sampleModel);
+  it("serializes and parses a v3 model document correctly", () => {
+    const serialized = serializeModelV3(sampleModel);
     const parsed = parseModelDocument(serialized);
 
-    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.schemaVersion).toBe(3);
     expect(parsed.nodes).toHaveLength(1);
     expect(parsed.nodes[0].id).toBe("node-1");
     expect(parsed.edges).toHaveLength(1);
     expect(parsed.timing.simulationTimeMs).toBe(5000);
     expect(parsed.metadata.app).toBe("web-simulink");
+    expect(parsed.metadata.modelName).toBe("Test Model");
+    expect(parsed.metadata.description).toBe("A test description");
   });
 
-  it("migrates a v1 model document to v2", () => {
+  it("migrates a v2 model document to v3", () => {
+    const v2Model = {
+      schemaVersion: 2,
+      metadata: {
+        app: "web-simulink",
+        savedAtMs: Date.now(),
+      },
+      timing: {
+        simulationTimeMs: 1000,
+        stepTimeMs: 100,
+      },
+      nodes: sampleModel.nodes,
+      edges: sampleModel.edges,
+    };
+
+    const serializedV2 = JSON.stringify(v2Model);
+    const parsed = parseModelDocument(serializedV2);
+
+    expect(parsed.schemaVersion).toBe(3);
+    expect(parsed.timing.simulationTimeMs).toBe(1000);
+    expect(parsed.metadata.modelName).toBe("Migrated V2 Model");
+  });
+
+  it("migrates a v1 model document to v3", () => {
     const v1Model = {
       nodes: sampleModel.nodes,
       edges: sampleModel.edges,
@@ -50,10 +77,11 @@ describe("modelPersistence", () => {
     const serializedV1 = JSON.stringify(v1Model);
     const parsed = parseModelDocument(serializedV1);
 
-    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.schemaVersion).toBe(3);
     expect(parsed.timing.simulationTimeMs).toBe(2000);
     expect(parsed.nodes).toEqual(sampleModel.nodes);
     expect(parsed.metadata.app).toBe("web-simulink");
+    expect(parsed.metadata.modelName).toBe("Migrated V1 Model");
     expect(parsed.metadata.savedAtMs).toBeDefined();
   });
 
