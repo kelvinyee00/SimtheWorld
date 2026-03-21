@@ -6,6 +6,8 @@ import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
 import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
+import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
+import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import { SimulationGraph, SimulationRuntimeSnapshot } from "@/src/simulation/types";
 
@@ -121,6 +123,33 @@ describe("stepSimulation deterministic execution", () => {
     expect(snapshot.nodeOutputs.switch?.default).toBe(1);
   });
 
+
+
+  it("executes Mux/Demux vector routing deterministically", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: { start: 3, step: 0, mode: "inc" } },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: { start: 8, step: 0, mode: "inc" } },
+        { id: "mux", type: MUX_BLOCK_TYPE, data: {} },
+        { id: "demux", type: DEMUX_BLOCK_TYPE, data: {} },
+        { id: "display", type: DISPLAY_BLOCK_TYPE, data: { label: "Display" } },
+      ],
+      edges: [
+        { id: "a->mux1", source: "counter-a", target: "mux", targetHandle: "in1" },
+        { id: "b->mux2", source: "counter-b", target: "mux", targetHandle: "in2" },
+        { id: "mux->demux", source: "mux", target: "demux", targetHandle: "in" },
+        { id: "demux-out2->display", source: "demux", sourceHandle: "out2", target: "display" },
+      ],
+    };
+
+    const snapshot = runTicks({ graph, ticks: 1, stepTimeMs: 100, simulationTimeMs: 1_000 });
+    const displayState = snapshot.nodeInternalState.display as { value?: unknown };
+
+    expect(snapshot.nodeOutputs.mux?.default).toEqual([3, 8]);
+    expect(snapshot.nodeOutputs.demux?.out1).toBe(3);
+    expect(snapshot.nodeOutputs.demux?.out2).toBe(8);
+    expect(displayState.value).toBe(8);
+  });
 
   it("supports multi-rate stepping (slow block updates at configured sample time)", () => {
     const graph: SimulationGraph = {

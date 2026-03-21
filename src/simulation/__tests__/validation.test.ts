@@ -7,6 +7,8 @@ import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
+import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
+import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import {
   formatGraphValidationIssues,
@@ -303,6 +305,53 @@ describe("validateSimulationGraph", () => {
         (issue) => issue.code === "INVALID_SUBSYSTEM_INTERFACE" && issue.message.includes("empty label")
       )
     ).toBe(true);
+  });
+
+  it("rejects vector-to-number direct wiring (Mux -> Gain)", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "mux", type: MUX_BLOCK_TYPE, data: {} },
+        { id: "gain", type: SUM_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        { id: "a->mux1", source: "counter-a", target: "mux", targetHandle: "in1" },
+        { id: "b->mux2", source: "counter-b", target: "mux", targetHandle: "in2" },
+        { id: "mux->gain", source: "mux", target: "gain", targetHandle: "in1" },
+      ],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+    });
+
+    expect(issues.some((issue) => issue.code === "INVALID_SIGNAL_TYPE")).toBe(true);
+  });
+
+
+  it("accepts vector wiring between Mux and Demux", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "mux", type: MUX_BLOCK_TYPE, data: {} },
+        { id: "demux", type: DEMUX_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        { id: "a->mux1", source: "counter-a", target: "mux", targetHandle: "in1" },
+        { id: "b->mux2", source: "counter-b", target: "mux", targetHandle: "in2" },
+        { id: "mux->demux", source: "mux", target: "demux", targetHandle: "in" },
+      ],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+    });
+
+    expect(issues).toEqual([]);
   });
 
 });

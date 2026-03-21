@@ -23,6 +23,8 @@ import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
+import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
+import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -115,6 +117,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isSubsystem = type === SUBSYSTEM_BLOCK_TYPE;
   const isInport = type === INPORT_BLOCK_TYPE;
   const isOutport = type === OUTPORT_BLOCK_TYPE;
+  const isMux = type === MUX_BLOCK_TYPE;
+  const isDemux = type === DEMUX_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -125,7 +129,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isSwitch ||
     isSubsystem ||
     isInport ||
-    isOutport;
+    isOutport ||
+    isMux ||
+    isDemux;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -163,7 +169,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                     ? "⇥"
                     : isOutport
                       ? "↦"
-                      : "";
+                      : isMux
+                        ? "⫴"
+                        : isDemux
+                          ? "⫶"
+                          : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -246,7 +256,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isCounter || isMathNode || isInport) ? (
+        {(isCounter || isMathNode || isInport || isMux) ? (
           <Handle
             type="source"
             id="default"
@@ -256,10 +266,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay || isOutport ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
@@ -306,6 +316,44 @@ export const CustomBlockNode = memo(function CustomBlockNode({
               id="inFalse"
               position={Position.Left}
               style={withTop(handleStyle, "78%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
+
+        {isMux && (
+          <>
+            <Handle
+              type="target"
+              id="in1"
+              position={Position.Left}
+              style={withTop(handleStyle, "35%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="in2"
+              position={Position.Left}
+              style={withTop(handleStyle, "70%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
+
+        {isDemux && (
+          <>
+            <Handle
+              type="source"
+              id="out1"
+              position={Position.Right}
+              style={withTop(handleStyle, "35%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="source"
+              id="out2"
+              position={Position.Right}
+              style={withTop(handleStyle, "70%")}
               className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
             />
           </>

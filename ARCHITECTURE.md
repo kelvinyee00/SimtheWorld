@@ -306,3 +306,14 @@ Constraints for P0:
   - auto-sequential default labels (`in1`, `in2`, `out1`, ...)
   - one-click normalization of I/O labels
   - interface summary panel with connection counts
+
+### 15) Vector Signal System v1 (P5-3)
+- Extended signal type lattice with `vector` domain support.
+- Extended runtime signal payload with vector values (`number[]`) while preserving scalar/boolean compatibility.
+- Added vector-processing blocks:
+  - **Mux**: combines scalar channels into vector output (`[in1, in2]`)
+  - **Demux**: splits vector input into scalar outputs (`out1`, `out2`)
+- Added typed-wire compatibility guardrails for vector domain:
+  - vector-to-number direct wiring now fails validation
+  - vector-to-vector wiring accepted (`Mux -> Demux`)
+- Added canvas + subsystem-editor integration for Mux/Demux block instantiation and wiring.

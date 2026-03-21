@@ -17,8 +17,8 @@
 ## P5 Queue (Scalability, Debuggability & Modeling Ergonomics)
 - [x] P5-1 Deterministic Conformance Expansion (nested + multi-rate + typed stress tests)
 - [x] P5-2 Subsystem UX v2 (I/O mapping guardrails + editor ergonomics)
-- [ ] P5-3 Vector Signal System v1 (vector ports + Mux/Demux blocks) [IN PROGRESS]
-- [ ] P5-4 Runtime Trace & Debug Panel (tick-level probes and event timeline)
+- [x] P5-3 Vector Signal System v1 (vector ports + Mux/Demux blocks)
+- [ ] P5-4 Runtime Trace & Debug Panel (tick-level probes and event timeline) [IN PROGRESS]
 - [ ] P5-5 Persistence v3 + Migration Path (hierarchy/vector metadata compatibility)
 - [ ] P5-6 Final Verification + Deployment
 

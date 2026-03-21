@@ -12,6 +12,8 @@ import { SwitchBlock, SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBl
 import { InportBlock, INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OutportBlock, OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SubsystemBlock, SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
+import { MuxBlock, MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
+import { DemuxBlock, DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -41,6 +43,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [INPORT_BLOCK_TYPE]: InportBlock,
   [OUTPORT_BLOCK_TYPE]: OutportBlock,
   [SUBSYSTEM_BLOCK_TYPE]: SubsystemBlock,
+  [MUX_BLOCK_TYPE]: MuxBlock,
+  [DEMUX_BLOCK_TYPE]: DemuxBlock,
 };
 
 /**

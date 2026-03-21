@@ -613,3 +613,33 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Advanced queue to P5-3 `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-21 14:46 CET
+**Task Executed:** P5-3 Vector Signal System v1 completed and verified
+**Files Modified/Created:**
+- `src/simulation/types.ts`
+- `src/simulation/blocks/muxBlock.ts` (new)
+- `src/simulation/blocks/demuxBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `app/page.tsx`
+- `src/simulation/__tests__/engine.determinism.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `ARCHITECTURE.md`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added vector signal domain (`SignalType: vector`) and vector payload support (`number[]`).
+- Implemented Mux/Demux blocks with typed ports and deterministic channel mapping.
+- Added vector typing guardrails in validation path with coverage for:
+  - vector->number mismatch rejection
+  - vector->vector compatibility acceptance
+- Added deterministic runtime test for Mux/Demux channel routing.
+- Integrated Mux/Demux into root canvas and subsystem editor block libraries.
+- Validation gates passed:
+  - `npm run test` ✅ (24 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Advanced queue to P5-4 `[IN PROGRESS]`.

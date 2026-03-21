@@ -33,6 +33,8 @@ import { TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
 import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
+import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
+import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -49,6 +51,8 @@ const NODE_TYPES: NodeTypes = {
   [INPORT_BLOCK_TYPE]: CustomBlockNode,
   [OUTPORT_BLOCK_TYPE]: CustomBlockNode,
   [SUBSYSTEM_BLOCK_TYPE]: CustomBlockNode,
+  [MUX_BLOCK_TYPE]: CustomBlockNode,
+  [DEMUX_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -57,6 +61,8 @@ const LIBRARY_BLOCKS = [
   { label: "Gain", type: GAIN_BLOCK_TYPE },
   { label: "Sum", type: SUM_BLOCK_TYPE },
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
+  { label: "Mux", type: MUX_BLOCK_TYPE },
+  { label: "Demux", type: DEMUX_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
@@ -90,6 +96,10 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
       return { label: `out${getNextPortIndex(existingNodes, OUTPORT_BLOCK_TYPE)}` };
     case GAIN_BLOCK_TYPE:
       return { label: "Gain", gain: 1 };
+    case MUX_BLOCK_TYPE:
+      return { label: "Mux" };
+    case DEMUX_BLOCK_TYPE:
+      return { label: "Demux" };
     case SUBSYSTEM_BLOCK_TYPE:
       return { label: "Subsystem", graph: { nodes: [], edges: [] } };
     default:
