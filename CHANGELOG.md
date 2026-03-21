@@ -95,7 +95,7 @@
 - Added straight-edge policy artifact for integration: `src/canvas/edgeDefaults.ts` sets default edge type to `straight`.
 - Validation gate re-run in main session: `npm run lint` ✅, `npm run build` ✅.
 
------
+---
 **Date/Time:** 2026-03-17 23:16 CET
 **Task Executed:** Delegated P0-5 Canvas + mobile interaction
 **Files Modified/Created:** `CHANGELOG.md`
@@ -104,7 +104,7 @@
 - Straight-edge requirement enforced via `src/canvas/edgeDefaults.ts`.
 - Switched back to `gpt-5.3-codex` per PO preference.
 
------
+---
 **Date/Time:** 2026-03-17 23:25 CET
 **Task Executed:** P0-5 Canvas + mobile interaction verified
 **Files Modified/Created:** `app/page.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -116,7 +116,7 @@
 - Project still builds and lints successfully.
 - Moving to P0-6 End-to-end Counter demo + validation.
 
------
+---
 **Date/Time:** 2026-03-17 23:28 CET
 **Task Executed:** Delegated P0-6 End-to-end Counter demo + validation
 **Files Modified/Created:** `CHANGELOG.md`
@@ -125,7 +125,7 @@
 - Establishing default model wiring on load.
 - Integrating runtime store outputs with UI components for real-time visualization.
 
------
+---
 **Date/Time:** 2026-03-17 23:45 CET
 **Task Executed:** P0-6 End-to-end Counter demo + validation verified (P0 COMPLETE)
 **Files Modified/Created:** `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -135,7 +135,7 @@
 - Final validation in main session: `npm run lint` ✅, `npm run build` ✅.
 - **P0 PHASE COMPLETE.** The prototype is functional, documented, and mobile-reactive.
 
------
+---
 **Date/Time:** 2026-03-18 00:20 CET
 **Task Executed:** P1-1 Block Library Sidebar verified
 **Files Modified/Created:** `app/page.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -147,7 +147,7 @@
 - Validation: `npm run lint` ✅, `npm run build` ✅.
 - Moving to P1-2 Simulation Control Panel.
 
------
+---
 **Date/Time:** 2026-03-18 00:26 CET
 **Task Executed:** Delegated P1-2 Advanced Simulation Controls
 **Files Modified/Created:** `CHANGELOG.md`
@@ -156,7 +156,7 @@
 - Model pinned to `openai-codex/gpt-5.3-codex`.
 - Scope: Stop Time + Step Time toolbar controls, runtime store binding, speed behavior verification.
 
------
+---
 **Date/Time:** 2026-03-18 00:31 CET
 **Task Executed:** P1-2 Advanced Simulation Controls verified
 **Files Modified/Created:** `app/page.tsx`, `src/store/simulationRuntimeStore.ts`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -167,7 +167,7 @@
 - Validation: `npm run lint` ✅, `npm run build` ✅.
 - Proceeding to P1-3 Matlab Aesthetics & Grid.
 
------
+---
 **Date/Time:** 2026-03-18 00:32 CET
 **Task Executed:** Delegated P1-3 Matlab Aesthetics & Grid
 **Files Modified/Created:** `CHANGELOG.md`
@@ -176,7 +176,7 @@
 - Model pinned to `openai-codex/gpt-5.3-codex`.
 - Scope: Simulink light-gray dot-grid canvas + 3D white block styling while preserving straight edges.
 
------
+---
 **Date/Time:** 2026-03-18 00:34 CET
 **Task Executed:** P1-3 Matlab Aesthetics & Grid verified
 **Files Modified/Created:** `app/page.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -187,7 +187,7 @@
 - Validation: `npm run lint` ✅, `npm run build` ✅.
 - Proceeding to P1-4 Scope Interactive Modal.
 
------
+---
 **Date/Time:** 2026-03-18 00:35 CET
 **Task Executed:** Delegated P1-4 Scope Interactive Modal
 **Files Modified/Created:** `CHANGELOG.md`
@@ -196,7 +196,7 @@
 - Model pinned to `openai-codex/gpt-5.3-codex`.
 - Scope includes icon block + double-click modal + cursor/zoom/measurement behaviors.
 
------
+---
 **Date/Time:** 2026-03-18 01:29 CET
 **Task Executed:** P1-4 Scope Interactive Modal verified
 **Files Modified/Created:** `src/simulation/blocks/scopeBlock.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -206,16 +206,7 @@
 - Validation: `npm run lint` ✅, `npm run build` ✅.
 - Proceeding to P1-5 Counter Refinement.
 
------
-**Date/Time:** 2026-03-18 01:30 CET
-**Task Executed:** Delegated P1-5 Counter Refinement
-**Files Modified/Created:** `CHANGELOG.md`
-**Notes/Bugs:**
-- Sub-agent label: `web-simulink-p1-5-counter-refinement-20260318-0130` (unique per lock-management protocol).
-- Model pinned to `openai-codex/gpt-5.3-codex`.
-- Scope: hide counter value on canvas + Inspector editing for Start/Step/Mode.
-
------
+---
 **Date/Time:** 2026-03-18 01:34 CET
 **Task Executed:** P1-5 Counter Refinement verified (P1 COMPLETE)
 **Files Modified/Created:** `app/page.tsx`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -226,7 +217,7 @@
 - Validation re-run in main session: `npm run lint` ✅, `npm run build` ✅.
 - All P1 tasks (P1-1..P1-5) complete and ready for commit/push.
 
------
+---
 **Date/Time:** 2026-03-18 09:12 CET
 **Task Executed:** P2-1 Aesthetic Shift initiated and implemented
 **Files Modified/Created:** `src/canvas/customBlockNode.tsx`, `app/page.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -235,7 +226,7 @@
 - Counter block redesigned to compact icon-only square ("123") with subtext removed.
 - Updated library block styling to reflect source/sink color semantics.
 
------
+---
 **Date/Time:** 2026-03-18 09:15 CET
 **Task Executed:** P2-2 Connectivity & interaction hardening
 **Files Modified/Created:** `src/canvas/customBlockNode.tsx`, `src/canvas/edgeDefaults.ts`, `app/page.tsx`, `CHANGELOG.md`
@@ -244,7 +235,7 @@
 - Increased edge interaction corridor (`interactionWidth`) for easier edge targeting.
 - Added direct edge deletion path via existing Delete/Backspace flow and toolbar Delete action.
 
------
+---
 **Date/Time:** 2026-03-18 09:18 CET
 **Task Executed:** P2-3 Scope modal oscilloscope overhaul
 **Files Modified/Created:** `src/simulation/blocks/scopeBlock.tsx`, `CHANGELOG.md`
@@ -254,7 +245,7 @@
 - Added auto-scroll follow mode on X-axis with Brush zoom + "Follow latest" reset.
 - Preserved double-click launch flow and measurement readout (cursor t/y).
 
------
+---
 **Date/Time:** 2026-03-18 09:20 CET
 **Task Executed:** P2-4 Final validation and deployment
 **Files Modified/Created:** `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -264,7 +255,7 @@
   - `npm run build` ✅
 - Ready for commit + push to `origin/master`.
 
------
+---
 **Date/Time:** 2026-03-19 03:40 CET
 **Task Executed:** P3-1 Signal Routing Logic implemented and verified
 **Files Modified/Created:**
@@ -292,7 +283,7 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 
------
+---
 **Date/Time:** 2026-03-19 08:38 CET
 **Task Executed:** P3-2 Signal Logging & Export implemented and verified
 **Files Modified/Created:**
@@ -323,7 +314,7 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 
------
+---
 **Date/Time:** 2026-03-19 09:36 CET
 **Task Executed:** P3-3 Integrator + Unit Delay foundation implemented and verified
 **Files Modified/Created:**
@@ -347,7 +338,7 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 
------
+---
 **Date/Time:** 2026-03-19 09:44 CET
 **Task Executed:** P3-4 Graph validation + guardrails implemented and verified
 **Files Modified/Created:**
@@ -365,7 +356,7 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 
------
+---
 **Date/Time:** 2026-03-19 09:54 CET
 **Task Executed:** P3-5 Model persistence v2 implemented and verified
 **Files Modified/Created:**
@@ -383,7 +374,7 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 
------
+---
 **Date/Time:** 2026-03-19 09:58 CET
 **Task Executed:** P3-6 Final verification + deployment synchronization
 **Files Modified/Created:**
@@ -396,7 +387,7 @@
 - Marked P3-6 complete and closed P3 phase in task queue.
 - Repository prepared for final push synchronization.
 
------
+---
 **Date/Time:** 2026-03-21 00:38 CET
 **Task Executed:** P4-1 Regression Safety Net implemented and verified
 **Files Modified/Created:**
@@ -419,7 +410,7 @@
   - `npm run build` ✅
   - `npm run test` ✅
 
------
+---
 **Date/Time:** 2026-03-21 03:35 CET
 **Task Executed:** P4-2 Signal Type System v1 implemented and verified
 **Files Modified/Created:**
@@ -445,3 +436,19 @@
   - `npm run test` ✅
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 04:30 CET
+**Task Executed:** P4-3 Subsystem Block foundation (WIP)
+**Files Modified/Created:**
+- `src/simulation/blocks/subsystemBlock.ts` (new)
+- `src/simulation/blocks/inportBlock.ts` (new)
+- `src/simulation/blocks/outportBlock.ts` (new)
+- `src/canvas/subsystemEditorModal.tsx` (new)
+- `src/simulation/__tests__/subsystem.test.ts` (new)
+**Notes/Bugs:**
+- Initial implementation of hierarchical modeling foundation.
+- Added Inport/Outport interface blocks for subsystem boundary definition.
+- Added SubsystemBlock logic for recursive simulation engine invocation.
+- Added preliminary subsystem editor modal (React Flow instance inside modal).
+- Work in progress: verification and UI integration pending.
