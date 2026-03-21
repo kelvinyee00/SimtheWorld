@@ -4,6 +4,9 @@ import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
 import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
+import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
+import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
+import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import {
   formatGraphValidationIssues,
@@ -200,6 +203,43 @@ describe("validateSimulationGraph", () => {
     });
 
     expect(issues.some((issue) => issue.code === "INVALID_SAMPLE_TIME")).toBe(true);
+  });
+
+  it("flags invalid sample time inside subsystem graph", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        {
+          id: "subsystem",
+          type: SUBSYSTEM_BLOCK_TYPE,
+          data: {
+            graph: {
+              nodes: [
+                { id: "in", type: INPORT_BLOCK_TYPE, data: { label: "default" } },
+                { id: "counter", type: COUNTER_BLOCK_TYPE, data: { sampleTimeMs: 150 } },
+                { id: "out", type: OUTPORT_BLOCK_TYPE, data: { label: "default" } },
+              ],
+              edges: [
+                { id: "in->out", source: "in", target: "out", targetHandle: "in" },
+              ],
+            },
+          },
+        },
+      ],
+      edges: [],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+      baseStepTimeMs: 100,
+    });
+
+    expect(
+      issues.some(
+        (issue) =>
+          issue.code === "INVALID_SAMPLE_TIME" && issue.message.includes("[Subsystem subsystem]")
+      )
+    ).toBe(true);
   });
 
 });

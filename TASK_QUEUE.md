@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P3/P4 tasks prioritize advanced simulation capabilities while preserving P1/P2 UX stability.
+- P5 tasks prioritize scale, diagnostics, and modeling ergonomics while preserving P1/P2 UX stability and deterministic runtime behavior.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -13,6 +13,14 @@
 4. Run relevant validation commands and report exact outputs.
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
+
+## P5 Queue (Scalability, Debuggability & Modeling Ergonomics)
+- [x] P5-1 Deterministic Conformance Expansion (nested + multi-rate + typed stress tests)
+- [ ] P5-2 Subsystem UX v2 (I/O mapping guardrails + editor ergonomics) [IN PROGRESS]
+- [ ] P5-3 Vector Signal System v1 (vector ports + Mux/Demux blocks)
+- [ ] P5-4 Runtime Trace & Debug Panel (tick-level probes and event timeline)
+- [ ] P5-5 Persistence v3 + Migration Path (hierarchy/vector metadata compatibility)
+- [ ] P5-6 Final Verification + Deployment
 
 ## P4 Queue (Hierarchical & Multi-Rate)
 - [x] P4-1 Regression Safety Net (Engine + Canvas)
@@ -36,3 +44,4 @@
 - [x] P2 Industrial UI/UX refinement complete.
 - [x] P3 Advanced simulation phase complete.
 - [x] P4 Hierarchical & Multi-Rate phase complete.
+- [x] P5 Kickoff and priorities formalized.

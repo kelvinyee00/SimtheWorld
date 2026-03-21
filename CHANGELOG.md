@@ -525,3 +525,38 @@
   - `npm run build` ✅
 - Marked P4 phase as complete.
 - Ready for final repository synchronization.
+
+---
+**Date/Time:** 2026-03-21 14:33 CET
+**Task Executed:** P5 phase kickoff + priority queue formalization
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Confirmed repository is clean and synchronized to `origin/master` before kickoff.
+- Initialized P5 workstream with six milestone priorities:
+  - P5-1 Deterministic conformance expansion (nested + multi-rate + typed stress tests)
+  - P5-2 Subsystem UX v2 (I/O mapping guardrails + editor ergonomics)
+  - P5-3 Vector signal system v1 (vector ports + Mux/Demux)
+  - P5-4 Runtime trace & debug panel
+  - P5-5 Persistence v3 + migration path
+  - P5-6 Final verification + deployment
+- Marked P5-1 as active `[IN PROGRESS]` for immediate Codex execution continuity.
+
+---
+**Date/Time:** 2026-03-21 14:32 CET
+**Task Executed:** P5-1 deterministic conformance expansion completed and verified
+**Files Modified/Created:**
+- `src/simulation/__tests__/subsystem.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added deterministic conformance coverage for subsystem + multi-rate hold behavior.
+- Added recursive validation coverage for invalid sample-time constraints inside nested subsystem graphs.
+- Test suite expanded from 16 to 18 passing tests.
+- Advanced queue state to P5-2 `[IN PROGRESS]`.
+- Validation gates passed:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
