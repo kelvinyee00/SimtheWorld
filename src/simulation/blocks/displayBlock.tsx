@@ -1,6 +1,6 @@
 "use client";
 
-import { SimulationBlockDefinition } from "@/src/simulation/types";
+import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
  * Display block (P0-4 visualization sink).
@@ -48,13 +48,15 @@ function toDisplayState(previousState: unknown): DisplayBlockState {
   };
 }
 
-function readInputValue(inputs: Record<string, number | null>): number | null {
+function readInputValue(inputs: Record<string, SignalValue>): number | null {
   const direct = inputs.default ?? inputs.in ?? null;
   return typeof direct === "number" && Number.isFinite(direct) ? direct : null;
 }
 
 export const DisplayBlock: SimulationBlockDefinition = {
   type: DISPLAY_BLOCK_TYPE,
+  inputPortTypes: { default: "number", in: "number" },
+  outputPortTypes: {},
   initialize: () => ({
     value: null,
     lastUpdatedTick: -1,

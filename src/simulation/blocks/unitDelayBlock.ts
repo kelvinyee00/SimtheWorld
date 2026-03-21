@@ -55,6 +55,8 @@ function readInputValue(inputs: Record<string, SignalValue>): number | null {
 
 export const UnitDelayBlock: SimulationBlockDefinition = {
   type: UNIT_DELAY_BLOCK_TYPE,
+  inputPortTypes: { in: "number", default: "number" },
+  outputPortTypes: { default: "number" },
   breaksAlgebraicLoop: true,
   initialize: (params) => parseUnitDelayParams(params).initialValue,
   step: ({ params, previousState, inputs }) => {

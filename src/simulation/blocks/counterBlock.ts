@@ -49,6 +49,7 @@ function resolvePreviousState(previousState: unknown, fallback: number): number 
 
 export const CounterBlock: SimulationBlockDefinition = {
   type: COUNTER_BLOCK_TYPE,
+  outputPortTypes: { default: "number" },
 
   /**
    * Initializes deterministic internal state from `start`.

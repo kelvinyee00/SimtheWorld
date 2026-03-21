@@ -18,6 +18,8 @@ import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
+import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
+import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -35,6 +37,7 @@ interface BlockNodeData {
   gain?: number;
   initialCondition?: number;
   initialValue?: number;
+  operator?: string;
   format?: "json" | "csv";
   fileName?: string;
 }
@@ -103,8 +106,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isProduct = type === PRODUCT_BLOCK_TYPE;
   const isIntegrator = type === INTEGRATOR_BLOCK_TYPE;
   const isUnitDelay = type === UNIT_DELAY_BLOCK_TYPE;
+  const isCompare = type === COMPARE_BLOCK_TYPE;
+  const isSwitch = type === SWITCH_BLOCK_TYPE;
   const isToFile = type === TO_FILE_BLOCK_TYPE;
-  const isMathNode = isGain || isSum || isProduct || isIntegrator || isUnitDelay;
+  const isMathNode =
+    isGain || isSum || isProduct || isIntegrator || isUnitDelay || isCompare || isSwitch;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -132,7 +138,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           ? "∫"
           : isUnitDelay
             ? "z⁻¹"
-            : "";
+            : isCompare
+              ? "≷"
+              : isSwitch
+                ? "⇆"
+                : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -202,6 +212,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                       : 0
                   }
                 </p>
+              ) : isCompare ? (
+                <p className="text-[11px] text-slate-500">{String(data.operator ?? "gt")}</p>
+              ) : isSwitch ? (
+                <p className="text-[11px] text-slate-500">bool cond</p>
               ) : (
                 <p className="text-[11px] text-slate-500">multi-input</p>
               )}
@@ -229,7 +243,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         )}
 
-        {(isSum || isProduct) && (
+        {(isSum || isProduct || isCompare) && (
           <>
             <Handle
               type="target"
@@ -243,6 +257,32 @@ export const CustomBlockNode = memo(function CustomBlockNode({
               id="in2"
               position={Position.Left}
               style={withTop(handleStyle, "68%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
+
+        {isSwitch && (
+          <>
+            <Handle
+              type="target"
+              id="cond"
+              position={Position.Left}
+              style={withTop(handleStyle, "22%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="inTrue"
+              position={Position.Left}
+              style={withTop(handleStyle, "50%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="inFalse"
+              position={Position.Left}
+              style={withTop(handleStyle, "78%")}
               className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
             />
           </>

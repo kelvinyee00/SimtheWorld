@@ -20,7 +20,9 @@ export type SimulationStatus = "idle" | "running" | "paused" | "completed";
  * - Lift this to discriminated unions (number | boolean | vector | struct) and enforce
  *   compatibility at wire-connection time with schema validators.
  */
-export type SignalValue = number | null;
+export type SignalType = "number" | "boolean" | "any";
+
+export type SignalValue = number | boolean | null;
 
 /**
  * Node instance metadata owned by the graph layer.
@@ -105,6 +107,16 @@ export interface SimulationBlockDefinition {
    * Optional initialization hook invoked on reset/start.
    */
   initialize?: (params: Record<string, unknown>) => unknown;
+  /**
+   * Optional input port type metadata used by validation/connection guardrails.
+   * Keys are base handle ids (e.g. `default`, `in`, `in1`, `cond`).
+   */
+  inputPortTypes?: Record<string, SignalType>;
+  /**
+   * Optional output port type metadata used by validation/connection guardrails.
+   * Keys are output handle ids (usually `default` for current blocks).
+   */
+  outputPortTypes?: Record<string, SignalType>;
   /**
    * Marks blocks whose outputs are sourced from persisted state (not direct-feedthrough).
    *

@@ -1,14 +1,11 @@
-import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
-import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
-import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
-import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
-import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
-import { SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
-import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
-import { TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
-import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { getTopologicalOrder } from "@/src/simulation/topology";
-import { BlockRegistry, SimulationGraph } from "@/src/simulation/types";
+import {
+  BlockRegistry,
+  SignalType,
+  SimulationEdge,
+  SimulationGraph,
+  SimulationNode,
+} from "@/src/simulation/types";
 
 export interface GraphValidationIssue {
   code:
@@ -17,41 +14,187 @@ export interface GraphValidationIssue {
     | "INVALID_SOURCE_HANDLE"
     | "INVALID_TARGET_HANDLE"
     | "TARGET_HAS_NO_INPUT_PORTS"
+    | "INVALID_SIGNAL_TYPE"
+    | "INVALID_SAMPLE_TIME"
     | "UNSUPPORTED_CYCLE";
   message: string;
   nodeId?: string;
   edgeId?: string;
 }
 
-function getAllowedTargetHandles(type: string): string[] {
-  switch (type) {
-    case DISPLAY_BLOCK_TYPE:
-    case SCOPE_BLOCK_TYPE:
-      return ["default"];
-    case GAIN_BLOCK_TYPE:
-      return ["in", "default"];
-    case SUM_BLOCK_TYPE:
-    case PRODUCT_BLOCK_TYPE:
-      return ["in1", "in2", "default"];
-    case INTEGRATOR_BLOCK_TYPE:
-    case UNIT_DELAY_BLOCK_TYPE:
-      return ["in", "default"];
-    case TO_FILE_BLOCK_TYPE:
-      return ["default", "in"];
-    case COUNTER_BLOCK_TYPE:
-      return [];
-    default:
-      return ["default"];
+function normalizeHandleBase(handle: string): string {
+  return handle.split("__", 1)[0] ?? handle;
+}
+
+function getKnownInputHandles(type: string, registry: BlockRegistry): string[] {
+  const definition = registry[type];
+  if (!definition?.inputPortTypes) {
+    return [];
   }
+
+  return Object.keys(definition.inputPortTypes);
+}
+
+function getKnownOutputHandles(type: string, registry: BlockRegistry): string[] {
+  const definition = registry[type];
+  if (!definition?.outputPortTypes) {
+    return ["default"];
+  }
+
+  return Object.keys(definition.outputPortTypes);
+}
+
+function getInputSignalType(params: {
+  type: string;
+  handle: string;
+  registry: BlockRegistry;
+}): SignalType {
+  const { type, handle, registry } = params;
+  const definition = registry[type];
+  const base = normalizeHandleBase(handle);
+
+  if (!definition?.inputPortTypes) {
+    return "any";
+  }
+
+  return (
+    definition.inputPortTypes[base] ??
+    definition.inputPortTypes.default ??
+    "any"
+  );
+}
+
+function getOutputSignalType(params: {
+  type: string;
+  handle: string;
+  registry: BlockRegistry;
+}): SignalType {
+  const { type, handle, registry } = params;
+  const definition = registry[type];
+  const base = normalizeHandleBase(handle);
+
+  if (!definition?.outputPortTypes) {
+    return "any";
+  }
+
+  return (
+    definition.outputPortTypes[base] ??
+    definition.outputPortTypes.default ??
+    "any"
+  );
+}
+
+function areSignalTypesCompatible(source: SignalType, target: SignalType): boolean {
+  if (source === "any" || target === "any") {
+    return true;
+  }
+  return source === target;
+}
+
+function validateNodeSampleTime(node: SimulationNode): GraphValidationIssue | null {
+  const raw = (node.data as Record<string, unknown> | undefined)?.sampleTimeMs;
+  if (typeof raw === "undefined") {
+    return null;
+  }
+
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) {
+    return {
+      code: "INVALID_SAMPLE_TIME",
+      nodeId: node.id,
+      message: `Node '${node.id}' has invalid sampleTimeMs '${String(raw)}'. Expected positive finite number.`,
+    };
+  }
+
+  return null;
+}
+
+export function validateConnectionCandidate(params: {
+  graph: SimulationGraph;
+  registry: BlockRegistry;
+  edge: SimulationEdge;
+}): GraphValidationIssue | null {
+  const { graph, registry, edge } = params;
+
+  const sourceNode = graph.nodes.find((node) => node.id === edge.source);
+  const targetNode = graph.nodes.find((node) => node.id === edge.target);
+
+  if (!sourceNode || !targetNode) {
+    return {
+      code: "INVALID_EDGE_ENDPOINT",
+      edgeId: edge.id,
+      message: `Edge '${edge.id}' references missing source/target node(s).`,
+    };
+  }
+
+  const sourceDefinition = registry[sourceNode.type];
+  const targetDefinition = registry[targetNode.type];
+
+  if (!sourceDefinition || !targetDefinition) {
+    return null;
+  }
+
+  const sourceHandle = edge.sourceHandle ?? "default";
+  const sourceHandleBase = normalizeHandleBase(sourceHandle);
+  const knownSourceHandles = getKnownOutputHandles(sourceNode.type, registry);
+  if (!knownSourceHandles.includes(sourceHandleBase)) {
+    return {
+      code: "INVALID_SOURCE_HANDLE",
+      edgeId: edge.id,
+      message: `Edge '${edge.id}' uses unsupported source handle '${sourceHandle}' on '${sourceNode.id}'. Allowed: ${knownSourceHandles.join(
+        ", "
+      )}.`,
+    };
+  }
+
+  const targetHandle = edge.targetHandle ?? "default";
+  const targetHandleBase = normalizeHandleBase(targetHandle);
+  const knownTargetHandles = getKnownInputHandles(targetNode.type, registry);
+
+  if (knownTargetHandles.length === 0) {
+    return {
+      code: "TARGET_HAS_NO_INPUT_PORTS",
+      edgeId: edge.id,
+      nodeId: targetNode.id,
+      message: `Edge '${edge.id}' targets '${targetNode.id}', but block type '${targetNode.type}' has no input ports.`,
+    };
+  }
+
+  if (!knownTargetHandles.includes(targetHandleBase)) {
+    return {
+      code: "INVALID_TARGET_HANDLE",
+      edgeId: edge.id,
+      nodeId: targetNode.id,
+      message: `Edge '${edge.id}' targets invalid handle '${targetHandle}' on '${targetNode.id}'. Allowed: ${knownTargetHandles.join(
+        ", "
+      )}.`,
+    };
+  }
+
+  const sourceType = getOutputSignalType({
+    type: sourceNode.type,
+    handle: sourceHandle,
+    registry,
+  });
+  const targetType = getInputSignalType({
+    type: targetNode.type,
+    handle: targetHandle,
+    registry,
+  });
+
+  if (!areSignalTypesCompatible(sourceType, targetType)) {
+    return {
+      code: "INVALID_SIGNAL_TYPE",
+      edgeId: edge.id,
+      nodeId: targetNode.id,
+      message: `Edge '${edge.id}' has incompatible signal types (${sourceType} -> ${targetType}) for '${sourceNode.id}' -> '${targetNode.id}'.`,
+    };
+  }
+
+  return null;
 }
 
 /**
- * Pre-run graph validation gate for P3-4.
- *
- * Guarantees:
- * - Unknown block types are rejected before scheduler start.
- * - Handle mismatches produce deterministic actionable diagnostics.
- * - Unsupported algebraic cycles fail fast with explicit guidance.
+ * Pre-run graph validation gate for P3-4/P4-2.
  */
 export function validateSimulationGraph(params: {
   graph: SimulationGraph;
@@ -60,8 +203,6 @@ export function validateSimulationGraph(params: {
   const { graph, registry } = params;
   const issues: GraphValidationIssue[] = [];
 
-  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
-
   for (const node of graph.nodes) {
     if (!registry[node.type]) {
       issues.push({
@@ -69,53 +210,24 @@ export function validateSimulationGraph(params: {
         nodeId: node.id,
         message: `Node '${node.id}' references unknown block type '${node.type}'.`,
       });
+      continue;
+    }
+
+    const sampleTimeIssue = validateNodeSampleTime(node);
+    if (sampleTimeIssue) {
+      issues.push(sampleTimeIssue);
     }
   }
 
   for (const edge of graph.edges) {
-    const sourceNode = nodeById.get(edge.source);
-    const targetNode = nodeById.get(edge.target);
+    const issue = validateConnectionCandidate({
+      graph,
+      registry,
+      edge,
+    });
 
-    if (!sourceNode || !targetNode) {
-      issues.push({
-        code: "INVALID_EDGE_ENDPOINT",
-        edgeId: edge.id,
-        message: `Edge '${edge.id}' references missing source/target node(s).`,
-      });
-      continue;
-    }
-
-    const sourceHandle = edge.sourceHandle ?? "default";
-    if (sourceHandle !== "default") {
-      issues.push({
-        code: "INVALID_SOURCE_HANDLE",
-        edgeId: edge.id,
-        message: `Edge '${edge.id}' uses unsupported source handle '${sourceHandle}'.`,
-      });
-    }
-
-    const targetHandle = edge.targetHandle ?? "default";
-    const allowedTargets = getAllowedTargetHandles(targetNode.type);
-
-    if (allowedTargets.length === 0) {
-      issues.push({
-        code: "TARGET_HAS_NO_INPUT_PORTS",
-        edgeId: edge.id,
-        nodeId: targetNode.id,
-        message: `Edge '${edge.id}' targets '${targetNode.id}', but block type '${targetNode.type}' has no input ports.`,
-      });
-      continue;
-    }
-
-    if (!allowedTargets.includes(targetHandle)) {
-      issues.push({
-        code: "INVALID_TARGET_HANDLE",
-        edgeId: edge.id,
-        nodeId: targetNode.id,
-        message: `Edge '${edge.id}' targets invalid handle '${targetHandle}' on '${targetNode.id}'. Allowed: ${allowedTargets.join(
-          ", "
-        )}.`,
-      });
+    if (issue) {
+      issues.push(issue);
     }
   }
 

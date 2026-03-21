@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { SimulationBlockDefinition } from "@/src/simulation/types";
+import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
 
 export const SCOPE_BLOCK_TYPE = "scope" as const;
 
@@ -96,13 +96,15 @@ function toScopeState(previousState: unknown, maxPoints: number): ScopeBlockStat
   };
 }
 
-function readInputValue(inputs: Record<string, number | null>): number | null {
+function readInputValue(inputs: Record<string, SignalValue>): number | null {
   const direct = inputs.default ?? inputs.in ?? null;
   return typeof direct === "number" && Number.isFinite(direct) ? direct : null;
 }
 
 export const ScopeBlock: SimulationBlockDefinition = {
   type: SCOPE_BLOCK_TYPE,
+  inputPortTypes: { default: "number", in: "number" },
+  outputPortTypes: {},
   initialize: (params) => ({
     samples: [],
     lastUpdatedTick: -1,

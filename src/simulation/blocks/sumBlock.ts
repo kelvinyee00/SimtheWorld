@@ -27,6 +27,8 @@ function collectNumericInputs(inputs: Record<string, SignalValue>): number[] {
 
 export const SumBlock: SimulationBlockDefinition = {
   type: SUM_BLOCK_TYPE,
+  inputPortTypes: { in1: "number", in2: "number", default: "number" },
+  outputPortTypes: { default: "number" },
   step: ({ inputs }) => {
     const values = collectNumericInputs(inputs);
     const summed = values.reduce((acc, current) => acc + current, 0);

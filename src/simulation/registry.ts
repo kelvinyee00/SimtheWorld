@@ -7,6 +7,8 @@ import { ProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/produc
 import { ToFileBlock, TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
 import { IntegratorBlock, INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
 import { UnitDelayBlock, UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
+import { CompareBlock, COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
+import { SwitchBlock, SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -31,6 +33,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [TO_FILE_BLOCK_TYPE]: ToFileBlock,
   [INTEGRATOR_BLOCK_TYPE]: IntegratorBlock,
   [UNIT_DELAY_BLOCK_TYPE]: UnitDelayBlock,
+  [COMPARE_BLOCK_TYPE]: CompareBlock,
+  [SWITCH_BLOCK_TYPE]: SwitchBlock,
 };
 
 /**

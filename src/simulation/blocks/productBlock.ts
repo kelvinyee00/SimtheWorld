@@ -30,6 +30,8 @@ function collectNumericInputs(inputs: Record<string, SignalValue>): number[] {
 
 export const ProductBlock: SimulationBlockDefinition = {
   type: PRODUCT_BLOCK_TYPE,
+  inputPortTypes: { in1: "number", in2: "number", default: "number" },
+  outputPortTypes: { default: "number" },
   step: ({ inputs }) => {
     const values = collectNumericInputs(inputs);
     const multiplied = values.reduce((acc, current) => acc * current, 1);

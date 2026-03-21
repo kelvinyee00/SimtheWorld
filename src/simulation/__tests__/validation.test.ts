@@ -1,6 +1,8 @@
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
+import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
+import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import {
@@ -117,4 +119,66 @@ describe("validateSimulationGraph", () => {
 
     expect(issues.some((issue) => issue.code === "UNSUPPORTED_CYCLE")).toBe(true);
   });
+  it("rejects incompatible signal types during validation", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "switch", type: SWITCH_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        {
+          id: "counter->switch-cond",
+          source: "counter",
+          target: "switch",
+          targetHandle: "cond",
+        },
+      ],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+    });
+
+    expect(issues.some((issue) => issue.code === "INVALID_SIGNAL_TYPE")).toBe(true);
+  });
+
+  it("accepts boolean-to-boolean typed wiring (Compare -> Switch.cond)", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: {} },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: { start: 1 } },
+        { id: "compare", type: COMPARE_BLOCK_TYPE, data: { operator: "lt" } },
+        { id: "switch", type: SWITCH_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        {
+          id: "a->compare-in1",
+          source: "counter-a",
+          target: "compare",
+          targetHandle: "in1",
+        },
+        {
+          id: "b->compare-in2",
+          source: "counter-b",
+          target: "compare",
+          targetHandle: "in2",
+        },
+        {
+          id: "compare->switch-cond",
+          source: "compare",
+          target: "switch",
+          targetHandle: "cond",
+        },
+      ],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+    });
+
+    expect(issues).toEqual([]);
+  });
+
 });

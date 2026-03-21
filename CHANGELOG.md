@@ -418,3 +418,30 @@
   - `npm run lint` ✅
   - `npm run build` ✅
   - `npm run test` ✅
+
+-----
+**Date/Time:** 2026-03-21 03:35 CET
+**Task Executed:** P4-2 Signal Type System v1 implemented and verified
+**Files Modified/Created:**
+- `src/simulation/types.ts`
+- `src/simulation/validation.ts`
+- `src/simulation/registry.ts`
+- `src/simulation/blocks/compareBlock.ts` (new)
+- `src/simulation/blocks/switchBlock.ts` (new)
+- `src/simulation/blocks/*` (typed port metadata updates)
+- `src/canvas/customBlockNode.tsx`
+- `app/page.tsx`
+- `src/simulation/__tests__/engine.determinism.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added typed signal domain and port metadata for validation/connection guardrails.
+- Added Compare + Switch boolean-capable blocks.
+- Added connection-time validation in canvas connect path.
+- Added run-time validation for incompatible signal type wiring.
+- Validation gates passed:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅

@@ -48,6 +48,8 @@ function readPrimaryInput(inputs: Record<string, SignalValue>): number | null {
 
 export const GainBlock: SimulationBlockDefinition = {
   type: GAIN_BLOCK_TYPE,
+  inputPortTypes: { in: "number", default: "number" },
+  outputPortTypes: { default: "number" },
   step: ({ params, inputs }) => {
     const parsed = parseGainParams(params);
     const input = readPrimaryInput(inputs);

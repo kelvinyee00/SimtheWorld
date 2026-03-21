@@ -3,6 +3,8 @@ import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
+import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
+import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import { SimulationGraph, SimulationRuntimeSnapshot } from "@/src/simulation/types";
 
@@ -92,6 +94,30 @@ describe("stepSimulation deterministic execution", () => {
     // So delay.default is 12.
     expect(first.nodeOutputs.delay?.default).toBe(12);
     expect(first.nodeInternalState.delay).toBe(16);
+  });
+
+
+  it("evaluates Compare/Switch typed boolean control deterministically", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: { start: 0, step: 1, mode: "inc" } },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: { start: 5, step: 0, mode: "inc" } },
+        { id: "compare", type: COMPARE_BLOCK_TYPE, data: { operator: "lt" } },
+        { id: "switch", type: SWITCH_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        { id: "a->compare1", source: "counter-a", target: "compare", targetHandle: "in1" },
+        { id: "b->compare2", source: "counter-b", target: "compare", targetHandle: "in2" },
+        { id: "compare->switch-cond", source: "compare", target: "switch", targetHandle: "cond" },
+        { id: "a->switch-true", source: "counter-a", target: "switch", targetHandle: "inTrue" },
+        { id: "b->switch-false", source: "counter-b", target: "switch", targetHandle: "inFalse" },
+      ],
+    };
+
+    const snapshot = runTicks({ graph, ticks: 2, stepTimeMs: 100, simulationTimeMs: 1_000 });
+
+    expect(snapshot.nodeOutputs.compare?.default).toBe(true);
+    expect(snapshot.nodeOutputs.switch?.default).toBe(1);
   });
 
   it("throws for unsupported algebraic cycles without memory/delay breakers", () => {

@@ -232,6 +232,8 @@ export function buildToFilePayload(params: {
 
 export const ToFileBlock: SimulationBlockDefinition = {
   type: TO_FILE_BLOCK_TYPE,
+  inputPortTypes: { default: "number", in: "number", in1: "number", in2: "number" },
+  outputPortTypes: {},
   initialize: (params) => toToFileState(undefined, params),
   step: ({ tick, timeMs, params, previousState, inputs }) => {
     const state = toToFileState(previousState, params);

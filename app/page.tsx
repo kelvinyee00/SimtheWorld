@@ -30,6 +30,11 @@ import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import {
+  COMPARE_BLOCK_TYPE,
+  CompareOperator,
+} from "@/src/simulation/blocks/compareBlock";
+import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
+import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
   ToFileExportFormat,
@@ -46,6 +51,9 @@ import {
   saveModelToLocalStorage,
   serializeModelV2,
 } from "@/src/persistence/modelPersistence";
+import {
+  validateConnectionCandidate,
+} from "@/src/simulation/validation";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -102,6 +110,8 @@ const NODE_TYPES: NodeTypes = {
   [PRODUCT_BLOCK_TYPE]: CustomBlockNode,
   [INTEGRATOR_BLOCK_TYPE]: CustomBlockNode,
   [UNIT_DELAY_BLOCK_TYPE]: CustomBlockNode,
+  [COMPARE_BLOCK_TYPE]: CustomBlockNode,
+  [SWITCH_BLOCK_TYPE]: CustomBlockNode,
   [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
 };
 
@@ -120,6 +130,8 @@ const LIBRARY_BLOCKS = [
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
+  { label: "Compare", type: COMPARE_BLOCK_TYPE },
+  { label: "Switch", type: SWITCH_BLOCK_TYPE },
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
@@ -169,6 +181,10 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
       return { label: "Unit Delay", initialValue: 0 };
+    case COMPARE_BLOCK_TYPE:
+      return { label: "Compare", operator: "gt" };
+    case SWITCH_BLOCK_TYPE:
+      return { label: "Switch" };
     case TO_FILE_BLOCK_TYPE:
       return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000 };
     case DISPLAY_BLOCK_TYPE:
@@ -207,6 +223,10 @@ interface UnitDelayInspectorData {
   initialValue: number;
 }
 
+interface CompareInspectorData {
+  operator: CompareOperator;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
@@ -223,6 +243,10 @@ const DEFAULT_INTEGRATOR_INSPECTOR_DATA: IntegratorInspectorData = {
 
 const DEFAULT_UNIT_DELAY_INSPECTOR_DATA: UnitDelayInspectorData = {
   initialValue: 0,
+};
+
+const DEFAULT_COMPARE_INSPECTOR_DATA: CompareInspectorData = {
+  operator: "gt",
 };
 
 const MS_PER_SECOND = 1_000;
@@ -286,6 +310,7 @@ export default function Home() {
   const hasInitializedModelPersistenceRef = useRef(false);
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
+  const registry = useSimulationRuntimeStore((state) => state.registry);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
   const setTiming = useSimulationRuntimeStore((state) => state.setTiming);
   const run = useSimulationRuntimeStore((state) => state.run);
@@ -381,19 +406,51 @@ export default function Home() {
    */
   const onConnect = useCallback<OnConnect>(
     (connection: Connection) => {
-      setEdges((currentEdges) =>
-        addEdge(
-          {
-            ...connection,
-            id: makeEdgeId(connection.source ?? "source", connection.target ?? "target"),
-            // Belt-and-suspenders safety: preserve straight-edge policy even if call-sites evolve.
-            type: DEFAULT_EDGE_OPTIONS.type ?? "straight",
-          },
-          currentEdges
-        )
-      );
+      const candidate: Edge = {
+        ...connection,
+        source: connection.source ?? "source",
+        target: connection.target ?? "target",
+        id: makeEdgeId(connection.source ?? "source", connection.target ?? "target"),
+        // Belt-and-suspenders safety: preserve straight-edge policy even if call-sites evolve.
+        type: DEFAULT_EDGE_OPTIONS.type ?? "straight",
+      };
+
+      const issue = validateConnectionCandidate({
+        graph: {
+          nodes: nodes.map((node) => ({
+            id: node.id,
+            type: node.type ?? "default",
+            data: (node.data as Record<string, unknown> | undefined) ?? {},
+          })),
+          edges: edges
+            .concat(candidate)
+            .map((edge) => ({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              sourceHandle: edge.sourceHandle ?? undefined,
+              targetHandle: edge.targetHandle ?? undefined,
+            })),
+        },
+        registry,
+        edge: {
+          id: candidate.id,
+          source: candidate.source,
+          target: candidate.target,
+          sourceHandle: candidate.sourceHandle ?? undefined,
+          targetHandle: candidate.targetHandle ?? undefined,
+        },
+      });
+
+      if (issue) {
+        setModelActionMessage(issue.message);
+        return;
+      }
+
+      setModelActionMessage(null);
+      setEdges((currentEdges) => addEdge(candidate, currentEdges));
     },
-    [setEdges]
+    [edges, nodes, registry, setEdges]
   );
 
   /**
@@ -771,6 +828,25 @@ export default function Home() {
     return { initialValue };
   }, [selectedNode]);
 
+  const selectedCompareData = useMemo<CompareInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== COMPARE_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const operator: CompareOperator =
+      raw.operator === "gte" ||
+      raw.operator === "lt" ||
+      raw.operator === "lte" ||
+      raw.operator === "eq" ||
+      raw.operator === "neq" ||
+      raw.operator === "gt"
+        ? raw.operator
+        : DEFAULT_COMPARE_INSPECTOR_DATA.operator;
+
+    return { operator };
+  }, [selectedNode]);
+
   /**
    * Inspector -> graph node-data write path.
    *
@@ -889,6 +965,13 @@ export default function Home() {
       patchSelectedNodeData({ initialValue: safeValue });
     },
     [patchSelectedNodeData, selectedUnitDelayData]
+  );
+
+  const commitCompareOperator = useCallback(
+    (operator: CompareOperator) => {
+      patchSelectedNodeData({ operator });
+    },
+    [patchSelectedNodeData]
   );
 
   const exportSelectedToFile = useCallback(() => {
@@ -1143,6 +1226,29 @@ export default function Home() {
                 onChange={(event) => commitUnitDelayInitialValue(event.target.value)}
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
               />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedCompareData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Compare Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Operator
+              <select
+                value={selectedCompareData.operator}
+                onChange={(event) => commitCompareOperator(event.target.value as CompareOperator)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              >
+                <option value="gt">&gt;</option>
+                <option value="gte">&gt;=</option>
+                <option value="lt">&lt;</option>
+                <option value="lte">&lt;=</option>
+                <option value="eq">==</option>
+                <option value="neq">!=</option>
+              </select>
             </label>
           </div>
         ) : null}

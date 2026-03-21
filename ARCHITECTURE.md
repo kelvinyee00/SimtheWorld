@@ -240,3 +240,15 @@ Constraints for P0:
 - Added compatibility migration path for legacy v1 model shape.
 - Added local autosave/load path using browser `localStorage` for model continuity between sessions.
 - Added user-triggered export/import controls in UI without altering runtime determinism.
+
+
+### 9) Signal Type System v1 (P4-2)
+- Extended core signal domain to include `number | boolean | null`.
+- Added typed port metadata (`inputPortTypes`, `outputPortTypes`) to block definitions.
+- Added boolean processing blocks:
+  - **Compare** (numeric comparison -> boolean output)
+  - **Switch** (boolean condition selects numeric branch)
+- Added connection-time and run-time type guardrails via graph validation:
+  - invalid handle/source checks
+  - incompatible signal type checks (e.g., number -> boolean `cond`)
+- Preserved compatibility for existing numeric P0-P3 models.

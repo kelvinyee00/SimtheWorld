@@ -57,6 +57,8 @@ function readInputValue(inputs: Record<string, SignalValue>): number | null {
 
 export const IntegratorBlock: SimulationBlockDefinition = {
   type: INTEGRATOR_BLOCK_TYPE,
+  inputPortTypes: { in: "number", default: "number" },
+  outputPortTypes: { default: "number" },
   breaksAlgebraicLoop: true,
   initialize: (params) => parseIntegratorParams(params).initialCondition,
   step: ({ params, previousState, stepTimeMs, inputs }) => {
