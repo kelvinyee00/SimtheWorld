@@ -9,23 +9,29 @@ import { INPORT_BLOCK_TYPE } from "./inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "./outportBlock";
 
 /**
- * Subsystem block (P4-3 hierarchical modeling foundation, refined in P5-2).
+ * Subsystem block (P4-3 foundation, extended in P6-3 for masked multi-I/O interfaces).
  *
  * Behavior:
  * - Encapsulates a nested SimulationGraph.
- * - Manages its own internal SimulationRuntimeSnapshot as persistent node state.
- * - Inport nodes in the nested graph receive values from the subsystem's external inputs.
- * - Outport nodes in the nested graph provide values to the subsystem's external outputs.
+ * - Persists internal runtime snapshot as node-local state.
+ * - Maps external subsystem inputs to internal Inport states.
+ * - Maps internal Outport outputs back to external subsystem outputs.
  *
- * P5-2 mapping refinements:
- * - Inport/Outport label handling is now normalized (trimmed, deterministic fallback names).
- * - Interface node traversal is deterministic (stable id sort).
- * - Output labels are addressable via `sourceHandle` from parent edges.
+ * P6-3 masking extension:
+ * - Optional `mask.inputs[]` / `mask.outputs[]` define explicit external handle aliases.
+ * - Optional `mask.parameters` enables parameterized nested graph values:
+ *   node data string values prefixed with `$` are resolved against mask parameters.
  */
 export const SUBSYSTEM_BLOCK_TYPE = "subsystem" as const;
 
 interface SubsystemState {
   internalSnapshot: SimulationRuntimeSnapshot;
+}
+
+interface SubsystemMask {
+  inputs: string[];
+  outputs: string[];
+  parameters: Record<string, unknown>;
 }
 
 function coerceInternalGraph(raw: unknown): SimulationGraph {
@@ -61,7 +67,22 @@ function toSignalOrNull(value: unknown): SignalValue {
   if (typeof value === "boolean") {
     return value;
   }
+  if (Array.isArray(value)) {
+    const numeric = value.filter(
+      (entry): entry is number => typeof entry === "number" && Number.isFinite(entry)
+    );
+    return numeric;
+  }
   return null;
+}
+
+function sanitizeHandleName(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function getInterfaceLabel(params: {
@@ -88,10 +109,108 @@ function getSortedInterfaceNodeIds(params: {
     .sort((left, right) => left.localeCompare(right));
 }
 
+function parseSubsystemMask(rawMask: unknown): SubsystemMask {
+  if (typeof rawMask !== "object" || rawMask === null) {
+    return { inputs: [], outputs: [], parameters: {} };
+  }
+
+  const candidate = rawMask as Record<string, unknown>;
+
+  const inputs = Array.isArray(candidate.inputs)
+    ? candidate.inputs
+        .map((entry) => sanitizeHandleName(entry))
+        .filter((entry): entry is string => typeof entry === "string")
+    : [];
+
+  const outputs = Array.isArray(candidate.outputs)
+    ? candidate.outputs
+        .map((entry) => sanitizeHandleName(entry))
+        .filter((entry): entry is string => typeof entry === "string")
+    : [];
+
+  const parameters =
+    typeof candidate.parameters === "object" && candidate.parameters !== null
+      ? (candidate.parameters as Record<string, unknown>)
+      : {};
+
+  return {
+    inputs,
+    outputs,
+    parameters,
+  };
+}
+
+function resolveMaskedValue(
+  value: unknown,
+  parameters: Record<string, unknown>
+): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  if (!value.startsWith("$")) {
+    return value;
+  }
+
+  const key = value.slice(1).trim();
+  if (key.length === 0) {
+    return value;
+  }
+
+  return key in parameters ? parameters[key] : value;
+}
+
+function applyMaskParameters(
+  graph: SimulationGraph,
+  parameters: Record<string, unknown>
+): SimulationGraph {
+  if (Object.keys(parameters).length === 0) {
+    return graph;
+  }
+
+  return {
+    nodes: graph.nodes.map((node) => {
+      const rawData = (node.data ?? {}) as Record<string, unknown>;
+      const nextData = Object.fromEntries(
+        Object.entries(rawData).map(([key, value]) => [
+          key,
+          resolveMaskedValue(value, parameters),
+        ])
+      );
+
+      return {
+        ...node,
+        data: nextData,
+      };
+    }),
+    edges: graph.edges,
+  };
+}
+
 export const SubsystemBlock: SimulationBlockDefinition = {
   type: SUBSYSTEM_BLOCK_TYPE,
-  inputPortTypes: { default: "any", in1: "any", in2: "any" },
-  outputPortTypes: { default: "any" },
+  inputPortTypes: {
+    default: "any",
+    in1: "any",
+    in2: "any",
+    in3: "any",
+    in4: "any",
+    in5: "any",
+    in6: "any",
+    in7: "any",
+    in8: "any",
+  },
+  outputPortTypes: {
+    default: "any",
+    out1: "any",
+    out2: "any",
+    out3: "any",
+    out4: "any",
+    out5: "any",
+    out6: "any",
+    out7: "any",
+    out8: "any",
+  },
 
   initialize: () => {
     return {
@@ -104,12 +223,16 @@ export const SubsystemBlock: SimulationBlockDefinition = {
 
   step: ({ stepTimeMs, params, previousState, inputs, registry }) => {
     const internalGraph = coerceInternalGraph(params.graph);
+    const mask = parseSubsystemMask(params.mask);
+    const runtimeGraph = applyMaskParameters(internalGraph, mask.parameters);
     const state = toSubsystemState(previousState);
 
-    let snapshot = state?.internalSnapshot ?? createInitialSnapshot({
-      simulationTimeMs: 1_000_000,
-      stepTimeMs,
-    });
+    let snapshot =
+      state?.internalSnapshot ??
+      createInitialSnapshot({
+        simulationTimeMs: 1_000_000,
+        stepTimeMs,
+      });
 
     snapshot.stepTimeMs = stepTimeMs;
 
@@ -121,23 +244,35 @@ export const SubsystemBlock: SimulationBlockDefinition = {
     }
 
     const inportIds = getSortedInterfaceNodeIds({
-      graph: internalGraph,
+      graph: runtimeGraph,
       type: INPORT_BLOCK_TYPE,
     });
 
     for (let index = 0; index < inportIds.length; index += 1) {
       const nodeId = inportIds[index];
-      const node = internalGraph.nodes.find((candidate) => candidate.id === nodeId);
+      const node = runtimeGraph.nodes.find((candidate) => candidate.id === nodeId);
       if (!node) {
         continue;
       }
 
       const label = getInterfaceLabel({ rawData: node.data, fallback: `in${index + 1}` });
-      let resolved = inputLookup.get(label.toLowerCase());
+      const maskedHandle = sanitizeHandleName(mask.inputs[index]);
 
-      if (typeof resolved === "undefined") {
-        const fallbackKey = index === 0 ? "default" : `in${index + 1}`;
-        resolved = inputLookup.get(fallbackKey.toLowerCase());
+      const handleCandidates = [
+        maskedHandle,
+        label,
+        `in${index + 1}`,
+        index === 0 ? "default" : null,
+      ]
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => entry.toLowerCase());
+
+      let resolved: SignalValue | undefined;
+      for (const handle of handleCandidates) {
+        resolved = inputLookup.get(handle);
+        if (typeof resolved !== "undefined") {
+          break;
+        }
       }
 
       nextInternalState[node.id] = toSignalOrNull(resolved);
@@ -150,30 +285,38 @@ export const SubsystemBlock: SimulationBlockDefinition = {
     };
 
     const resultSnapshot = stepSimulation({
-      graph: internalGraph,
+      graph: runtimeGraph,
       registry,
       snapshot,
     });
 
     const externalOutputs: Record<string, SignalValue> = {};
     const outportIds = getSortedInterfaceNodeIds({
-      graph: internalGraph,
+      graph: runtimeGraph,
       type: OUTPORT_BLOCK_TYPE,
     });
 
     for (let index = 0; index < outportIds.length; index += 1) {
       const nodeId = outportIds[index];
-      const node = internalGraph.nodes.find((candidate) => candidate.id === nodeId);
+      const node = runtimeGraph.nodes.find((candidate) => candidate.id === nodeId);
       if (!node) {
         continue;
       }
 
       const label = getInterfaceLabel({ rawData: node.data, fallback: `out${index + 1}` });
+      const maskedHandle = sanitizeHandleName(mask.outputs[index]);
+      const fallbackHandle = `out${index + 1}`;
+
       const nodeOutputs = resultSnapshot.nodeOutputs[node.id] ?? {};
       const value = toSignalOrNull(nodeOutputs.default ?? null);
 
       externalOutputs[label] = value;
-      if (index === 0 || label.toLowerCase() === "default") {
+      externalOutputs[fallbackHandle] = value;
+      if (maskedHandle) {
+        externalOutputs[maskedHandle] = value;
+      }
+
+      if (index === 0 || label.toLowerCase() === "default" || maskedHandle === "default") {
         externalOutputs.default = value;
       }
     }

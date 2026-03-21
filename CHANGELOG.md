@@ -763,3 +763,32 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced to P6-3 `[IN PROGRESS]` for immediate continuation.
+
+---
+**Date/Time:** 2026-03-21 18:42 CET
+**Task Executed:** P6-3 Multi-Input/Output Subsystem Masking completed (no commit per directive)
+**Files Modified/Created:**
+- `src/simulation/blocks/subsystemBlock.ts`
+- `src/simulation/validation.ts`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `app/page.tsx`
+- `src/simulation/__tests__/subsystem.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added subsystem mask contract (`mask.inputs`, `mask.outputs`, `mask.parameters`) for parameterized multi-I/O interfaces.
+- Subsystem runtime now supports:
+  - External handle alias mapping for inputs/outputs.
+  - Parameter substitution in nested node data via `$parameterName` placeholders.
+- Added subsystem dynamic I/O handle rendering on canvas from mask metadata.
+- Added subsystem inspector controls for mask inputs/outputs and JSON parameter object.
+- Added save-time mask auto-sync from subsystem internal graph (Inport/Outport labels).
+- Extended validation to accept subsystem mask handle aliases during connection checks.
+- Added regression tests for masked handle routing and parameterized subsystem execution.
+- Validation gates:
+  - `npm run test` ✅ (36 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced to P6-4 `[IN PROGRESS]`.

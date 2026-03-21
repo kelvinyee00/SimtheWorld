@@ -166,4 +166,46 @@ describe("Subsystem block execution", () => {
     expect(displayState.value).toBe(3);
   });
 
+  it("supports masked multi-I/O handles and parameterized nested block values", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "error", type: COUNTER_BLOCK_TYPE, data: { start: 2, step: 0, mode: "inc" } },
+        {
+          id: "subsystem",
+          type: SUBSYSTEM_BLOCK_TYPE,
+          data: {
+            mask: {
+              inputs: ["err"],
+              outputs: ["ctrl"],
+              parameters: { gainK: 3 },
+            },
+            graph: {
+              nodes: [
+                { id: "in", type: INPORT_BLOCK_TYPE, data: { label: "in1" } },
+                { id: "gain", type: GAIN_BLOCK_TYPE, data: { gain: "$gainK" } },
+                { id: "out", type: OUTPORT_BLOCK_TYPE, data: { label: "out1" } },
+              ],
+              edges: [
+                { id: "in->gain", source: "in", target: "gain", targetHandle: "in" },
+                { id: "gain->out", source: "gain", target: "out", targetHandle: "in" },
+              ],
+            },
+          },
+        },
+        { id: "display", type: DISPLAY_BLOCK_TYPE, data: { label: "Display" } },
+      ],
+      edges: [
+        { id: "error->subsystem-err", source: "error", target: "subsystem", targetHandle: "err" },
+        { id: "subsystem-ctrl->display", source: "subsystem", sourceHandle: "ctrl", target: "display" },
+      ],
+    };
+
+    const snapshot = runTicks({ graph, ticks: 1 });
+    const displayState = snapshot.nodeInternalState.display as { value?: unknown };
+
+    expect(snapshot.nodeOutputs.subsystem?.ctrl).toBe(6);
+    expect(snapshot.nodeOutputs.subsystem?.default).toBe(6);
+    expect(displayState.value).toBe(6);
+  });
+
 });

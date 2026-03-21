@@ -135,7 +135,11 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
         lagTimeConstantSec: 1,
       };
     case SUBSYSTEM_BLOCK_TYPE:
-      return { label: "Subsystem", graph: { nodes: [], edges: [] } };
+      return {
+        label: "Subsystem",
+        graph: { nodes: [], edges: [] },
+        mask: { inputs: ["in1"], outputs: ["out1"], parameters: {} },
+      };
     default:
       return { label: "Block" };
   }

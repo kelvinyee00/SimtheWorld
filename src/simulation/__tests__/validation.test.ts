@@ -9,6 +9,7 @@ import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
+import { PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
 import { DEFAULT_BLOCK_REGISTRY } from "@/src/simulation/registry";
 import {
   formatGraphValidationIssues,
@@ -351,6 +352,44 @@ describe("validateSimulationGraph", () => {
       registry: DEFAULT_BLOCK_REGISTRY,
     });
 
+    expect(issues).toEqual([]);
+  });
+
+  it("accepts subsystem mask handle aliases for edge validation", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter", type: COUNTER_BLOCK_TYPE, data: {} },
+        {
+          id: "subsystem",
+          type: SUBSYSTEM_BLOCK_TYPE,
+          data: {
+            mask: {
+              inputs: ["err"],
+              outputs: ["ctrl"],
+              parameters: {},
+            },
+            graph: {
+              nodes: [
+                { id: "in", type: INPORT_BLOCK_TYPE, data: { label: "in1" } },
+                { id: "pid", type: PID_BLOCK_TYPE, data: { kp: 1, ki: 0, kd: 0, n: 10 } },
+                { id: "out", type: OUTPORT_BLOCK_TYPE, data: { label: "out1" } },
+              ],
+              edges: [
+                { id: "in->pid", source: "in", target: "pid", targetHandle: "in" },
+                { id: "pid->out", source: "pid", target: "out", targetHandle: "in" },
+              ],
+            },
+          },
+        },
+        { id: "sink", type: DISPLAY_BLOCK_TYPE, data: {} },
+      ],
+      edges: [
+        { id: "counter->sub-err", source: "counter", target: "subsystem", targetHandle: "err" },
+        { id: "sub-ctrl->sink", source: "subsystem", sourceHandle: "ctrl", target: "sink" },
+      ],
+    };
+
+    const issues = validateSimulationGraph({ graph, registry: DEFAULT_BLOCK_REGISTRY });
     expect(issues).toEqual([]);
   });
 

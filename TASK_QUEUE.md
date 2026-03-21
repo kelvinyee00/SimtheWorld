@@ -17,8 +17,8 @@
 ## P6 Queue (Advanced Control & Discrete Modeling)
 - [x] P6-1 PID Controller Block (P/I/D/N parameters + anti-windup clamping)
 - [x] P6-2 Discrete Filter Family (Discrete Transfer Fcn + Lead/Lag blocks)
-- [ ] P6-3 Multi-Input/Output Subsystem Masking (parameterized interface) [IN PROGRESS]
-- [ ] P6-4 Global Signal Bus & GOTO/FROM blocks
+- [x] P6-3 Multi-Input/Output Subsystem Masking (parameterized interface)
+- [ ] P6-4 Global Signal Bus & GOTO/FROM blocks [IN PROGRESS]
 - [ ] P6-5 Look-up Table (1D/2D linear interpolation)
 - [ ] P6-6 Final Verification + Deployment
 

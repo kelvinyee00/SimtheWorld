@@ -30,6 +30,73 @@ function normalizeHandleBase(handle: string): string {
   return handle.split("__", 1)[0] ?? handle;
 }
 
+
+function sanitizeMaskHandle(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function getSubsystemInterfaceHandles(params: {
+  node: SimulationNode;
+  direction: "input" | "output";
+}): string[] {
+  const { node, direction } = params;
+  const data = (node.data as Record<string, unknown> | undefined) ?? {};
+
+  const handles = new Set<string>(["default"]);
+
+  const maskRaw =
+    typeof data.mask === "object" && data.mask !== null
+      ? (data.mask as Record<string, unknown>)
+      : null;
+
+  const maskKey = direction === "input" ? "inputs" : "outputs";
+  const maskList = Array.isArray(maskRaw?.[maskKey])
+    ? (maskRaw?.[maskKey] as unknown[])
+    : [];
+
+  maskList.forEach((entry, index) => {
+    const name = sanitizeMaskHandle(entry);
+    if (name) {
+      handles.add(name);
+    }
+
+    handles.add(direction === "input" ? `in${index + 1}` : `out${index + 1}`);
+  });
+
+  const rawGraph = data.graph;
+  if (
+    typeof rawGraph === "object" &&
+    rawGraph !== null &&
+    "nodes" in rawGraph &&
+    Array.isArray((rawGraph as { nodes?: unknown }).nodes)
+  ) {
+    const nodes = (rawGraph as { nodes: SimulationNode[] }).nodes;
+    const interfaceType = direction === "input" ? INPORT_BLOCK_TYPE : OUTPORT_BLOCK_TYPE;
+
+    const interfaceNodes = nodes
+      .filter((candidate) => candidate.type === interfaceType)
+      .slice()
+      .sort((left, right) => left.id.localeCompare(right.id));
+
+    interfaceNodes.forEach((candidate, index) => {
+      const rawLabel = (candidate.data as Record<string, unknown> | undefined)?.label;
+      const label = sanitizeMaskHandle(rawLabel);
+      if (label) {
+        handles.add(label);
+      }
+
+      handles.add(direction === "input" ? `in${index + 1}` : `out${index + 1}`);
+    });
+  }
+
+  return Array.from(handles);
+}
+
 function getKnownInputHandles(type: string, registry: BlockRegistry): string[] {
   const definition = registry[type];
   if (!definition?.inputPortTypes) {
@@ -214,11 +281,18 @@ export function validateConnectionCandidate(params: {
   const sourceHandle = edge.sourceHandle ?? "default";
   const sourceHandleBase = normalizeHandleBase(sourceHandle);
   const knownSourceHandles = getKnownOutputHandles(sourceNode.type, registry);
-  if (!knownSourceHandles.includes(sourceHandleBase)) {
+  if (sourceNode.type === SUBSYSTEM_BLOCK_TYPE) {
+    knownSourceHandles.push(
+      ...getSubsystemInterfaceHandles({ node: sourceNode, direction: "output" })
+    );
+  }
+
+  const uniqueSourceHandles = Array.from(new Set(knownSourceHandles));
+  if (!uniqueSourceHandles.includes(sourceHandleBase)) {
     return {
       code: "INVALID_SOURCE_HANDLE",
       edgeId: edge.id,
-      message: `Edge '${edge.id}' uses unsupported source handle '${sourceHandle}' on '${sourceNode.id}'. Allowed: ${knownSourceHandles.join(
+      message: `Edge '${edge.id}' uses unsupported source handle '${sourceHandle}' on '${sourceNode.id}'. Allowed: ${uniqueSourceHandles.join(
         ", "
       )}.`,
     };
@@ -227,8 +301,15 @@ export function validateConnectionCandidate(params: {
   const targetHandle = edge.targetHandle ?? "default";
   const targetHandleBase = normalizeHandleBase(targetHandle);
   const knownTargetHandles = getKnownInputHandles(targetNode.type, registry);
+  if (targetNode.type === SUBSYSTEM_BLOCK_TYPE) {
+    knownTargetHandles.push(
+      ...getSubsystemInterfaceHandles({ node: targetNode, direction: "input" })
+    );
+  }
 
-  if (knownTargetHandles.length === 0) {
+  const uniqueTargetHandles = Array.from(new Set(knownTargetHandles));
+
+  if (uniqueTargetHandles.length === 0) {
     return {
       code: "TARGET_HAS_NO_INPUT_PORTS",
       edgeId: edge.id,
@@ -237,12 +318,12 @@ export function validateConnectionCandidate(params: {
     };
   }
 
-  if (!knownTargetHandles.includes(targetHandleBase)) {
+  if (!uniqueTargetHandles.includes(targetHandleBase)) {
     return {
       code: "INVALID_TARGET_HANDLE",
       edgeId: edge.id,
       nodeId: targetNode.id,
-      message: `Edge '${edge.id}' targets invalid handle '${targetHandle}' on '${targetNode.id}'. Allowed: ${knownTargetHandles.join(
+      message: `Edge '${edge.id}' targets invalid handle '${targetHandle}' on '${targetNode.id}'. Allowed: ${uniqueTargetHandles.join(
         ", "
       )}.`,
     };

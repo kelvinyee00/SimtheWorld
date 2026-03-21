@@ -90,6 +90,14 @@ export interface BlockStepContext {
    * Global block registry for recursive execution (subsystems).
    */
   registry: BlockRegistry;
+  /**
+   * Shared per-tick global signal bus used by GOTO/FROM style blocks.
+   *
+   * Determinism contract:
+   * - Bus is initialized from prior snapshot state and updated in execution order.
+   * - Reads/writes are pure with respect to explicit simulation inputs + ordering.
+   */
+  globalSignals: Record<string, SignalValue>;
 }
 
 /**

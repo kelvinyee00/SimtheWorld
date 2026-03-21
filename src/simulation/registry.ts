@@ -20,6 +20,8 @@ import {
   DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
 } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LeadLagBlock, LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
+import { GotoBlock, GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
+import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -54,6 +56,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [PID_BLOCK_TYPE]: PidBlock,
   [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: DiscreteTransferFcnBlock,
   [LEAD_LAG_BLOCK_TYPE]: LeadLagBlock,
+  [GOTO_BLOCK_TYPE]: GotoBlock,
+  [FROM_BLOCK_TYPE]: FromBlock,
 };
 
 /**

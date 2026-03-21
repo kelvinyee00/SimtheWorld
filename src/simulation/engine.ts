@@ -73,6 +73,10 @@ export function stepSimulation(params: {
     ...snapshot.nodeInternalState,
   };
 
+  const nextGlobalSignals = {
+    ...coerceGlobalSignals(snapshot.nodeInternalState.__globalSignals),
+  };
+
   for (const nodeId of executionOrder) {
     const node = graph.nodes.find((n) => n.id === nodeId);
     if (!node) {
@@ -113,6 +117,7 @@ export function stepSimulation(params: {
       inputs,
       previousState,
       registry,
+      globalSignals: nextGlobalSignals,
     });
 
     nextOutputs[node.id] = result.outputs;
@@ -120,6 +125,8 @@ export function stepSimulation(params: {
       nextInternalState[node.id] = result.nextState;
     }
   }
+
+  nextInternalState.__globalSignals = nextGlobalSignals;
 
   const advancedTime = snapshot.timeMs + snapshot.stepTimeMs;
   const clampedTime = Math.min(advancedTime, snapshot.simulationTimeMs);
@@ -141,6 +148,39 @@ function sanitizeMs(value: number, fallback: number): number {
     return fallback;
   }
   return Math.floor(value);
+}
+
+
+function coerceGlobalSignals(raw: unknown): Record<string, SignalValue> {
+  if (typeof raw !== "object" || raw === null) {
+    return {};
+  }
+
+  const record = raw as Record<string, unknown>;
+  const next: Record<string, SignalValue> = {};
+
+  for (const [key, value] of Object.entries(record)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      next[key] = value;
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      next[key] = value;
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      next[key] = value.filter(
+        (entry): entry is number => typeof entry === "number" && Number.isFinite(entry)
+      );
+      continue;
+    }
+
+    next[key] = null;
+  }
+
+  return next;
 }
 
 

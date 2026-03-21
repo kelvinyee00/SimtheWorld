@@ -60,6 +60,7 @@ interface BlockNodeData {
   denominator?: number[];
   leadTimeConstantSec?: number;
   lagTimeConstantSec?: number;
+  mask?: unknown;
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -98,6 +99,44 @@ function withTop(style: CSSProperties, top: string): CSSProperties {
     top,
   };
 }
+
+
+function sanitizeHandleName(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function toSubsystemHandleList(params: {
+  data: BlockNodeData;
+  direction: "input" | "output";
+}): string[] {
+  const { data, direction } = params;
+
+  const handles = new Set<string>(["default"]);
+  const maskRaw =
+    typeof (data as Record<string, unknown>).mask === "object" &&
+    (data as Record<string, unknown>).mask !== null
+      ? ((data as Record<string, unknown>).mask as Record<string, unknown>)
+      : null;
+
+  const key = direction === "input" ? "inputs" : "outputs";
+  const masked = Array.isArray(maskRaw?.[key]) ? (maskRaw?.[key] as unknown[]) : [];
+
+  masked.forEach((entry, index) => {
+    const sanitized = sanitizeHandleName(entry);
+    if (sanitized) {
+      handles.add(sanitized);
+    }
+    handles.add(direction === "input" ? `in${index + 1}` : `out${index + 1}`);
+  });
+
+  return Array.from(handles);
+}
+
 
 /**
  * Unified renderer for all simulation blocks on the canvas.
@@ -157,6 +196,26 @@ export const CustomBlockNode = memo(function CustomBlockNode({
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
+
+  const subsystemInputHandles = useMemo(
+    () =>
+      isSubsystem
+        ? toSubsystemHandleList({ data, direction: "input" }).filter(
+            (handle) => handle !== "default"
+          )
+        : [],
+    [data, isSubsystem]
+  );
+
+  const subsystemOutputHandles = useMemo(
+    () =>
+      isSubsystem
+        ? toSubsystemHandleList({ data, direction: "output" }).filter(
+            (handle) => handle !== "default"
+          )
+        : [],
+    [data, isSubsystem]
+  );
 
   const containerClass = isCounter
     ? "group min-h-[82px] w-[88px] rounded-xl border-2 bg-white px-2 py-2 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.18)] transition-[border-color,box-shadow]"
@@ -287,7 +346,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                   Tz/Tp
                 </p>
               ) : isSubsystem ? (
-                <p className="text-[11px] text-slate-500 italic">Double-click to open</p>
+                <p className="text-[11px] text-slate-500 italic">I/O: {subsystemInputHandles.length}/{subsystemOutputHandles.length}</p>
               ) : (
                 <p className="text-[11px] text-slate-500">multi-input</p>
               )}
@@ -397,6 +456,37 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             />
           </>
         )}
+
+        {isSubsystem &&
+          subsystemInputHandles.map((handle, index) => {
+            const top = `${((index + 1) / (subsystemInputHandles.length + 1)) * 100}%`;
+            return (
+              <Handle
+                key={`sub-in-${handle}`}
+                type="target"
+                id={handle}
+                position={Position.Left}
+                style={withTop(handleStyle, top)}
+                className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+              />
+            );
+          })}
+
+        {isSubsystem &&
+          subsystemOutputHandles.map((handle, index) => {
+            const top = `${((index + 1) / (subsystemOutputHandles.length + 1)) * 100}%`;
+            return (
+              <Handle
+                key={`sub-out-${handle}`}
+                type="source"
+                id={handle}
+                position={Position.Right}
+                style={withTop(handleStyle, top)}
+                className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+              />
+            );
+          })}
+
       {isSubsystem && (
           <Handle
             type="target"

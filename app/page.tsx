@@ -194,6 +194,43 @@ function makeNodeId(type: string): string {
  * - Keeps library drag/drop behavior deterministic.
  * - Ensures each created block has required runtime fields from first render.
  */
+
+
+function deriveSubsystemMaskFromGraph(graph: { nodes: Node[]; edges: Edge[] }): {
+  inputs: string[];
+  outputs: string[];
+} {
+  const sanitize = (value: unknown, fallback: string): string => {
+    if (typeof value !== "string") {
+      return fallback;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  };
+
+  const inports = graph.nodes
+    .filter((node) => node.type === INPORT_BLOCK_TYPE)
+    .slice()
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((node, index) =>
+      sanitize((node.data as Record<string, unknown> | undefined)?.label, `in${index + 1}`)
+    );
+
+  const outports = graph.nodes
+    .filter((node) => node.type === OUTPORT_BLOCK_TYPE)
+    .slice()
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((node, index) =>
+      sanitize((node.data as Record<string, unknown> | undefined)?.label, `out${index + 1}`)
+    );
+
+  return {
+    inputs: inports,
+    outputs: outports,
+  };
+}
+
 function makeNodeData(type: string): Record<string, unknown> {
   switch (type) {
     case COUNTER_BLOCK_TYPE:
@@ -246,7 +283,11 @@ function makeNodeData(type: string): Record<string, unknown> {
     case OUTPORT_BLOCK_TYPE:
       return { label: "Outport" };
     case SUBSYSTEM_BLOCK_TYPE:
-      return { label: "Subsystem", graph: { nodes: [], edges: [] } };
+      return {
+        label: "Subsystem",
+        graph: { nodes: [], edges: [] },
+        mask: { inputs: ["in1"], outputs: ["out1"], parameters: {} },
+      };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
     case SCOPE_BLOCK_TYPE:
@@ -305,6 +346,12 @@ interface LeadLagInspectorData {
   gain: number;
   leadTimeConstantSec: number;
   lagTimeConstantSec: number;
+}
+
+interface SubsystemMaskInspectorData {
+  inputs: string[];
+  outputs: string[];
+  parameters: string;
 }
 
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
@@ -1048,6 +1095,43 @@ export default function Home() {
     };
   }, [selectedNode]);
 
+  const selectedSubsystemMaskData = useMemo<SubsystemMaskInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== SUBSYSTEM_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const rawMask =
+      typeof raw.mask === "object" && raw.mask !== null
+        ? (raw.mask as Record<string, unknown>)
+        : {};
+
+    const sanitize = (value: unknown): string | null => {
+      if (typeof value !== "string") {
+        return null;
+      }
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    };
+
+    const inputs = Array.isArray(rawMask.inputs)
+      ? rawMask.inputs
+          .map((entry) => sanitize(entry))
+          .filter((entry): entry is string => typeof entry === "string")
+      : [];
+    const outputs = Array.isArray(rawMask.outputs)
+      ? rawMask.outputs
+          .map((entry) => sanitize(entry))
+          .filter((entry): entry is string => typeof entry === "string")
+      : [];
+    const parameters =
+      typeof rawMask.parameters === "object" && rawMask.parameters !== null
+        ? JSON.stringify(rawMask.parameters, null, 2)
+        : "{}";
+
+    return { inputs, outputs, parameters };
+  }, [selectedNode]);
+
   const selectedSampleTimeMs = useMemo<number | null>(() => {
     if (!selectedNode) {
       return null;
@@ -1261,6 +1345,57 @@ export default function Home() {
       patchSelectedNodeData({ [field]: parsed });
     },
     [patchSelectedNodeData, selectedLeadLagData]
+  );
+
+  const commitSubsystemMaskList = useCallback(
+    (field: "inputs" | "outputs", rawValue: string) => {
+      const list = rawValue
+        .split(",")
+        .map((segment) => segment.trim())
+        .filter((segment) => segment.length > 0);
+
+      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {};
+      const existingMask =
+        typeof raw.mask === "object" && raw.mask !== null
+          ? (raw.mask as Record<string, unknown>)
+          : {};
+
+      patchSelectedNodeData({
+        mask: {
+          ...existingMask,
+          [field]: list,
+        },
+      });
+    },
+    [patchSelectedNodeData, selectedNode]
+  );
+
+  const commitSubsystemMaskParameters = useCallback(
+    (rawValue: string) => {
+      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {};
+      const existingMask =
+        typeof raw.mask === "object" && raw.mask !== null
+          ? (raw.mask as Record<string, unknown>)
+          : {};
+
+      try {
+        const parsed = JSON.parse(rawValue) as unknown;
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          throw new Error("Mask parameters must be a JSON object.");
+        }
+
+        patchSelectedNodeData({
+          mask: {
+            ...existingMask,
+            parameters: parsed,
+          },
+        });
+        setModelActionMessage(null);
+      } catch {
+        setModelActionMessage("Subsystem mask parameters must be valid JSON object.");
+      }
+    },
+    [patchSelectedNodeData, selectedNode]
   );
 
   const commitSampleTimeMs = useCallback(
@@ -1809,6 +1944,54 @@ export default function Home() {
           </div>
         ) : null}
 
+        {selectedSubsystemMaskData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Subsystem Mask Interface
+            </p>
+            <label className="block text-xs text-slate-600">
+              Input Handles (comma-separated)
+              <input
+                type="text"
+                value={selectedSubsystemMaskData.inputs.join(",")}
+                onBlur={(event) => commitSubsystemMaskList("inputs", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitSubsystemMaskList("inputs", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Output Handles (comma-separated)
+              <input
+                type="text"
+                value={selectedSubsystemMaskData.outputs.join(",")}
+                onBlur={(event) => commitSubsystemMaskList("outputs", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitSubsystemMaskList("outputs", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Mask Parameters (JSON object)
+              <textarea
+                rows={4}
+                value={selectedSubsystemMaskData.parameters}
+                onBlur={(event) => commitSubsystemMaskParameters(event.target.value)}
+                onChange={(event) => commitSubsystemMaskParameters(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
         {selectedToFileData ? (
           <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -2287,18 +2470,38 @@ export default function Home() {
             initialGraph={editingSubsystemGraph}
             onClose={() => setEditingSubsystemId(null)}
             onSave={(graph) => {
+              const maskFromGraph = deriveSubsystemMaskFromGraph(graph);
+
               setNodes((currentNodes) =>
-                currentNodes.map((node) =>
-                  node.id === editingSubsystemId
-                    ? {
-                        ...node,
-                        data: {
-                          ...((node.data as Record<string, unknown> | undefined) ?? {}),
-                          graph,
-                        },
-                      }
-                    : node
-                )
+                currentNodes.map((node) => {
+                  if (node.id !== editingSubsystemId) {
+                    return node;
+                  }
+
+                  const currentData =
+                    ((node.data as Record<string, unknown> | undefined) ?? {});
+                  const currentMask =
+                    typeof currentData.mask === "object" && currentData.mask !== null
+                      ? (currentData.mask as Record<string, unknown>)
+                      : {};
+                  const parameters =
+                    typeof currentMask.parameters === "object" && currentMask.parameters !== null
+                      ? currentMask.parameters
+                      : {};
+
+                  return {
+                    ...node,
+                    data: {
+                      ...currentData,
+                      graph,
+                      mask: {
+                        inputs: maskFromGraph.inputs,
+                        outputs: maskFromGraph.outputs,
+                        parameters,
+                      },
+                    },
+                  };
+                })
               );
             }}
           />
