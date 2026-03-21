@@ -20,6 +20,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 
 import { CustomBlockNode } from "@/src/canvas/customBlockNode";
+import { SubsystemEditorModal } from "@/src/canvas/subsystemEditorModal";
 import { DEFAULT_EDGE_OPTIONS } from "@/src/canvas/edgeDefaults";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
@@ -34,6 +35,9 @@ import {
   CompareOperator,
 } from "@/src/simulation/blocks/compareBlock";
 import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
+import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
+import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
+import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -113,6 +117,9 @@ const NODE_TYPES: NodeTypes = {
   [COMPARE_BLOCK_TYPE]: CustomBlockNode,
   [SWITCH_BLOCK_TYPE]: CustomBlockNode,
   [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
+  [INPORT_BLOCK_TYPE]: CustomBlockNode,
+  [OUTPORT_BLOCK_TYPE]: CustomBlockNode,
+  [SUBSYSTEM_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -128,6 +135,9 @@ const LIBRARY_BLOCKS = [
   { label: "Gain", type: GAIN_BLOCK_TYPE },
   { label: "Sum", type: SUM_BLOCK_TYPE },
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
+  { label: "Inport", type: INPORT_BLOCK_TYPE },
+  { label: "Outport", type: OUTPORT_BLOCK_TYPE },
+  { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
@@ -187,6 +197,12 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Switch" };
     case TO_FILE_BLOCK_TYPE:
       return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000 };
+    case INPORT_BLOCK_TYPE:
+      return { label: "Inport" };
+    case OUTPORT_BLOCK_TYPE:
+      return { label: "Outport" };
+    case SUBSYSTEM_BLOCK_TYPE:
+      return { label: "Subsystem", graph: { nodes: [], edges: [] } };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
     case SCOPE_BLOCK_TYPE:
@@ -300,6 +316,7 @@ export default function Home() {
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [editingSubsystemId, setEditingSubsystemId] = useState<string | null>(null);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
@@ -737,6 +754,32 @@ export default function Home() {
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
   );
+
+  const editingSubsystemGraph = useMemo<{ nodes: Node[]; edges: Edge[] }>(() => {
+    if (!editingSubsystemId) {
+      return { nodes: [], edges: [] };
+    }
+
+    const subsystemNode = nodes.find((node) => node.id === editingSubsystemId);
+    const rawData = (subsystemNode?.data as Record<string, unknown> | undefined) ?? {};
+    const rawGraph = rawData.graph;
+
+    if (
+      typeof rawGraph === "object" &&
+      rawGraph !== null &&
+      "nodes" in rawGraph &&
+      "edges" in rawGraph &&
+      Array.isArray((rawGraph as { nodes?: unknown }).nodes) &&
+      Array.isArray((rawGraph as { edges?: unknown }).edges)
+    ) {
+      return {
+        nodes: (rawGraph as { nodes: Node[] }).nodes,
+        edges: (rawGraph as { edges: Edge[] }).edges,
+      };
+    }
+
+    return { nodes: [], edges: [] };
+  }, [editingSubsystemId, nodes]);
 
   const selectedEdgeIds = useMemo(
     () => edges.filter((edge) => edge.selected).map((edge) => edge.id),
@@ -1469,6 +1512,7 @@ export default function Home() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onNodeDoubleClick={(_, node) => { if(node.type === SUBSYSTEM_BLOCK_TYPE) setEditingSubsystemId(node.id); }}
               onDragOver={onCanvasDragOver}
               onDrop={onCanvasDrop}
               defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
@@ -1608,6 +1652,30 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {editingSubsystemId ? (
+          <SubsystemEditorModal
+            open={true}
+            subsystemId={editingSubsystemId}
+            initialGraph={editingSubsystemGraph}
+            onClose={() => setEditingSubsystemId(null)}
+            onSave={(graph) => {
+              setNodes((currentNodes) =>
+                currentNodes.map((node) =>
+                  node.id === editingSubsystemId
+                    ? {
+                        ...node,
+                        data: {
+                          ...((node.data as Record<string, unknown> | undefined) ?? {}),
+                          graph,
+                        },
+                      }
+                    : node
+                )
+              );
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

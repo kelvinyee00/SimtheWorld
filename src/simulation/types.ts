@@ -86,6 +86,10 @@ export interface BlockStepContext {
    *   where only deterministic state participates in reproducible runs.
    */
   previousState: unknown;
+  /**
+   * Global block registry for recursive execution (subsystems).
+   */
+  registry: BlockRegistry;
 }
 
 /**

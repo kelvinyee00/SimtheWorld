@@ -101,6 +101,7 @@ export function stepSimulation(params: {
       params: node.data ?? {},
       inputs,
       previousState,
+      registry,
     });
 
     nextOutputs[node.id] = result.outputs;

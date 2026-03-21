@@ -9,6 +9,9 @@ import { IntegratorBlock, INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/
 import { UnitDelayBlock, UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { CompareBlock, COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
 import { SwitchBlock, SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
+import { InportBlock, INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
+import { OutportBlock, OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
+import { SubsystemBlock, SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -35,6 +38,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [UNIT_DELAY_BLOCK_TYPE]: UnitDelayBlock,
   [COMPARE_BLOCK_TYPE]: CompareBlock,
   [SWITCH_BLOCK_TYPE]: SwitchBlock,
+  [INPORT_BLOCK_TYPE]: InportBlock,
+  [OUTPORT_BLOCK_TYPE]: OutportBlock,
+  [SUBSYSTEM_BLOCK_TYPE]: SubsystemBlock,
 };
 
 /**

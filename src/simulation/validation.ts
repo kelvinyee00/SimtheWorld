@@ -1,4 +1,5 @@
 import { getTopologicalOrder } from "@/src/simulation/topology";
+import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import {
   BlockRegistry,
   SignalType,
@@ -194,14 +195,14 @@ export function validateConnectionCandidate(params: {
 }
 
 /**
- * Pre-run graph validation gate for P3-4/P4-2.
+ * Pre-run graph validation gate for P3-4/P4-2/P4-3.
  */
 export function validateSimulationGraph(params: {
   graph: SimulationGraph;
   registry: BlockRegistry;
 }): GraphValidationIssue[] {
   const { graph, registry } = params;
-  const issues: GraphValidationIssue[] = [];
+  let issues: GraphValidationIssue[] = [];
 
   for (const node of graph.nodes) {
     if (!registry[node.type]) {
@@ -216,6 +217,28 @@ export function validateSimulationGraph(params: {
     const sampleTimeIssue = validateNodeSampleTime(node);
     if (sampleTimeIssue) {
       issues.push(sampleTimeIssue);
+    }
+
+    // P4-3 Recursive validation for subsystems
+    if (node.type === SUBSYSTEM_BLOCK_TYPE) {
+      const rawData = (node.data as Record<string, unknown> | undefined) ?? {};
+      const rawGraph = rawData.graph;
+
+      if (
+        typeof rawGraph === "object" &&
+        rawGraph !== null &&
+        "nodes" in rawGraph &&
+        "edges" in rawGraph
+      ) {
+        const internalGraph = rawGraph as SimulationGraph;
+        const internalIssues = validateSimulationGraph({ graph: internalGraph, registry });
+        issues = issues.concat(
+          internalIssues.map((issue) => ({
+            ...issue,
+            message: `[Subsystem ${node.id}] ${issue.message}`,
+          }))
+        );
+      }
     }
   }
 

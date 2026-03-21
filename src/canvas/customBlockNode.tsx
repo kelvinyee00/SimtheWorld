@@ -20,6 +20,9 @@ import { INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
 import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
+import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
+import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
+import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -109,8 +112,20 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isCompare = type === COMPARE_BLOCK_TYPE;
   const isSwitch = type === SWITCH_BLOCK_TYPE;
   const isToFile = type === TO_FILE_BLOCK_TYPE;
+  const isSubsystem = type === SUBSYSTEM_BLOCK_TYPE;
+  const isInport = type === INPORT_BLOCK_TYPE;
+  const isOutport = type === OUTPORT_BLOCK_TYPE;
   const isMathNode =
-    isGain || isSum || isProduct || isIntegrator || isUnitDelay || isCompare || isSwitch;
+    isGain ||
+    isSum ||
+    isProduct ||
+    isIntegrator ||
+    isUnitDelay ||
+    isCompare ||
+    isSwitch ||
+    isSubsystem ||
+    isInport ||
+    isOutport;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -142,7 +157,13 @@ export const CustomBlockNode = memo(function CustomBlockNode({
               ? "≷"
               : isSwitch
                 ? "⇆"
-                : "";
+                : isSubsystem
+                  ? "📦"
+                  : isInport
+                    ? "⇥"
+                    : isOutport
+                      ? "↦"
+                      : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -216,6 +237,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">{String(data.operator ?? "gt")}</p>
               ) : isSwitch ? (
                 <p className="text-[11px] text-slate-500">bool cond</p>
+              ) : isSubsystem ? (
+                <p className="text-[11px] text-slate-500 italic">Double-click to open</p>
               ) : (
                 <p className="text-[11px] text-slate-500">multi-input</p>
               )}
@@ -223,7 +246,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isCounter || isMathNode) ? (
+        {(isCounter || isMathNode || isInport) ? (
           <Handle
             type="source"
             id="default"
@@ -233,10 +256,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
@@ -287,6 +310,15 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             />
           </>
         )}
+      {isSubsystem && (
+          <Handle
+            type="target"
+            id="default"
+            position={Position.Left}
+            style={handleStyle}
+            className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+          />
+      )}
       </div>
 
       {isScope ? (
