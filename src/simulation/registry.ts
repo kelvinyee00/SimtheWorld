@@ -14,6 +14,12 @@ import { OutportBlock, OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outpor
 import { SubsystemBlock, SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { MuxBlock, MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DemuxBlock, DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
+import { PidBlock, PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
+import {
+  DiscreteTransferFcnBlock,
+  DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
+} from "@/src/simulation/blocks/discreteTransferFcnBlock";
+import { LeadLagBlock, LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -45,6 +51,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [SUBSYSTEM_BLOCK_TYPE]: SubsystemBlock,
   [MUX_BLOCK_TYPE]: MuxBlock,
   [DEMUX_BLOCK_TYPE]: DemuxBlock,
+  [PID_BLOCK_TYPE]: PidBlock,
+  [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: DiscreteTransferFcnBlock,
+  [LEAD_LAG_BLOCK_TYPE]: LeadLagBlock,
 };
 
 /**

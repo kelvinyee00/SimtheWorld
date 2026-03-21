@@ -35,6 +35,11 @@ import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
+import { PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
+import {
+  DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
+} from "@/src/simulation/blocks/discreteTransferFcnBlock";
+import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -53,6 +58,9 @@ const NODE_TYPES: NodeTypes = {
   [SUBSYSTEM_BLOCK_TYPE]: CustomBlockNode,
   [MUX_BLOCK_TYPE]: CustomBlockNode,
   [DEMUX_BLOCK_TYPE]: CustomBlockNode,
+  [PID_BLOCK_TYPE]: CustomBlockNode,
+  [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: CustomBlockNode,
+  [LEAD_LAG_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -63,6 +71,9 @@ const LIBRARY_BLOCKS = [
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
   { label: "Mux", type: MUX_BLOCK_TYPE },
   { label: "Demux", type: DEMUX_BLOCK_TYPE },
+  { label: "PID", type: PID_BLOCK_TYPE },
+  { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE },
+  { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
@@ -100,6 +111,29 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
       return { label: "Mux" };
     case DEMUX_BLOCK_TYPE:
       return { label: "Demux" };
+    case PID_BLOCK_TYPE:
+      return {
+        label: "PID",
+        kp: 1,
+        ki: 0,
+        kd: 0,
+        n: 10,
+        lowerSaturation: null,
+        upperSaturation: null,
+      };
+    case DISCRETE_TRANSFER_FCN_BLOCK_TYPE:
+      return {
+        label: "Discrete Transfer Fcn",
+        numerator: [1],
+        denominator: [1, 0],
+      };
+    case LEAD_LAG_BLOCK_TYPE:
+      return {
+        label: "Lead/Lag",
+        gain: 1,
+        leadTimeConstantSec: 0.1,
+        lagTimeConstantSec: 1,
+      };
     case SUBSYSTEM_BLOCK_TYPE:
       return { label: "Subsystem", graph: { nodes: [], edges: [] } };
     default:

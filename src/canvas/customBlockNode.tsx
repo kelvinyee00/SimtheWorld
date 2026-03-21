@@ -25,6 +25,11 @@ import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
+import { PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
+import {
+  DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
+} from "@/src/simulation/blocks/discreteTransferFcnBlock";
+import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -45,6 +50,16 @@ interface BlockNodeData {
   operator?: string;
   format?: "json" | "csv";
   fileName?: string;
+  kp?: number;
+  ki?: number;
+  kd?: number;
+  n?: number;
+  lowerSaturation?: number | null;
+  upperSaturation?: number | null;
+  numerator?: number[];
+  denominator?: number[];
+  leadTimeConstantSec?: number;
+  lagTimeConstantSec?: number;
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -119,6 +134,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isOutport = type === OUTPORT_BLOCK_TYPE;
   const isMux = type === MUX_BLOCK_TYPE;
   const isDemux = type === DEMUX_BLOCK_TYPE;
+  const isPid = type === PID_BLOCK_TYPE;
+  const isDiscreteTransfer = type === DISCRETE_TRANSFER_FCN_BLOCK_TYPE;
+  const isLeadLag = type === LEAD_LAG_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -131,7 +149,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isInport ||
     isOutport ||
     isMux ||
-    isDemux;
+    isDemux ||
+    isPid ||
+    isDiscreteTransfer ||
+    isLeadLag;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -173,7 +194,13 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                         ? "⫴"
                         : isDemux
                           ? "⫶"
-                          : "";
+                          : isPid
+                            ? "PID"
+                            : isDiscreteTransfer
+                              ? "H(z)"
+                              : isLeadLag
+                                ? "L/L"
+                                : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -247,6 +274,18 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">{String(data.operator ?? "gt")}</p>
               ) : isSwitch ? (
                 <p className="text-[11px] text-slate-500">bool cond</p>
+              ) : isPid ? (
+                <p className="text-[11px] text-slate-500">
+                  Kp={typeof data.kp === "number" && Number.isFinite(data.kp) ? data.kp : 1}
+                </p>
+              ) : isDiscreteTransfer ? (
+                <p className="text-[11px] text-slate-500">
+                  num/den
+                </p>
+              ) : isLeadLag ? (
+                <p className="text-[11px] text-slate-500">
+                  Tz/Tp
+                </p>
               ) : isSubsystem ? (
                 <p className="text-[11px] text-slate-500 italic">Double-click to open</p>
               ) : (
@@ -266,10 +305,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"

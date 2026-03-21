@@ -40,6 +40,11 @@ import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
 import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
+import { PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
+import {
+  DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
+} from "@/src/simulation/blocks/discreteTransferFcnBlock";
+import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -124,6 +129,9 @@ const NODE_TYPES: NodeTypes = {
   [SUBSYSTEM_BLOCK_TYPE]: CustomBlockNode,
   [MUX_BLOCK_TYPE]: CustomBlockNode,
   [DEMUX_BLOCK_TYPE]: CustomBlockNode,
+  [PID_BLOCK_TYPE]: CustomBlockNode,
+  [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: CustomBlockNode,
+  [LEAD_LAG_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -141,6 +149,9 @@ const LIBRARY_BLOCKS = [
   { label: "Product", type: PRODUCT_BLOCK_TYPE },
   { label: "Mux", type: MUX_BLOCK_TYPE },
   { label: "Demux", type: DEMUX_BLOCK_TYPE },
+  { label: "PID", type: PID_BLOCK_TYPE },
+  { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE },
+  { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE },
   { label: "Inport", type: INPORT_BLOCK_TYPE },
   { label: "Outport", type: OUTPORT_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
@@ -197,6 +208,29 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Mux" };
     case DEMUX_BLOCK_TYPE:
       return { label: "Demux" };
+    case PID_BLOCK_TYPE:
+      return {
+        label: "PID",
+        kp: 1,
+        ki: 0,
+        kd: 0,
+        n: 10,
+        lowerSaturation: null,
+        upperSaturation: null,
+      };
+    case DISCRETE_TRANSFER_FCN_BLOCK_TYPE:
+      return {
+        label: "Discrete Transfer Fcn",
+        numerator: [1],
+        denominator: [1, 0],
+      };
+    case LEAD_LAG_BLOCK_TYPE:
+      return {
+        label: "Lead/Lag",
+        gain: 1,
+        leadTimeConstantSec: 0.1,
+        lagTimeConstantSec: 1,
+      };
     case INTEGRATOR_BLOCK_TYPE:
       return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
@@ -253,6 +287,26 @@ interface CompareInspectorData {
   operator: CompareOperator;
 }
 
+interface PidInspectorData {
+  kp: number;
+  ki: number;
+  kd: number;
+  n: number;
+  lowerSaturation: number | null;
+  upperSaturation: number | null;
+}
+
+interface DiscreteTransferInspectorData {
+  numerator: number[];
+  denominator: number[];
+}
+
+interface LeadLagInspectorData {
+  gain: number;
+  leadTimeConstantSec: number;
+  lagTimeConstantSec: number;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
@@ -273,6 +327,26 @@ const DEFAULT_UNIT_DELAY_INSPECTOR_DATA: UnitDelayInspectorData = {
 
 const DEFAULT_COMPARE_INSPECTOR_DATA: CompareInspectorData = {
   operator: "gt",
+};
+
+const DEFAULT_PID_INSPECTOR_DATA: PidInspectorData = {
+  kp: 1,
+  ki: 0,
+  kd: 0,
+  n: 10,
+  lowerSaturation: null,
+  upperSaturation: null,
+};
+
+const DEFAULT_DISCRETE_TRANSFER_INSPECTOR_DATA: DiscreteTransferInspectorData = {
+  numerator: [1],
+  denominator: [1, 0],
+};
+
+const DEFAULT_LEAD_LAG_INSPECTOR_DATA: LeadLagInspectorData = {
+  gain: 1,
+  leadTimeConstantSec: 0.1,
+  lagTimeConstantSec: 1,
 };
 
 const MS_PER_SECOND = 1_000;
@@ -904,6 +978,76 @@ export default function Home() {
     return { operator };
   }, [selectedNode]);
 
+  const selectedPidData = useMemo<PidInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== PID_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const kp = typeof raw.kp === "number" && Number.isFinite(raw.kp) ? raw.kp : DEFAULT_PID_INSPECTOR_DATA.kp;
+    const ki = typeof raw.ki === "number" && Number.isFinite(raw.ki) ? raw.ki : DEFAULT_PID_INSPECTOR_DATA.ki;
+    const kd = typeof raw.kd === "number" && Number.isFinite(raw.kd) ? raw.kd : DEFAULT_PID_INSPECTOR_DATA.kd;
+    const n =
+      typeof raw.n === "number" && Number.isFinite(raw.n) && raw.n >= 0
+        ? raw.n
+        : DEFAULT_PID_INSPECTOR_DATA.n;
+    const lowerSaturation =
+      typeof raw.lowerSaturation === "number" && Number.isFinite(raw.lowerSaturation)
+        ? raw.lowerSaturation
+        : null;
+    const upperSaturation =
+      typeof raw.upperSaturation === "number" && Number.isFinite(raw.upperSaturation)
+        ? raw.upperSaturation
+        : null;
+
+    return { kp, ki, kd, n, lowerSaturation, upperSaturation };
+  }, [selectedNode]);
+
+  const selectedDiscreteTransferData = useMemo<DiscreteTransferInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== DISCRETE_TRANSFER_FCN_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const numerator = Array.isArray(raw.numerator)
+      ? raw.numerator.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+      : [];
+    const denominator = Array.isArray(raw.denominator)
+      ? raw.denominator.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+      : [];
+
+    return {
+      numerator:
+        numerator.length > 0 ? numerator : DEFAULT_DISCRETE_TRANSFER_INSPECTOR_DATA.numerator,
+      denominator:
+        denominator.length > 0
+          ? denominator
+          : DEFAULT_DISCRETE_TRANSFER_INSPECTOR_DATA.denominator,
+    };
+  }, [selectedNode]);
+
+  const selectedLeadLagData = useMemo<LeadLagInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== LEAD_LAG_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      gain:
+        typeof raw.gain === "number" && Number.isFinite(raw.gain)
+          ? raw.gain
+          : DEFAULT_LEAD_LAG_INSPECTOR_DATA.gain,
+      leadTimeConstantSec:
+        typeof raw.leadTimeConstantSec === "number" && Number.isFinite(raw.leadTimeConstantSec)
+          ? Math.max(0, raw.leadTimeConstantSec)
+          : DEFAULT_LEAD_LAG_INSPECTOR_DATA.leadTimeConstantSec,
+      lagTimeConstantSec:
+        typeof raw.lagTimeConstantSec === "number" && Number.isFinite(raw.lagTimeConstantSec)
+          ? Math.max(0, raw.lagTimeConstantSec)
+          : DEFAULT_LEAD_LAG_INSPECTOR_DATA.lagTimeConstantSec,
+    };
+  }, [selectedNode]);
+
   const selectedSampleTimeMs = useMemo<number | null>(() => {
     if (!selectedNode) {
       return null;
@@ -1038,6 +1182,85 @@ export default function Home() {
       patchSelectedNodeData({ operator });
     },
     [patchSelectedNodeData]
+  );
+
+  const commitPidNumericField = useCallback(
+    (
+      field: "kp" | "ki" | "kd" | "n" | "lowerSaturation" | "upperSaturation",
+      rawValue: string
+    ) => {
+      if (!selectedPidData) {
+        return;
+      }
+
+      const trimmed = rawValue.trim();
+      if (trimmed.length === 0 && (field === "lowerSaturation" || field === "upperSaturation")) {
+        patchSelectedNodeData({ [field]: null });
+        return;
+      }
+
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed)) {
+        patchSelectedNodeData({ [field]: selectedPidData[field] });
+        return;
+      }
+
+      if (field === "n") {
+        patchSelectedNodeData({ n: Math.max(0, parsed) });
+        return;
+      }
+
+      patchSelectedNodeData({ [field]: parsed });
+    },
+    [patchSelectedNodeData, selectedPidData]
+  );
+
+  const parseCoefficientList = useCallback((rawValue: string): number[] => {
+    return rawValue
+      .split(",")
+      .map((segment) => Number(segment.trim()))
+      .filter((value) => Number.isFinite(value));
+  }, []);
+
+  const commitDiscreteTransferCoefficients = useCallback(
+    (field: "numerator" | "denominator", rawValue: string) => {
+      if (!selectedDiscreteTransferData) {
+        return;
+      }
+
+      const parsed = parseCoefficientList(rawValue);
+      if (parsed.length === 0) {
+        patchSelectedNodeData({
+          [field]: selectedDiscreteTransferData[field],
+        });
+        return;
+      }
+
+      patchSelectedNodeData({ [field]: parsed });
+    },
+    [parseCoefficientList, patchSelectedNodeData, selectedDiscreteTransferData]
+  );
+
+  const commitLeadLagNumericField = useCallback(
+    (field: "gain" | "leadTimeConstantSec" | "lagTimeConstantSec", rawValue: string) => {
+      if (!selectedLeadLagData) {
+        return;
+      }
+
+      const parsed = Number(rawValue.trim());
+      if (!Number.isFinite(parsed)) {
+        patchSelectedNodeData({ [field]: selectedLeadLagData[field] });
+        return;
+      }
+
+      if (field === "leadTimeConstantSec" || field === "lagTimeConstantSec") {
+        patchSelectedNodeData({ [field]: Math.max(0, parsed) });
+        return;
+      }
+
+      patchSelectedNodeData({ [field]: parsed });
+    },
+    [patchSelectedNodeData, selectedLeadLagData]
   );
 
   const commitSampleTimeMs = useCallback(
@@ -1368,6 +1591,220 @@ export default function Home() {
                 <option value="eq">==</option>
                 <option value="neq">!=</option>
               </select>
+            </label>
+          </div>
+        ) : null}
+
+        {selectedPidData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              PID Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Kp
+              <input
+                type="number"
+                value={String(selectedPidData.kp)}
+                onBlur={(event) => commitPidNumericField("kp", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitPidNumericField("kp", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Ki
+              <input
+                type="number"
+                value={String(selectedPidData.ki)}
+                onBlur={(event) => commitPidNumericField("ki", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitPidNumericField("ki", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Kd
+              <input
+                type="number"
+                value={String(selectedPidData.kd)}
+                onBlur={(event) => commitPidNumericField("kd", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitPidNumericField("kd", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Derivative Filter Coefficient (N)
+              <input
+                type="number"
+                min={0}
+                value={String(selectedPidData.n)}
+                onBlur={(event) => commitPidNumericField("n", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitPidNumericField("n", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block text-xs text-slate-600">
+                Lower Sat
+                <input
+                  type="number"
+                  value={selectedPidData.lowerSaturation === null ? "" : String(selectedPidData.lowerSaturation)}
+                  placeholder="none"
+                  onBlur={(event) => commitPidNumericField("lowerSaturation", event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  onChange={(event) => commitPidNumericField("lowerSaturation", event.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+                />
+              </label>
+              <label className="block text-xs text-slate-600">
+                Upper Sat
+                <input
+                  type="number"
+                  value={selectedPidData.upperSaturation === null ? "" : String(selectedPidData.upperSaturation)}
+                  placeholder="none"
+                  onBlur={(event) => commitPidNumericField("upperSaturation", event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  onChange={(event) => commitPidNumericField("upperSaturation", event.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+                />
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        {selectedDiscreteTransferData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Discrete Transfer Fcn Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Numerator Coefficients (b0,b1,...)
+              <input
+                type="text"
+                value={selectedDiscreteTransferData.numerator.join(",")}
+                onBlur={(event) =>
+                  commitDiscreteTransferCoefficients("numerator", event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) =>
+                  commitDiscreteTransferCoefficients("numerator", event.target.value)
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Denominator Coefficients (a0,a1,...)
+              <input
+                type="text"
+                value={selectedDiscreteTransferData.denominator.join(",")}
+                onBlur={(event) =>
+                  commitDiscreteTransferCoefficients("denominator", event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) =>
+                  commitDiscreteTransferCoefficients("denominator", event.target.value)
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedLeadLagData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Lead/Lag Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Gain (K)
+              <input
+                type="number"
+                value={String(selectedLeadLagData.gain)}
+                onBlur={(event) => commitLeadLagNumericField("gain", event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitLeadLagNumericField("gain", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Lead Time Constant (s)
+              <input
+                type="number"
+                min={0}
+                step="0.001"
+                value={String(selectedLeadLagData.leadTimeConstantSec)}
+                onBlur={(event) =>
+                  commitLeadLagNumericField("leadTimeConstantSec", event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) =>
+                  commitLeadLagNumericField("leadTimeConstantSec", event.target.value)
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Lag Time Constant (s)
+              <input
+                type="number"
+                min={0}
+                step="0.001"
+                value={String(selectedLeadLagData.lagTimeConstantSec)}
+                onBlur={(event) =>
+                  commitLeadLagNumericField("lagTimeConstantSec", event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) =>
+                  commitLeadLagNumericField("lagTimeConstantSec", event.target.value)
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
             </label>
           </div>
         ) : null}

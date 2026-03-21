@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P5 tasks prioritize scale, diagnostics, and modeling ergonomics while preserving P1/P2 UX stability and deterministic runtime behavior.
+- P6 tasks focus on advanced control and discrete modeling blocks, maintaining P1-P5 stability and deterministic behavior.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -13,6 +13,14 @@
 4. Run relevant validation commands and report exact outputs.
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
+
+## P6 Queue (Advanced Control & Discrete Modeling)
+- [x] P6-1 PID Controller Block (P/I/D/N parameters + anti-windup clamping)
+- [x] P6-2 Discrete Filter Family (Discrete Transfer Fcn + Lead/Lag blocks)
+- [ ] P6-3 Multi-Input/Output Subsystem Masking (parameterized interface) [IN PROGRESS]
+- [ ] P6-4 Global Signal Bus & GOTO/FROM blocks
+- [ ] P6-5 Look-up Table (1D/2D linear interpolation)
+- [ ] P6-6 Final Verification + Deployment
 
 ## P5 Queue (Scalability, Debuggability & Modeling Ergonomics)
 - [x] P5-1 Deterministic Conformance Expansion (nested + multi-rate + typed stress tests)

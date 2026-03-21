@@ -700,3 +700,66 @@
   - `npm run build` ✅
 - Synchronized workspace documentation for P5 features.
 - Marked P5 phase as complete and ready for remote synchronization.
+
+---
+**Date/Time:** 2026-03-21 17:35 CET
+**Task Executed:** P6 phase kickoff + control/discrete priorities
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Initialized P6 workstream for Advanced Control & Discrete Modeling.
+- Priority queue: PID Controller, Discrete Filters, Masking, Signal Buses, and Look-up Tables.
+- P6-1 (PID Controller) initialized as the immediate next milestone.
+
+---
+**Date/Time:** 2026-03-21 17:36 CET
+**Task Executed:** P6-1 PID Controller Block completed (no commit per directive)
+**Files Modified/Created:**
+- `src/simulation/blocks/pidBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `app/page.tsx`
+- `src/simulation/__tests__/pid.test.ts` (new)
+- `TASK_QUEUE.md`
+**Notes/Bugs:**
+- Added discrete PID controller block with typed parameters: `kp`, `ki`, `kd`, derivative filter `n`.
+- Added anti-windup + saturation behavior using conditional integrator clamping and output saturation (`lowerSaturation`, `upperSaturation`).
+- Integrated PID into root canvas and subsystem editor libraries (industrial sink-blue visual path via math-node rendering).
+- Added inspector fields for full PID tuning in UI.
+- Added deterministic PID unit tests covering proportional, integral accumulation, derivative filtering, and upper/lower saturation anti-windup behavior.
+- Validation gates:
+  - `npm run test` ✅ (30 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 18:36 CET
+**Task Executed:** P6-2 Discrete Filter Family completed (no commit per directive)
+**Files Modified/Created:**
+- `src/simulation/blocks/discreteTransferFcnBlock.ts` (new)
+- `src/simulation/blocks/leadLagBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `app/page.tsx`
+- `src/simulation/__tests__/discreteFilters.test.ts` (new)
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added **Discrete Transfer Fcn** block with generic IIR/FIR difference-equation engine:
+  - Params: `numerator[]`, `denominator[]`
+  - Deterministic state histories (`inputHistory`, `outputHistory`)
+  - Safe normalization for invalid coefficient payloads.
+- Added **Lead/Lag** block with Tustin discretization:
+  - Params: `gain`, `leadTimeConstantSec`, `lagTimeConstantSec`
+  - Fallback to static gain when lag time constant is non-positive.
+- Added inspector editors for coefficient and lead/lag parameter tuning.
+- Added sink-blue math-node visual integration on main canvas and subsystem editor library.
+- Added regression tests for identity transfer, first-order lag behavior, lead/lag fallback, and deterministic replay.
+- Validation gates:
+  - `npm run test` ✅ (34 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced to P6-3 `[IN PROGRESS]` for immediate continuation.
