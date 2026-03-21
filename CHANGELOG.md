@@ -583,3 +583,33 @@
   - `npm run test` ✅ (19 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 14:42 CET
+**Task Executed:** P5-2 Subsystem UX v2 completed and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/subsystemBlock.ts`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/validation.ts`
+- `src/simulation/__tests__/subsystem.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `ARCHITECTURE.md`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Completed subsystem UX v2 with deterministic I/O mapping + editor ergonomics.
+- Refined Subsystem block I/O mapping:
+  - stable deterministic interface-node traversal
+  - normalized Inport label -> external input lookup with fallback routing
+  - Outport labels now exposed as source-handle addressable outputs in parent graph
+- Expanded editor ergonomics and safety:
+  - quick-add Inport/Outport controls
+  - interface summary with per-port connection count
+  - save-time enforcement for empty/duplicate interface labels
+  - normalization action for sequential I/O relabeling
+- Expanded test suite to cover named subsystem handle mapping and additional interface validation.
+- Validation gates passed:
+  - `npm run test` ✅ (21 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Advanced queue to P5-3 `[IN PROGRESS]`.

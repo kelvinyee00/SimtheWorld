@@ -272,4 +272,37 @@ describe("validateSimulationGraph", () => {
     expect(issues.some((issue) => issue.code === "INVALID_SUBSYSTEM_INTERFACE")).toBe(true);
   });
 
+  it("flags empty subsystem Outport label", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        {
+          id: "subsystem",
+          type: SUBSYSTEM_BLOCK_TYPE,
+          data: {
+            graph: {
+              nodes: [
+                { id: "in", type: INPORT_BLOCK_TYPE, data: { label: "in1" } },
+                { id: "out", type: OUTPORT_BLOCK_TYPE, data: { label: "   " } },
+              ],
+              edges: [],
+            },
+          },
+        },
+      ],
+      edges: [],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+      baseStepTimeMs: 100,
+    });
+
+    expect(
+      issues.some(
+        (issue) => issue.code === "INVALID_SUBSYSTEM_INTERFACE" && issue.message.includes("empty label")
+      )
+    ).toBe(true);
+  });
+
 });

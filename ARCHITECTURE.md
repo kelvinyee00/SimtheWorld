@@ -287,3 +287,22 @@ Constraints for P0:
   - optional point decimation for high-density traces
   - rendered-point ratio telemetry shown in modal footer
 - Preserved deterministic engine semantics while improving UI scalability for dense runs.
+
+### 13) Deterministic Conformance Expansion (P5-1)
+- Extended deterministic regression coverage across nested + multi-rate interactions.
+- Added subsystem multi-rate hold-behavior tests to protect scheduler + hierarchy composition semantics.
+- Added recursive validation tests for nested sample-time violations.
+
+### 14) Subsystem UX v2 (P5-2)
+- Added subsystem interface quality guardrails (editor + validator):
+  - empty Inport/Outport labels are rejected
+  - duplicate labels are rejected case-insensitively
+- Added deterministic subsystem I/O mapping refinements:
+  - stable sorted interface traversal by node id
+  - normalized label mapping for Inport input resolution
+  - Outport labels exposed as addressable source handles for parent graph wiring
+- Added subsystem editor ergonomics:
+  - quick-add buttons for Inport/Outport
+  - auto-sequential default labels (`in1`, `in2`, `out1`, ...)
+  - one-click normalization of I/O labels
+  - interface summary panel with connection counts

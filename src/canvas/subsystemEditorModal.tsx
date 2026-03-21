@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -199,6 +199,43 @@ export function SubsystemEditorModal({
     );
   };
 
+  const addInterfaceNode = useCallback(
+    (type: typeof INPORT_BLOCK_TYPE | typeof OUTPORT_BLOCK_TYPE) => {
+      setNodes((currentNodes) => {
+        const offset = currentNodes.length;
+        return currentNodes.concat({
+          id: makeNodeId(type),
+          type,
+          position: { x: 120, y: 100 + offset * 28 },
+          data: makeNodeData(type, currentNodes),
+        });
+      });
+
+      setSaveErrors([]);
+    },
+    [setNodes]
+  );
+
+  const interfaceSummary = useMemo(() => {
+    return nodes
+      .filter((node) => node.type === INPORT_BLOCK_TYPE || node.type === OUTPORT_BLOCK_TYPE)
+      .slice()
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((node) => {
+        const label = getNodeLabel(node);
+        const connectionCount = edges.filter(
+          (edge) => edge.source === node.id || edge.target === node.id
+        ).length;
+
+        return {
+          id: node.id,
+          type: node.type === INPORT_BLOCK_TYPE ? "Inport" : "Outport",
+          label: label || "(empty)",
+          connectionCount,
+        };
+      });
+  }, [edges, nodes]);
+
   const normalizeIoLabels = useCallback(() => {
     setNodes((currentNodes) => {
       let inIndex = 1;
@@ -303,6 +340,46 @@ export function SubsystemEditorModal({
               </li>
             ))}
           </ul>
+
+          <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+              Quick I/O Add
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => addInterfaceNode(INPORT_BLOCK_TYPE)}
+                className="rounded border border-sky-300 bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700"
+              >
+                + Inport
+              </button>
+              <button
+                type="button"
+                onClick={() => addInterfaceNode(OUTPORT_BLOCK_TYPE)}
+                className="rounded border border-sky-300 bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700"
+              >
+                + Outport
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-md border border-slate-200 bg-white p-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+              Interface Summary
+            </p>
+            {interfaceSummary.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">No Inport/Outport nodes yet.</p>
+            ) : (
+              <ul className="mt-1 space-y-1">
+                {interfaceSummary.map((port) => (
+                  <li key={port.id} className="rounded border border-slate-100 bg-slate-50 px-2 py-1 text-[11px] text-slate-700">
+                    <span className="font-semibold">{port.type}</span> {port.label}
+                    <span className="ml-1 text-slate-500">({port.connectionCount} conn)</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </aside>
 
         <section className="flex-1 bg-[#eceff3]">

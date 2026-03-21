@@ -2,6 +2,7 @@ import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
+import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
@@ -107,6 +108,62 @@ describe("Subsystem block execution", () => {
     const display2 = afterTick2.nodeInternalState.display as { value?: unknown };
     expect(afterTick2.nodeOutputs.subsystem?.default).toBe(6);
     expect(display2.value).toBe(6);
+  });
+
+  it("maps named Inport handles and Outport source handles deterministically", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        { id: "counter-a", type: COUNTER_BLOCK_TYPE, data: { start: 1, step: 0, mode: "inc" } },
+        { id: "counter-b", type: COUNTER_BLOCK_TYPE, data: { start: 2, step: 0, mode: "inc" } },
+        {
+          id: "subsystem",
+          type: SUBSYSTEM_BLOCK_TYPE,
+          data: {
+            graph: {
+              nodes: [
+                { id: "in-a", type: INPORT_BLOCK_TYPE, data: { label: "in1" } },
+                { id: "in-b", type: INPORT_BLOCK_TYPE, data: { label: "in2" } },
+                { id: "sum", type: SUM_BLOCK_TYPE, data: { label: "Sum" } },
+                { id: "out", type: OUTPORT_BLOCK_TYPE, data: { label: "sumOut" } },
+              ],
+              edges: [
+                { id: "a->sum", source: "in-a", target: "sum", targetHandle: "in1" },
+                { id: "b->sum", source: "in-b", target: "sum", targetHandle: "in2" },
+                { id: "sum->out", source: "sum", target: "out", targetHandle: "in" },
+              ],
+            },
+          },
+        },
+        { id: "display", type: DISPLAY_BLOCK_TYPE, data: { label: "Display" } },
+      ],
+      edges: [
+        {
+          id: "counter-a->subsystem-in1",
+          source: "counter-a",
+          target: "subsystem",
+          targetHandle: "in1",
+        },
+        {
+          id: "counter-b->subsystem-in2",
+          source: "counter-b",
+          target: "subsystem",
+          targetHandle: "in2",
+        },
+        {
+          id: "subsystem-sumOut->display",
+          source: "subsystem",
+          sourceHandle: "sumOut",
+          target: "display",
+        },
+      ],
+    };
+
+    const snapshot = runTicks({ graph, ticks: 1 });
+    const displayState = snapshot.nodeInternalState.display as { value?: unknown };
+
+    expect(snapshot.nodeOutputs.subsystem?.sumOut).toBe(3);
+    expect(snapshot.nodeOutputs.subsystem?.default).toBe(3);
+    expect(displayState.value).toBe(3);
   });
 
 });
