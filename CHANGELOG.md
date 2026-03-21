@@ -560,3 +560,26 @@
   - `npm run test` ✅
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 14:38 CET
+**Task Executed:** P5-2 Subsystem UX v2 (phase-1 guardrails + ergonomics)
+**Files Modified/Created:**
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/validation.ts`
+- `src/simulation/__tests__/validation.test.ts`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added subsystem editor save-time guardrails for interface quality:
+  - Reject empty Inport/Outport labels.
+  - Reject duplicate Inport/Outport labels (case-insensitive).
+- Added editor ergonomics:
+  - Auto-sequential labels when creating Inport/Outport nodes (`in1`, `in2`, `out1`, ...).
+  - Added `Normalize I/O Labels` action for fast deterministic relabeling.
+  - Added inline issue banner when save is blocked by interface validation problems.
+- Added recursive graph-validation rule `INVALID_SUBSYSTEM_INTERFACE` for subsystem interface conflicts.
+- Added regression test coverage for duplicate subsystem interface labels.
+- Validation gates passed:
+  - `npm run test` ✅ (19 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

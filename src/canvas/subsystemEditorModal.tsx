@@ -70,15 +70,24 @@ function makeNodeId(type: string): string {
 }
 
 function makeEdgeId(source: string, target: string): string {
-    return `${source}->${target}-${Date.now()}`;
+  return `${source}->${target}-${Date.now()}`;
 }
 
-function makeNodeData(type: string): Record<string, unknown> {
+function getNodeLabel(node: Node): string {
+  const label = (node.data as Record<string, unknown> | undefined)?.label;
+  return typeof label === "string" ? label.trim() : "";
+}
+
+function getNextPortIndex(nodes: Node[], type: string): number {
+  return nodes.filter((node) => node.type === type).length + 1;
+}
+
+function makeNodeData(type: string, existingNodes: Node[]): Record<string, unknown> {
   switch (type) {
     case INPORT_BLOCK_TYPE:
-      return { label: "Inport" };
+      return { label: `in${getNextPortIndex(existingNodes, INPORT_BLOCK_TYPE)}` };
     case OUTPORT_BLOCK_TYPE:
-      return { label: "Outport" };
+      return { label: `out${getNextPortIndex(existingNodes, OUTPORT_BLOCK_TYPE)}` };
     case GAIN_BLOCK_TYPE:
       return { label: "Gain", gain: 1 };
     case SUBSYSTEM_BLOCK_TYPE:
@@ -86,6 +95,39 @@ function makeNodeData(type: string): Record<string, unknown> {
     default:
       return { label: "Block" };
   }
+}
+
+function validateSubsystemInterfaceNodes(nodes: Node[]): string[] {
+  const errors: string[] = [];
+
+  const checkPortType = (type: string, typeLabel: string) => {
+    const seen = new Map<string, string>();
+
+    for (const node of nodes) {
+      if (node.type !== type) {
+        continue;
+      }
+
+      const label = getNodeLabel(node);
+      if (!label) {
+        errors.push(`${typeLabel} '${node.id}' has an empty label.`);
+        continue;
+      }
+
+      const normalized = label.toLowerCase();
+      const previous = seen.get(normalized);
+      if (previous) {
+        errors.push(`${typeLabel} label '${label}' is duplicated (${previous}, ${node.id}).`);
+        continue;
+      }
+
+      seen.set(normalized, node.id);
+    }
+  };
+
+  checkPortType(INPORT_BLOCK_TYPE, "Inport");
+  checkPortType(OUTPORT_BLOCK_TYPE, "Outport");
+  return errors;
 }
 
 interface SubsystemEditorModalProps {
@@ -106,11 +148,13 @@ export function SubsystemEditorModal({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialGraph.edges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       setNodes(initialGraph.nodes);
       setEdges(initialGraph.edges);
+      setSaveErrors([]);
     }
   }, [open, initialGraph, setNodes, setEdges]);
 
@@ -145,17 +189,57 @@ export function SubsystemEditorModal({
       y: event.clientY,
     });
 
-    setNodes((nds) =>
-      nds.concat({
+    setNodes((currentNodes) =>
+      currentNodes.concat({
         id: makeNodeId(type),
         type,
         position,
-        data: makeNodeData(type),
+        data: makeNodeData(type, currentNodes),
       })
     );
   };
 
+  const normalizeIoLabels = useCallback(() => {
+    setNodes((currentNodes) => {
+      let inIndex = 1;
+      let outIndex = 1;
+
+      return currentNodes.map((node) => {
+        if (node.type === INPORT_BLOCK_TYPE) {
+          return {
+            ...node,
+            data: {
+              ...((node.data as Record<string, unknown> | undefined) ?? {}),
+              label: `in${inIndex++}`,
+            },
+          };
+        }
+
+        if (node.type === OUTPORT_BLOCK_TYPE) {
+          return {
+            ...node,
+            data: {
+              ...((node.data as Record<string, unknown> | undefined) ?? {}),
+              label: `out${outIndex++}`,
+            },
+          };
+        }
+
+        return node;
+      });
+    });
+
+    setSaveErrors([]);
+  }, [setNodes]);
+
   const handleSave = () => {
+    const interfaceIssues = validateSubsystemInterfaceNodes(nodes);
+    if (interfaceIssues.length > 0) {
+      setSaveErrors(interfaceIssues);
+      return;
+    }
+
+    setSaveErrors([]);
     onSave({ nodes, edges });
     onClose();
   };
@@ -171,6 +255,12 @@ export function SubsystemEditorModal({
         </div>
         <div className="flex gap-3">
           <button
+            onClick={normalizeIoLabels}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Normalize I/O Labels
+          </button>
+          <button
             onClick={onClose}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
@@ -185,16 +275,29 @@ export function SubsystemEditorModal({
         </div>
       </header>
 
+      {saveErrors.length > 0 ? (
+        <div className="border-b border-amber-300 bg-amber-50 px-6 py-3 text-xs text-amber-800">
+          <p className="font-semibold">Subsystem interface issues:</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {saveErrors.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <main className="flex flex-1 overflow-hidden">
-        <aside className="w-64 border-r border-slate-300 bg-white p-4 overflow-y-auto">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700 uppercase tracking-wider">Subsystem Library</h3>
+        <aside className="w-64 overflow-y-auto border-r border-slate-300 bg-white p-4">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-700">
+            Subsystem Library
+          </h3>
           <ul className="space-y-2">
             {LIBRARY_BLOCKS.map((block) => (
               <li
                 key={block.type}
                 draggable
                 onDragStart={(e) => onLibraryDragStart(e, block.type)}
-                className="cursor-grab rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-700 active:cursor-grabbing hover:border-sky-300"
+                className="cursor-grab rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-700 hover:border-sky-300 active:cursor-grabbing"
               >
                 {block.label}
               </li>

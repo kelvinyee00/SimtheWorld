@@ -1,5 +1,7 @@
 import { getTopologicalOrder } from "@/src/simulation/topology";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
+import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
+import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import {
   BlockRegistry,
   SignalType,
@@ -17,6 +19,7 @@ export interface GraphValidationIssue {
     | "TARGET_HAS_NO_INPUT_PORTS"
     | "INVALID_SIGNAL_TYPE"
     | "INVALID_SAMPLE_TIME"
+    | "INVALID_SUBSYSTEM_INTERFACE"
     | "UNSUPPORTED_CYCLE";
   message: string;
   nodeId?: string;
@@ -129,6 +132,58 @@ function validateNodeSampleTime(params: {
   }
 
   return null;
+}
+
+
+function validateSubsystemInterface(params: {
+  graph: SimulationGraph;
+  subsystemNodeId: string;
+}): GraphValidationIssue[] {
+  const { graph, subsystemNodeId } = params;
+  const issues: GraphValidationIssue[] = [];
+
+  const checkPortLabels = (portType: typeof INPORT_BLOCK_TYPE | typeof OUTPORT_BLOCK_TYPE) => {
+    const labelUsage = new Map<string, string>();
+
+    for (const node of graph.nodes) {
+      if (node.type !== portType) {
+        continue;
+      }
+
+      const rawLabel =
+        typeof (node.data as Record<string, unknown> | undefined)?.label === "string"
+          ? ((node.data as Record<string, unknown>).label as string)
+          : "";
+      const label = rawLabel.trim();
+
+      if (label.length === 0) {
+        issues.push({
+          code: "INVALID_SUBSYSTEM_INTERFACE",
+          nodeId: subsystemNodeId,
+          message: `Subsystem '${subsystemNodeId}' has ${portType} '${node.id}' with empty label.`,
+        });
+        continue;
+      }
+
+      const normalized = label.toLowerCase();
+      const priorNodeId = labelUsage.get(normalized);
+      if (priorNodeId) {
+        issues.push({
+          code: "INVALID_SUBSYSTEM_INTERFACE",
+          nodeId: subsystemNodeId,
+          message: `Subsystem '${subsystemNodeId}' has duplicate ${portType} label '${label}' on nodes '${priorNodeId}' and '${node.id}'.`,
+        });
+        continue;
+      }
+
+      labelUsage.set(normalized, node.id);
+    }
+  };
+
+  checkPortLabels(INPORT_BLOCK_TYPE);
+  checkPortLabels(OUTPORT_BLOCK_TYPE);
+
+  return issues;
 }
 
 export function validateConnectionCandidate(params: {
@@ -254,6 +309,12 @@ export function validateSimulationGraph(params: {
         "edges" in rawGraph
       ) {
         const internalGraph = rawGraph as SimulationGraph;
+        const interfaceIssues = validateSubsystemInterface({
+          graph: internalGraph,
+          subsystemNodeId: node.id,
+        });
+        issues = issues.concat(interfaceIssues);
+
         const internalIssues = validateSimulationGraph({ graph: internalGraph, registry, baseStepTimeMs });
         issues = issues.concat(
           internalIssues.map((issue) => ({
