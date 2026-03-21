@@ -18,9 +18,9 @@
 - [x] P6-1 PID Controller Block (P/I/D/N parameters + anti-windup clamping)
 - [x] P6-2 Discrete Filter Family (Discrete Transfer Fcn + Lead/Lag blocks)
 - [x] P6-3 Multi-Input/Output Subsystem Masking (parameterized interface)
-- [ ] P6-4 Global Signal Bus & GOTO/FROM blocks [IN PROGRESS]
-- [ ] P6-5 Look-up Table (1D/2D linear interpolation)
-- [ ] P6-6 Final Verification + Deployment
+- [x] P6-4 Global Signal Bus & GOTO/FROM blocks
+- [x] P6-5 Look-up Table (1D/2D linear interpolation)
+- [ ] P6-6 Final Verification + Deployment [IN PROGRESS]
 
 ## P5 Queue (Scalability, Debuggability & Modeling Ergonomics)
 - [x] P5-1 Deterministic Conformance Expansion (nested + multi-rate + typed stress tests)

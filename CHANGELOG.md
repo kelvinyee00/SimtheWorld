@@ -792,3 +792,51 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced to P6-4 `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-21 19:34 CET
+**Task Executed:** P6-4 Global Signal Bus & GOTO/FROM blocks completed and verified
+**Files Modified/Created:**
+- `src/simulation/engine.ts`
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/__tests__/globalBus.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added global signal bus execution path with deterministic per-tick shared state (`__globalSignals`).
+- Implemented virtual dependency edges (GOTO -> FROM per tag) to guarantee same-tick propagation without explicit wires.
+- Integrated GOTO/FROM blocks into registry, main canvas library, subsystem editor library, and inspector tag editing.
+- Added regression tests covering:
+  - same-tick propagation,
+  - multi-tag isolation,
+  - cross-tick latch behavior.
+- Validation:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 19:36 CET
+**Task Executed:** P6-5 Lookup Table (1D/2D interpolation) completed and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/lutBlock.ts`
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/__tests__/lut.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added LUT 1D block with linear interpolation and boundary clamping.
+- Added LUT 2D block with bilinear interpolation and boundary clamping.
+- Integrated LUT blocks into main canvas + subsystem editor palettes and inspector editing flows.
+- Added regression tests for 1D interpolation, 2D bilinear interpolation, and out-of-range clamping.
+- Validation:
+  - `npm run test` ✅ (8 files, 42 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P6-6 marked `[IN PROGRESS]`.

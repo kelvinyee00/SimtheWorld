@@ -40,6 +40,9 @@ import {
   DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
 } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
+import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
+import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
+import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -61,6 +64,10 @@ const NODE_TYPES: NodeTypes = {
   [PID_BLOCK_TYPE]: CustomBlockNode,
   [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: CustomBlockNode,
   [LEAD_LAG_BLOCK_TYPE]: CustomBlockNode,
+  [GOTO_BLOCK_TYPE]: CustomBlockNode,
+  [FROM_BLOCK_TYPE]: CustomBlockNode,
+  [LUT_1D_BLOCK_TYPE]: CustomBlockNode,
+  [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -74,6 +81,10 @@ const LIBRARY_BLOCKS = [
   { label: "PID", type: PID_BLOCK_TYPE },
   { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE },
   { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE },
+  { label: "GOTO", type: GOTO_BLOCK_TYPE },
+  { label: "FROM", type: FROM_BLOCK_TYPE },
+  { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
+  { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
@@ -133,6 +144,19 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
         gain: 1,
         leadTimeConstantSec: 0.1,
         lagTimeConstantSec: 1,
+      };
+    case GOTO_BLOCK_TYPE:
+      return { label: "GOTO", tag: "signal" };
+    case FROM_BLOCK_TYPE:
+      return { label: "FROM", tag: "signal" };
+    case LUT_1D_BLOCK_TYPE:
+      return { label: "LUT 1D", breakpointsX: [0, 10], tableData: [0, 100] };
+    case LUT_2D_BLOCK_TYPE:
+      return {
+        label: "LUT 2D",
+        breakpointsX: [0, 10],
+        breakpointsY: [0, 10],
+        tableData: [[0, 100], [100, 200]],
       };
     case SUBSYSTEM_BLOCK_TYPE:
       return {

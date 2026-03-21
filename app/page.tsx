@@ -45,6 +45,9 @@ import {
   DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
 } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
+import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
+import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
+import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -132,6 +135,10 @@ const NODE_TYPES: NodeTypes = {
   [PID_BLOCK_TYPE]: CustomBlockNode,
   [DISCRETE_TRANSFER_FCN_BLOCK_TYPE]: CustomBlockNode,
   [LEAD_LAG_BLOCK_TYPE]: CustomBlockNode,
+  [GOTO_BLOCK_TYPE]: CustomBlockNode,
+  [FROM_BLOCK_TYPE]: CustomBlockNode,
+  [LUT_1D_BLOCK_TYPE]: CustomBlockNode,
+  [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -152,6 +159,10 @@ const LIBRARY_BLOCKS = [
   { label: "PID", type: PID_BLOCK_TYPE },
   { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE },
   { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE },
+  { label: "GOTO", type: GOTO_BLOCK_TYPE },
+  { label: "FROM", type: FROM_BLOCK_TYPE },
+  { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
+  { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
   { label: "Inport", type: INPORT_BLOCK_TYPE },
   { label: "Outport", type: OUTPORT_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
@@ -268,6 +279,14 @@ function makeNodeData(type: string): Record<string, unknown> {
         leadTimeConstantSec: 0.1,
         lagTimeConstantSec: 1,
       };
+    case GOTO_BLOCK_TYPE:
+      return { label: "GOTO", tag: "signal" };
+    case FROM_BLOCK_TYPE:
+      return { label: "FROM", tag: "signal" };
+    case LUT_1D_BLOCK_TYPE:
+      return { label: "LUT 1D", breakpointsX: [0, 10], tableData: [0, 100] };
+    case LUT_2D_BLOCK_TYPE:
+      return { label: "LUT 2D", breakpointsX: [0, 10], breakpointsY: [0, 10], tableData: [[0, 100], [100, 200]] };
     case INTEGRATOR_BLOCK_TYPE:
       return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
@@ -346,6 +365,17 @@ interface LeadLagInspectorData {
   gain: number;
   leadTimeConstantSec: number;
   lagTimeConstantSec: number;
+}
+
+interface Lut1DInspectorData {
+  breakpointsX: number[];
+  tableData: number[];
+}
+
+interface Lut2DInspectorData {
+  breakpointsX: number[];
+  breakpointsY: number[];
+  tableData: string; // JSON string for matrix
 }
 
 interface SubsystemMaskInspectorData {
@@ -1095,6 +1125,15 @@ export default function Home() {
     };
   }, [selectedNode]);
 
+  const selectedGotoFromData = useMemo<{ tag: string } | null>(() => {
+    if (!selectedNode || (selectedNode.type !== GOTO_BLOCK_TYPE && selectedNode.type !== FROM_BLOCK_TYPE)) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return { tag: typeof raw.tag === "string" ? raw.tag : "signal" };
+  }, [selectedNode]);
+
   const selectedSubsystemMaskData = useMemo<SubsystemMaskInspectorData | null>(() => {
     if (!selectedNode || selectedNode.type !== SUBSYSTEM_BLOCK_TYPE) {
       return null;
@@ -1130,6 +1169,25 @@ export default function Home() {
         : "{}";
 
     return { inputs, outputs, parameters };
+  }, [selectedNode]);
+
+  const selectedLut1DData = useMemo<Lut1DInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== LUT_1D_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      breakpointsX: Array.isArray(raw.breakpointsX) ? raw.breakpointsX : [0, 10],
+      tableData: Array.isArray(raw.tableData) ? raw.tableData : [0, 100],
+    };
+  }, [selectedNode]);
+
+  const selectedLut2DData = useMemo<Lut2DInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== LUT_2D_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      breakpointsX: Array.isArray(raw.breakpointsX) ? raw.breakpointsX : [0, 10],
+      breakpointsY: Array.isArray(raw.breakpointsY) ? raw.breakpointsY : [0, 10],
+      tableData: JSON.stringify(raw.tableData ?? [[0, 100], [100, 200]], null, 2),
+    };
   }, [selectedNode]);
 
   const selectedSampleTimeMs = useMemo<number | null>(() => {
@@ -1396,6 +1454,39 @@ export default function Home() {
       }
     },
     [patchSelectedNodeData, selectedNode]
+  );
+
+  const commitGotoFromTag = useCallback(
+    (rawValue: string) => {
+      const tag = rawValue.trim();
+      patchSelectedNodeData({ tag: tag.length > 0 ? tag : "signal" });
+    },
+    [patchSelectedNodeData]
+  );
+
+  const commitLutVector = useCallback(
+    (field: "breakpointsX" | "breakpointsY" | "tableData", rawValue: string) => {
+      const parsed = parseCoefficientList(rawValue);
+      if (parsed.length > 0) {
+        patchSelectedNodeData({ [field]: parsed });
+      }
+    },
+    [parseCoefficientList, patchSelectedNodeData]
+  );
+
+  const commitLut2DTable = useCallback(
+    (rawValue: string) => {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          patchSelectedNodeData({ tableData: parsed });
+          setModelActionMessage(null);
+        }
+      } catch {
+        setModelActionMessage("Invalid matrix JSON for LUT 2D table data.");
+      }
+    },
+    [patchSelectedNodeData]
   );
 
   const commitSampleTimeMs = useCallback(
@@ -1986,6 +2077,95 @@ export default function Home() {
                 value={selectedSubsystemMaskData.parameters}
                 onBlur={(event) => commitSubsystemMaskParameters(event.target.value)}
                 onChange={(event) => commitSubsystemMaskParameters(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedGotoFromData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              GOTO/FROM Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Global Tag
+              <input
+                type="text"
+                value={selectedGotoFromData.tag}
+                onBlur={(event) => commitGotoFromTag(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                onChange={(event) => commitGotoFromTag(event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedLut1DData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              LUT 1D Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Breakpoints X (comma-separated)
+              <input
+                type="text"
+                value={selectedLut1DData.breakpointsX.join(",")}
+                onBlur={(event) => commitLutVector("breakpointsX", event.target.value)}
+                onChange={(event) => commitLutVector("breakpointsX", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Table Data (comma-separated)
+              <input
+                type="text"
+                value={selectedLut1DData.tableData.join(",")}
+                onBlur={(event) => commitLutVector("tableData", event.target.value)}
+                onChange={(event) => commitLutVector("tableData", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedLut2DData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              LUT 2D Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Breakpoints X (comma-separated)
+              <input
+                type="text"
+                value={selectedLut2DData.breakpointsX.join(",")}
+                onBlur={(event) => commitLutVector("breakpointsX", event.target.value)}
+                onChange={(event) => commitLutVector("breakpointsX", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Breakpoints Y (comma-separated)
+              <input
+                type="text"
+                value={selectedLut2DData.breakpointsY.join(",")}
+                onBlur={(event) => commitLutVector("breakpointsY", event.target.value)}
+                onChange={(event) => commitLutVector("breakpointsY", event.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Table Data (Matrix JSON)
+              <textarea
+                rows={4}
+                value={selectedLut2DData.tableData}
+                onBlur={(event) => commitLut2DTable(event.target.value)}
+                onChange={(event) => commitLut2DTable(event.target.value)}
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
               />
             </label>

@@ -30,6 +30,9 @@ import {
   DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
 } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
+import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
+import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
+import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -61,6 +64,10 @@ interface BlockNodeData {
   leadTimeConstantSec?: number;
   lagTimeConstantSec?: number;
   mask?: unknown;
+  tag?: string;
+  breakpointsX?: number[];
+  breakpointsY?: number[];
+  tableData?: number[] | number[][];
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -176,6 +183,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isPid = type === PID_BLOCK_TYPE;
   const isDiscreteTransfer = type === DISCRETE_TRANSFER_FCN_BLOCK_TYPE;
   const isLeadLag = type === LEAD_LAG_BLOCK_TYPE;
+  const isGoto = type === GOTO_BLOCK_TYPE;
+  const isFrom = type === FROM_BLOCK_TYPE;
+  const isLut1D = type === LUT_1D_BLOCK_TYPE;
+  const isLut2D = type === LUT_2D_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -191,7 +202,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDemux ||
     isPid ||
     isDiscreteTransfer ||
-    isLeadLag;
+    isLeadLag ||
+    isGoto ||
+    isFrom || isLut1D || isLut2D;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -345,6 +358,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">
                   Tz/Tp
                 </p>
+              ) : isLut1D || isLut2D ? (
+                <p className="text-[11px] text-slate-500">LUT</p>
+              ) : isGoto || isFrom ? (
+                <p className="text-[11px] text-slate-500">tag={String(data.tag ?? "signal")}</p>
               ) : isSubsystem ? (
                 <p className="text-[11px] text-slate-500 italic">I/O: {subsystemInputHandles.length}/{subsystemOutputHandles.length}</p>
               ) : (
@@ -364,16 +381,34 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
           />
         )}
 
+        {isLut2D && (
+          <>
+            <Handle
+              type="target"
+              id="in1"
+              position={Position.Left}
+              style={withTop(handleStyle, "33%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="in2"
+              position={Position.Left}
+              style={withTop(handleStyle, "68%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
         {(isSum || isProduct || isCompare) && (
           <>
             <Handle

@@ -1,8 +1,12 @@
+import { GOTO_BLOCK_TYPE } from "./blocks/gotoBlock";
+import { FROM_BLOCK_TYPE } from "./blocks/fromBlock";
 import { getTopologicalOrder } from "./topology";
 import {
   BlockRegistry,
   SignalValue,
+  SimulationEdge,
   SimulationGraph,
+  SimulationNode,
   SimulationRuntimeSnapshot,
 } from "./types";
 
@@ -65,7 +69,12 @@ export function stepSimulation(params: {
       .map((node) => node.id)
   );
 
-  const executionOrder = getTopologicalOrder(graph, { feedbackSourceNodeIds });
+    const virtualEdges = getVirtualEdges(graph);
+  const augmentedGraph: SimulationGraph = {
+    nodes: graph.nodes,
+    edges: [...graph.edges, ...virtualEdges],
+  };
+  const executionOrder = getTopologicalOrder(augmentedGraph, { feedbackSourceNodeIds });
   const nextOutputs: SimulationRuntimeSnapshot["nodeOutputs"] = {
     ...snapshot.nodeOutputs,
   };
@@ -150,6 +159,46 @@ function sanitizeMs(value: number, fallback: number): number {
   return Math.floor(value);
 }
 
+
+
+function getVirtualEdges(graph: SimulationGraph): SimulationEdge[] {
+  const gotos = graph.nodes.filter((n) => n.type === GOTO_BLOCK_TYPE);
+  const froms = graph.nodes.filter((n) => n.type === FROM_BLOCK_TYPE);
+
+  if (gotos.length === 0 || froms.length === 0) {
+    return [];
+  }
+
+  const virtualEdges: SimulationEdge[] = [];
+  const tagToGotos = new Map<string, string[]>();
+
+  const getTag = (node: SimulationNode): string => {
+    const raw = (node.data as Record<string, unknown> | undefined)?.tag;
+    if (typeof raw !== "string") return "signal";
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : "signal";
+  };
+
+  gotos.forEach((n) => {
+    const tag = getTag(n).toLowerCase();
+    if (!tagToGotos.has(tag)) tagToGotos.set(tag, []);
+    tagToGotos.get(tag)!.push(n.id);
+  });
+
+  froms.forEach((f) => {
+    const tag = getTag(f).toLowerCase();
+    const sources = tagToGotos.get(tag) ?? [];
+    sources.forEach((s) => {
+      virtualEdges.push({
+        id: `virtual:${s}->${f.id}`,
+        source: s,
+        target: f.id,
+      });
+    });
+  });
+
+  return virtualEdges;
+}
 
 function coerceGlobalSignals(raw: unknown): Record<string, SignalValue> {
   if (typeof raw !== "object" || raw === null) {
