@@ -92,9 +92,14 @@ function areSignalTypesCompatible(source: SignalType, target: SignalType): boole
   return source === target;
 }
 
-function validateNodeSampleTime(node: SimulationNode): GraphValidationIssue | null {
+function validateNodeSampleTime(params: {
+  node: SimulationNode;
+  baseStepTimeMs: number;
+}): GraphValidationIssue | null {
+  const { node, baseStepTimeMs } = params;
   const raw = (node.data as Record<string, unknown> | undefined)?.sampleTimeMs;
-  if (typeof raw === "undefined") {
+
+  if (typeof raw === "undefined" || raw === null) {
     return null;
   }
 
@@ -103,6 +108,23 @@ function validateNodeSampleTime(node: SimulationNode): GraphValidationIssue | nu
       code: "INVALID_SAMPLE_TIME",
       nodeId: node.id,
       message: `Node '${node.id}' has invalid sampleTimeMs '${String(raw)}'. Expected positive finite number.`,
+    };
+  }
+
+  if (raw < baseStepTimeMs) {
+    return {
+      code: "INVALID_SAMPLE_TIME",
+      nodeId: node.id,
+      message: `Node '${node.id}' sampleTimeMs (${raw}) must be >= base step (${baseStepTimeMs}).`,
+    };
+  }
+
+  const ratio = raw / baseStepTimeMs;
+  if (!Number.isInteger(ratio)) {
+    return {
+      code: "INVALID_SAMPLE_TIME",
+      nodeId: node.id,
+      message: `Node '${node.id}' sampleTimeMs (${raw}) must be an integer multiple of base step (${baseStepTimeMs}).`,
     };
   }
 
@@ -200,8 +222,9 @@ export function validateConnectionCandidate(params: {
 export function validateSimulationGraph(params: {
   graph: SimulationGraph;
   registry: BlockRegistry;
+  baseStepTimeMs?: number;
 }): GraphValidationIssue[] {
-  const { graph, registry } = params;
+  const { graph, registry, baseStepTimeMs = 100 } = params;
   let issues: GraphValidationIssue[] = [];
 
   for (const node of graph.nodes) {
@@ -214,7 +237,7 @@ export function validateSimulationGraph(params: {
       continue;
     }
 
-    const sampleTimeIssue = validateNodeSampleTime(node);
+    const sampleTimeIssue = validateNodeSampleTime({ node, baseStepTimeMs });
     if (sampleTimeIssue) {
       issues.push(sampleTimeIssue);
     }
@@ -231,7 +254,7 @@ export function validateSimulationGraph(params: {
         "edges" in rawGraph
       ) {
         const internalGraph = rawGraph as SimulationGraph;
-        const internalIssues = validateSimulationGraph({ graph: internalGraph, registry });
+        const internalIssues = validateSimulationGraph({ graph: internalGraph, registry, baseStepTimeMs });
         issues = issues.concat(
           internalIssues.map((issue) => ({
             ...issue,

@@ -26,10 +26,19 @@ import {
  * - Add derived selectors and partial subscriptions for high-frequency charts.
  * - Move scheduler execution to Web Worker while preserving the same action contract.
  */
+export interface RuntimePerformanceMetrics {
+  stepsExecuted: number;
+  lastStepDurationMs: number;
+  averageStepDurationMs: number;
+  peakStepDurationMs: number;
+  estimatedStepRateHz: number;
+}
+
 export interface SimulationRuntimeStore {
   graph: SimulationGraph;
   registry: BlockRegistry;
   runtime: SimulationRuntimeSnapshot;
+  metrics: RuntimePerformanceMetrics;
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
@@ -50,6 +59,14 @@ const EMPTY_GRAPH: SimulationGraph = {
   edges: [],
 };
 
+const DEFAULT_METRICS: RuntimePerformanceMetrics = {
+  stepsExecuted: 0,
+  lastStepDurationMs: 0,
+  averageStepDurationMs: 0,
+  peakStepDurationMs: 0,
+  estimatedStepRateHz: 0,
+};
+
 let timerId: ReturnType<typeof setTimeout> | null = null;
 
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
@@ -57,6 +74,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     graph: EMPTY_GRAPH,
     registry: DEFAULT_BLOCK_REGISTRY,
     runtime: DEFAULT_RUNTIME,
+    metrics: DEFAULT_METRICS,
 
     setGraph: (graph) => {
       set({ graph });
@@ -90,6 +108,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           ...next,
           status: wasRunning ? "running" : next.status,
         },
+        metrics: DEFAULT_METRICS,
       });
 
       if (wasRunning) {
@@ -98,10 +117,28 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     stepOnce: () => {
-      const { graph, registry, runtime } = get();
+      const { graph, registry, runtime, metrics } = get();
+      const startedAt = performance.now();
       try {
         const next = stepSimulation({ graph, registry, snapshot: runtime });
-        set({ runtime: next });
+        const durationMs = Math.max(0, performance.now() - startedAt);
+        const nextSteps = metrics.stepsExecuted + 1;
+        const nextAverage =
+          nextSteps === 1
+            ? durationMs
+            : (metrics.averageStepDurationMs * metrics.stepsExecuted + durationMs) /
+              nextSteps;
+
+        set({
+          runtime: next,
+          metrics: {
+            stepsExecuted: nextSteps,
+            lastStepDurationMs: durationMs,
+            averageStepDurationMs: nextAverage,
+            peakStepDurationMs: Math.max(metrics.peakStepDurationMs, durationMs),
+            estimatedStepRateHz: durationMs > 0 ? 1000 / durationMs : 0,
+          },
+        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown simulation error.";
@@ -121,7 +158,11 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
         return;
       }
 
-      const issues = validateSimulationGraph({ graph, registry });
+      const issues = validateSimulationGraph({
+        graph,
+        registry,
+        baseStepTimeMs: runtime.stepTimeMs,
+      });
       if (issues.length > 0) {
         set({
           runtime: {
@@ -139,6 +180,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           status: "running",
           error: undefined,
         },
+        metrics: runtime.tick === 0 ? DEFAULT_METRICS : get().metrics,
       });
 
       scheduleNextTick();
@@ -160,6 +202,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           simulationTimeMs: current.simulationTimeMs,
           stepTimeMs: current.stepTimeMs,
         }),
+        metrics: DEFAULT_METRICS,
       });
     },
 

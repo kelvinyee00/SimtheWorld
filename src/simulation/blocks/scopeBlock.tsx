@@ -19,6 +19,7 @@ export const SCOPE_BLOCK_TYPE = "scope" as const;
 const DEFAULT_SCOPE_MAX_POINTS = 300;
 const MAX_SCOPE_POINTS_HARD_CAP = 5_000;
 const AUTO_SCROLL_WINDOW_POINTS = 140;
+const MAX_SCOPE_RENDER_POINTS = 900;
 
 export interface ScopeSample {
   timeMs: number;
@@ -185,6 +186,21 @@ export function ScopeBlockView({ state, className }: ScopeBlockViewProps) {
   );
 }
 
+function decimateSamples(samples: ScopeSample[], maxPoints: number): ScopeSample[] {
+  if (samples.length <= maxPoints) {
+    return samples;
+  }
+
+  const stride = Math.ceil(samples.length / maxPoints);
+  const decimated = samples.filter((_, index) => index % stride === 0);
+  const last = samples.at(-1);
+  if (last && decimated.at(-1)?.timeMs !== last.timeMs) {
+    decimated.push(last);
+  }
+
+  return decimated;
+}
+
 interface ScopeModalProps {
   open: boolean;
   onClose: () => void;
@@ -198,8 +214,17 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
   );
   const [cursorSample, setCursorSample] = useState<ScopeSample | null>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [decimationEnabled, setDecimationEnabled] = useState(true);
 
-  const latestIndex = Math.max(0, parsed.samples.length - 1);
+  const chartSamples = useMemo(
+    () =>
+      decimationEnabled
+        ? decimateSamples(parsed.samples, MAX_SCOPE_RENDER_POINTS)
+        : parsed.samples,
+    [decimationEnabled, parsed.samples]
+  );
+
+  const latestIndex = Math.max(0, chartSamples.length - 1);
 
   /**
    * Real-time auto-scroll contract (oscilloscope behavior):
@@ -220,11 +245,11 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
 
   const activeRange = autoScroll ? autoRange : brushRange ?? autoRange;
 
-  const measuredCursorSample = cursorSample ?? parsed.samples.at(-1) ?? null;
+  const measuredCursorSample = cursorSample ?? chartSamples.at(-1) ?? null;
 
   const visibleSamples = useMemo(
-    () => parsed.samples.slice(activeRange.startIndex, activeRange.endIndex + 1),
-    [activeRange.endIndex, activeRange.startIndex, parsed.samples]
+    () => chartSamples.slice(activeRange.startIndex, activeRange.endIndex + 1),
+    [activeRange.endIndex, activeRange.startIndex, chartSamples]
   );
 
   const closeModal = () => {
@@ -304,6 +329,17 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setDecimationEnabled((current) => !current)}
+                  className={`rounded-md border px-2.5 py-1.5 text-xs font-medium ${
+                    decimationEnabled
+                      ? "border-sky-300 bg-sky-100 text-sky-700"
+                      : "border-slate-300 bg-white text-slate-700"
+                  }`}
+                >
+                  Decimate {decimationEnabled ? "On" : "Off"}
+                </button>
+                <button
+                  type="button"
                   onClick={closeModal}
                   className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700"
                 >
@@ -316,7 +352,7 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
               <div className="min-h-[250px] flex-1 rounded-lg border border-slate-300 bg-white p-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={parsed.samples}
+                    data={chartSamples}
                     margin={{ top: 10, right: 16, left: 0, bottom: 10 }}
                     onMouseMove={(event: unknown) => {
                       const candidate =
@@ -325,7 +361,7 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
                           : undefined;
 
                       if (typeof candidate === "number" && Number.isFinite(candidate)) {
-                        const next = parsed.samples[candidate];
+                        const next = chartSamples[candidate];
                         if (next) {
                           setCursorSample(next);
                         }
@@ -374,6 +410,9 @@ export function ScopeModal({ open, onClose, state }: ScopeModalProps) {
                 <p>
                   Visible window: {visibleSamples.length} points (idx {activeRange.startIndex} →{" "}
                   {activeRange.endIndex})
+                </p>
+                <p>
+                  Rendered points: {chartSamples.length} / {parsed.samples.length}
                 </p>
                 <button
                   type="button"

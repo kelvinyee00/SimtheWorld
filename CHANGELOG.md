@@ -452,3 +452,62 @@
 - Added SubsystemBlock logic for recursive simulation engine invocation.
 - Added preliminary subsystem editor modal (React Flow instance inside modal).
 - Work in progress: verification and UI integration pending.
+
+---
+**Date/Time:** 2026-03-21 04:40 CET
+**Task Executed:** P4-3 Subsystem Block completed and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/subsystemBlock.ts`
+- `src/simulation/blocks/inportBlock.ts`
+- `src/simulation/blocks/outportBlock.ts`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `app/page.tsx`
+- `src/simulation/registry.ts`
+- `src/simulation/validation.ts`
+- `src/simulation/__tests__/subsystem.test.ts`
+**Notes/Bugs:**
+- Completed subsystem hierarchical modeling v1 foundation.
+- Added Inport/Outport subsystem boundary semantics and nested graph stepping.
+- Added subsystem editor modal for internal block-diagram editing.
+- Added recursive validation for internal subsystem graphs.
+- Validation gates passed:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 04:41 CET
+**Task Executed:** P4-4 Multi-Rate Scheduler v1 completed and verified
+**Files Modified/Created:**
+- `src/simulation/engine.ts`
+- `src/simulation/validation.ts`
+- `src/store/simulationRuntimeStore.ts`
+- `app/page.tsx`
+- `src/simulation/__tests__/engine.determinism.test.ts`
+- `src/simulation/__tests__/validation.test.ts`
+**Notes/Bugs:**
+- Added per-node `sampleTimeMs` scheduling semantics in engine tick execution.
+- Added validation rules for sample-time multiples and base-step compliance.
+- Added inspector-level sample-time editing workflow.
+- Validation gates passed:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-21 04:42 CET
+**Task Executed:** P4-5 Performance + Observability hardening completed and verified
+**Files Modified/Created:**
+- `src/store/simulationRuntimeStore.ts`
+- `src/simulation/blocks/scopeBlock.tsx`
+- `app/page.tsx`
+**Notes/Bugs:**
+- Added runtime metrics telemetry (last/avg/peak step duration + estimated Hz).
+- Surfaced metrics in sidebar diagnostics panel.
+- Added scope decimation toggle for high-point-count rendering stabilization.
+- Added rendered-point ratio feedback in scope modal.
+- Validation gates passed:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅

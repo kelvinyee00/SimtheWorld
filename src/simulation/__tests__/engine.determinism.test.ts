@@ -1,6 +1,7 @@
 import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
+import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
 import { UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
 import { COMPARE_BLOCK_TYPE } from "@/src/simulation/blocks/compareBlock";
@@ -118,6 +119,45 @@ describe("stepSimulation deterministic execution", () => {
 
     expect(snapshot.nodeOutputs.compare?.default).toBe(true);
     expect(snapshot.nodeOutputs.switch?.default).toBe(1);
+  });
+
+
+  it("supports multi-rate stepping (slow block updates at configured sample time)", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        {
+          id: "counter",
+          type: COUNTER_BLOCK_TYPE,
+          data: { start: 1, step: 1, mode: "inc" },
+        },
+        {
+          id: "gain",
+          type: GAIN_BLOCK_TYPE,
+          data: { gain: 10, sampleTimeMs: 200 },
+        },
+        {
+          id: "display",
+          type: DISPLAY_BLOCK_TYPE,
+          data: { label: "Display" },
+        },
+      ],
+      edges: [
+        { id: "counter->gain", source: "counter", target: "gain", targetHandle: "in" },
+        { id: "gain->display", source: "gain", target: "display" },
+      ],
+    };
+
+    const afterTick0 = runTicks({ graph, ticks: 1, stepTimeMs: 100, simulationTimeMs: 1_000 });
+    const display0 = afterTick0.nodeInternalState.display as { value?: unknown };
+    expect(display0.value).toBe(10);
+
+    const afterTick1 = runTicks({ graph, ticks: 2, stepTimeMs: 100, simulationTimeMs: 1_000 });
+    const display1 = afterTick1.nodeInternalState.display as { value?: unknown };
+    expect(display1.value).toBe(10);
+
+    const afterTick2 = runTicks({ graph, ticks: 3, stepTimeMs: 100, simulationTimeMs: 1_000 });
+    const display2 = afterTick2.nodeInternalState.display as { value?: unknown };
+    expect(display2.value).toBe(30);
   });
 
   it("throws for unsupported algebraic cycles without memory/delay breakers", () => {

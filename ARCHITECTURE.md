@@ -252,3 +252,38 @@ Constraints for P0:
   - invalid handle/source checks
   - incompatible signal type checks (e.g., number -> boolean `cond`)
 - Preserved compatibility for existing numeric P0-P3 models.
+
+
+### 10) Subsystem Block (P4-3)
+- Added hierarchical modeling foundation via a new **Subsystem** block.
+- Added internal interface primitives:
+  - **Inport** block (inject external subsystem inputs into nested graph)
+  - **Outport** block (export nested graph outputs back to parent graph)
+- Added subsystem editor modal:
+  - dedicated React Flow canvas for nested graph editing
+  - internal block library includes Inport/Outport and processing blocks
+- Added recursive validation path for nested subsystem graphs.
+- Added deterministic subsystem execution test coverage.
+
+### 11) Multi-Rate Scheduler v1 (P4-4)
+- Added per-node sample-time support (`sampleTimeMs` node param).
+- Engine now evaluates each node only on eligible ticks:
+  - node steps at `tick % (sampleTimeMs / baseStepTimeMs) === 0`
+  - unstepped nodes retain previous outputs/state for deterministic hold behavior
+- Added validation guardrails for sample-time contracts:
+  - `sampleTimeMs` must be positive
+  - `sampleTimeMs` must be `>=` base step
+  - `sampleTimeMs` must be an integer multiple of base step
+- Added inspector controls for node-level sample-time configuration.
+
+### 12) Performance + Observability Hardening (P4-5)
+- Added runtime performance metrics in store:
+  - last-step duration
+  - average-step duration
+  - peak-step duration
+  - estimated step rate (Hz)
+- Exposed metrics in sidebar diagnostics for operator visibility.
+- Added scope render decimation mode:
+  - optional point decimation for high-density traces
+  - rendered-point ratio telemetry shown in modal footer
+- Preserved deterministic engine semantics while improving UI scalability for dense runs.

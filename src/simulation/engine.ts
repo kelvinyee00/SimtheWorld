@@ -84,6 +84,17 @@ export function stepSimulation(params: {
       throw new Error(`Missing block definition for type '${node.type}'.`);
     }
 
+    const nodeData = (node.data ?? {}) as Record<string, unknown>;
+    const shouldStep = shouldStepNode({
+      tick: snapshot.tick,
+      nodeData,
+      baseStepTimeMs: snapshot.stepTimeMs,
+    });
+
+    if (!shouldStep) {
+      continue;
+    }
+
     const inputs = collectInputs({
       nodeId,
       graph,
@@ -91,14 +102,14 @@ export function stepSimulation(params: {
     });
 
     const previousState =
-      nextInternalState[node.id] ?? definition.initialize?.(node.data ?? {});
+      nextInternalState[node.id] ?? definition.initialize?.(nodeData);
 
     const result = definition.step({
       tick: snapshot.tick,
       timeMs: snapshot.timeMs,
       stepTimeMs: snapshot.stepTimeMs,
       nodeId: node.id,
-      params: node.data ?? {},
+      params: nodeData,
       inputs,
       previousState,
       registry,
@@ -130,6 +141,38 @@ function sanitizeMs(value: number, fallback: number): number {
     return fallback;
   }
   return Math.floor(value);
+}
+
+
+function resolveNodeSampleTimeMs(nodeData: Record<string, unknown>, baseStepTimeMs: number): number {
+  const raw = nodeData.sampleTimeMs;
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) {
+    return baseStepTimeMs;
+  }
+
+  return raw;
+}
+
+function shouldStepNode(params: {
+  tick: number;
+  nodeData: Record<string, unknown>;
+  baseStepTimeMs: number;
+}): boolean {
+  const resolvedSampleTimeMs = resolveNodeSampleTimeMs(
+    params.nodeData,
+    params.baseStepTimeMs
+  );
+
+  if (resolvedSampleTimeMs <= params.baseStepTimeMs) {
+    return true;
+  }
+
+  const ratio = resolvedSampleTimeMs / params.baseStepTimeMs;
+  if (!Number.isFinite(ratio) || ratio <= 0 || !Number.isInteger(ratio)) {
+    return true;
+  }
+
+  return params.tick % ratio === 0;
 }
 
 /**

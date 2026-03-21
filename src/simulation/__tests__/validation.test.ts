@@ -181,4 +181,25 @@ describe("validateSimulationGraph", () => {
     expect(issues).toEqual([]);
   });
 
+  it("flags invalid non-integer sample time ratio", () => {
+    const graph: SimulationGraph = {
+      nodes: [
+        {
+          id: "counter",
+          type: COUNTER_BLOCK_TYPE,
+          data: { sampleTimeMs: 150 },
+        },
+      ],
+      edges: [],
+    };
+
+    const issues = validateSimulationGraph({
+      graph,
+      registry: DEFAULT_BLOCK_REGISTRY,
+      baseStepTimeMs: 100,
+    });
+
+    expect(issues.some((issue) => issue.code === "INVALID_SAMPLE_TIME")).toBe(true);
+  });
+
 });

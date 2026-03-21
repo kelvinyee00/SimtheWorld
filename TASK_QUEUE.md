@@ -17,9 +17,9 @@
 ## P4 Queue (Hierarchical & Multi-Rate)
 - [x] P4-1 Regression Safety Net (Engine + Canvas)
 - [x] P4-2 Signal Type System v1 (Number/Boolean)
-- [ ] P4-3 Subsystem Block (Hierarchical Modeling v1) [IN PROGRESS]
-- [ ] P4-4 Multi-Rate Scheduler v1
-- [ ] P4-5 Performance + Observability Hardening
+- [x] P4-3 Subsystem Block (Hierarchical Modeling v1)
+- [x] P4-4 Multi-Rate Scheduler v1
+- [x] P4-5 Performance + Observability Hardening
 - [ ] P4-6 Final Verification + Deployment
 
 ## P3 Queue (Advanced Simulation Features)

@@ -327,6 +327,7 @@ export default function Home() {
   const hasInitializedModelPersistenceRef = useRef(false);
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
+  const metrics = useSimulationRuntimeStore((state) => state.metrics);
   const registry = useSimulationRuntimeStore((state) => state.registry);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
   const setTiming = useSimulationRuntimeStore((state) => state.setTiming);
@@ -890,6 +891,15 @@ export default function Home() {
     return { operator };
   }, [selectedNode]);
 
+  const selectedSampleTimeMs = useMemo<number | null>(() => {
+    if (!selectedNode) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined)?.sampleTimeMs;
+    return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? raw : null;
+  }, [selectedNode]);
+
   /**
    * Inspector -> graph node-data write path.
    *
@@ -1015,6 +1025,28 @@ export default function Home() {
       patchSelectedNodeData({ operator });
     },
     [patchSelectedNodeData]
+  );
+
+  const commitSampleTimeMs = useCallback(
+    (rawValue: string) => {
+      if (!selectedNode) {
+        return;
+      }
+
+      const trimmed = rawValue.trim();
+      if (trimmed.length === 0) {
+        patchSelectedNodeData({ sampleTimeMs: null });
+        return;
+      }
+
+      const parsed = Number(trimmed);
+      const safeValue =
+        Number.isFinite(parsed) && parsed > 0
+          ? parsed
+          : selectedSampleTimeMs ?? runtime.stepTimeMs;
+      patchSelectedNodeData({ sampleTimeMs: safeValue });
+    },
+    [patchSelectedNodeData, runtime.stepTimeMs, selectedNode, selectedSampleTimeMs]
   );
 
   const exportSelectedToFile = useCallback(() => {
@@ -1151,6 +1183,37 @@ export default function Home() {
           <span className="font-medium text-slate-700">Position:</span> x=
           {Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
         </p>
+
+        <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+            Execution Rate
+          </p>
+          <label className="block text-xs text-slate-600">
+            Sample Time (ms)
+            <input
+              type="number"
+              min={runtime.stepTimeMs}
+              step={runtime.stepTimeMs}
+              value={selectedSampleTimeMs === null ? "" : String(selectedSampleTimeMs)}
+              placeholder={`base: ${runtime.stepTimeMs}`}
+              onBlur={(event) => commitSampleTimeMs(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+              }}
+              onChange={(event) => commitSampleTimeMs(event.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => patchSelectedNodeData({ sampleTimeMs: null })}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700"
+          >
+            Use Base Rate ({runtime.stepTimeMs} ms)
+          </button>
+        </div>
 
         {selectedCounterData ? (
           <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -1475,6 +1538,10 @@ export default function Home() {
               Runtime status: <span className="font-medium">{runtime.status}</span>
             </p>
             <p className="mt-1 text-xs text-slate-500">Tick: {runtime.tick}</p>
+            <p className="mt-1 text-xs text-slate-500">Last step: {metrics.lastStepDurationMs.toFixed(2)} ms</p>
+            <p className="mt-1 text-xs text-slate-500">Avg step: {metrics.averageStepDurationMs.toFixed(2)} ms</p>
+            <p className="mt-1 text-xs text-slate-500">Peak step: {metrics.peakStepDurationMs.toFixed(2)} ms</p>
+            <p className="mt-1 text-xs text-slate-500">Estimated step rate: {metrics.estimatedStepRateHz.toFixed(1)} Hz</p>
             <p className="mt-1 text-xs text-slate-500">IndexedDB runs: {recentRunRecords.length}</p>
             <div className="mt-2 flex gap-2">
               <button
