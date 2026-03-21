@@ -15,16 +15,6 @@ import {
 
 /**
  * Zustand runtime store for scheduler + simulation snapshot.
- *
- * Critical design intent:
- * - Keep all mutating control APIs (`run`, `pause`, `reset`) centralized in one store.
- * - Keep stepping deterministic by delegating state transitions to pure engine functions.
- * - Keep scheduler handle outside serializable state (closure variable) to avoid accidental
- *   persistence/leaks when future model-save features serialize store slices.
- *
- * Iteration-2 scalability path:
- * - Add derived selectors and partial subscriptions for high-frequency charts.
- * - Move scheduler execution to Web Worker while preserving the same action contract.
  */
 export interface RuntimePerformanceMetrics {
   stepsExecuted: number;
@@ -34,11 +24,20 @@ export interface RuntimePerformanceMetrics {
   estimatedStepRateHz: number;
 }
 
+export interface RuntimeTraceEvent {
+  tick: number;
+  timeMs: number;
+  durationMs: number;
+  status: SimulationStatus;
+  note: string;
+}
+
 export interface SimulationRuntimeStore {
   graph: SimulationGraph;
   registry: BlockRegistry;
   runtime: SimulationRuntimeSnapshot;
   metrics: RuntimePerformanceMetrics;
+  trace: RuntimeTraceEvent[];
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
@@ -47,6 +46,7 @@ export interface SimulationRuntimeStore {
   reset: () => void;
   complete: () => void;
   stepOnce: () => void;
+  clearTrace: () => void;
 }
 
 const DEFAULT_RUNTIME = createInitialSnapshot({
@@ -67,6 +67,15 @@ const DEFAULT_METRICS: RuntimePerformanceMetrics = {
   estimatedStepRateHz: 0,
 };
 
+const MAX_TRACE_EVENTS = 120;
+
+function appendTrace(
+  trace: RuntimeTraceEvent[],
+  event: RuntimeTraceEvent
+): RuntimeTraceEvent[] {
+  return [event, ...trace].slice(0, MAX_TRACE_EVENTS);
+}
+
 let timerId: ReturnType<typeof setTimeout> | null = null;
 
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
@@ -75,6 +84,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     registry: DEFAULT_BLOCK_REGISTRY,
     runtime: DEFAULT_RUNTIME,
     metrics: DEFAULT_METRICS,
+    trace: [],
 
     setGraph: (graph) => {
       set({ graph });
@@ -88,15 +98,6 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       const current = get().runtime;
       const wasRunning = current.status === "running";
 
-      /**
-       * Timing update policy (critical runtime-control seam):
-       * - Any Stop Time / Ts edit re-materializes a fresh snapshot via createInitialSnapshot
-       *   so timing constraints are validated in one canonical place.
-       * - We intentionally preserve graph + registry and only reset runtime tick/time, matching
-       *   desktop simulation tooling expectations after model-wide timing changes.
-       * - If the model was actively running, we restart the scheduler immediately so Ts edits
-       *   take effect without requiring an extra Run click.
-       */
       clearScheduler();
       const next = createInitialSnapshot({
         simulationTimeMs: simulationTimeMs ?? current.simulationTimeMs,
@@ -109,6 +110,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           status: wasRunning ? "running" : next.status,
         },
         metrics: DEFAULT_METRICS,
+        trace: [],
       });
 
       if (wasRunning) {
@@ -117,7 +119,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     stepOnce: () => {
-      const { graph, registry, runtime, metrics } = get();
+      const { graph, registry, runtime, metrics, trace } = get();
       const startedAt = performance.now();
       try {
         const next = stepSimulation({ graph, registry, snapshot: runtime });
@@ -138,6 +140,13 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
             peakStepDurationMs: Math.max(metrics.peakStepDurationMs, durationMs),
             estimatedStepRateHz: durationMs > 0 ? 1000 / durationMs : 0,
           },
+          trace: appendTrace(trace, {
+            tick: next.tick,
+            timeMs: next.timeMs,
+            durationMs,
+            status: next.status,
+            note: next.status === "completed" ? "step-complete" : "step",
+          }),
         });
       } catch (error) {
         const message =
@@ -148,6 +157,13 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
             status: "paused",
             error: message,
           },
+          trace: appendTrace(trace, {
+            tick: runtime.tick,
+            timeMs: runtime.timeMs,
+            durationMs: Math.max(0, performance.now() - startedAt),
+            status: "paused",
+            note: `error: ${message}`,
+          }),
         });
       }
     },
@@ -181,6 +197,13 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           error: undefined,
         },
         metrics: runtime.tick === 0 ? DEFAULT_METRICS : get().metrics,
+        trace: appendTrace(get().trace, {
+          tick: runtime.tick,
+          timeMs: runtime.timeMs,
+          durationMs: 0,
+          status: "running",
+          note: "run",
+        }),
       });
 
       scheduleNextTick();
@@ -203,6 +226,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           stepTimeMs: current.stepTimeMs,
         }),
         metrics: DEFAULT_METRICS,
+        trace: [],
       });
     },
 
@@ -217,17 +241,13 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
         },
       });
     },
+
+    clearTrace: () => {
+      set({ trace: [] });
+    },
   })
 );
 
-/**
- * Deterministic wall-clock scheduler for fixed-step simulation.
- *
- * Important nuance:
- * - The engine itself is deterministic regardless of timer jitter.
- * - This scheduler uses planned timestamps to reduce accumulated drift so UI playback
- *   remains close to target rate over long runs.
- */
 function scheduleNextTick(): void {
   const state = useSimulationRuntimeStore.getState();
   if (state.runtime.status !== "running") {

@@ -643,3 +643,24 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Advanced queue to P5-4 `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-21 14:55 CET
+**Task Executed:** P5-4 Runtime Trace & Debug Panel completed and verified
+**Files Modified/Created:**
+- `src/store/simulationRuntimeStore.ts`
+- `app/page.tsx`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Implemented tick-level runtime trace instrumentation in Zustand store.
+- Added `RuntimeTraceEvent` tracking for step, run, and error events.
+- Added sidebar "Runtime Trace" preview with recent event summary and durations.
+- Integrated full "Simulation Trace" debug panel (modal) with detailed event timeline and status tagging.
+- Added clear-trace functionality for session-based log management.
+- Bounded trace log to 120 most recent events to prevent memory bloat.
+- Validation gates passed:
+  - `npm run test` ✅ (24 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Advanced queue to P5-5 `[IN PROGRESS]`.

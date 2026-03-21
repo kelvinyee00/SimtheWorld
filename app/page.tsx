@@ -328,6 +328,7 @@ export default function Home() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingSubsystemId, setEditingSubsystemId] = useState<string | null>(null);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
+  const [isTracePanelOpen, setIsTracePanelOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
   const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
@@ -338,6 +339,8 @@ export default function Home() {
 
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
   const metrics = useSimulationRuntimeStore((state) => state.metrics);
+  const trace = useSimulationRuntimeStore((state) => state.trace);
+  const clearTrace = useSimulationRuntimeStore((state) => state.clearTrace);
   const registry = useSimulationRuntimeStore((state) => state.registry);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
   const setTiming = useSimulationRuntimeStore((state) => state.setTiming);
@@ -1553,6 +1556,42 @@ export default function Home() {
             <p className="mt-1 text-xs text-slate-500">Peak step: {metrics.peakStepDurationMs.toFixed(2)} ms</p>
             <p className="mt-1 text-xs text-slate-500">Estimated step rate: {metrics.estimatedStepRateHz.toFixed(1)} Hz</p>
             <p className="mt-1 text-xs text-slate-500">IndexedDB runs: {recentRunRecords.length}</p>
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Runtime Trace
+                </p>
+                <button
+                  type="button"
+                  onClick={clearTrace}
+                  className="text-[10px] font-medium text-slate-400 hover:text-slate-600 uppercase"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {trace.length === 0 ? (
+                  <p className="text-[10px] text-slate-400 italic">No events recorded.</p>
+                ) : (
+                  trace.slice(0, 20).map((event, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5 text-[10px] border-l-2 border-slate-200 pl-1.5 py-0.5">
+                      <span className="font-mono font-bold text-slate-400">#{event.tick}</span>
+                      <span className={`flex-1 ${event.status === 'paused' ? 'text-rose-600' : 'text-slate-600'}`}>
+                        {event.note}
+                      </span>
+                      <span className="text-slate-400 tabular-nums">{event.durationMs.toFixed(1)}ms</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTracePanelOpen(true)}
+                className="mt-2 w-full rounded border border-slate-300 bg-white py-1 text-[10px] font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Show Full Trace
+              </button>
+            </div>
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
@@ -1730,6 +1769,80 @@ export default function Home() {
           </div>
         )}
 
+
+        {isTracePanelOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="flex flex-col w-full max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">Simulation Trace</h2>
+                  <p className="text-xs text-slate-500">Tick-level execution probes and event timeline.</p>
+                </div>
+                <button
+                  onClick={() => setIsTracePanelOpen(false)}
+                  className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </header>
+              <main className="flex-1 overflow-y-auto p-6 bg-white">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-white border-b border-slate-200">
+                    <tr>
+                      <th className="py-2 font-semibold text-slate-500 uppercase tracking-wider w-16">Tick</th>
+                      <th className="py-2 font-semibold text-slate-500 uppercase tracking-wider w-20">Time</th>
+                      <th className="py-2 font-semibold text-slate-500 uppercase tracking-wider w-24">Status</th>
+                      <th className="py-2 font-semibold text-slate-500 uppercase tracking-wider">Note</th>
+                      <th className="py-2 font-semibold text-slate-500 uppercase tracking-wider text-right w-20">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {trace.map((event, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="py-2 font-mono font-bold text-slate-400">#{event.tick}</td>
+                        <td className="py-2 text-slate-600">{(event.timeMs / 1000).toFixed(2)}s</td>
+                        <td className="py-2">
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
+                            event.status === 'running' ? 'bg-emerald-100 text-emerald-700' :
+                            event.status === 'paused' ? 'bg-rose-100 text-rose-700' :
+                            event.status === 'completed' ? 'bg-sky-100 text-sky-700' :
+                            'bg-slate-100 text-slate-700'
+                          }`}>
+                            {event.status}
+                          </span>
+                        </td>
+                        <td className="py-2 text-slate-700 break-all">{event.note}</td>
+                        <td className="py-2 text-slate-500 text-right tabular-nums">{event.durationMs.toFixed(2)} ms</td>
+                      </tr>
+                    ))}
+                    {trace.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-400 italic">No events recorded. Start the simulation to see trace events.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </main>
+              <footer className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-between items-center">
+                <p className="text-xs text-slate-500">{trace.length} events logged (max 120).</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={clearTrace}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+                  >
+                    Clear Log
+                  </button>
+                  <button
+                    onClick={() => setIsTracePanelOpen(false)}
+                    className="rounded-lg bg-slate-800 px-6 py-2 text-sm font-medium text-white hover:bg-slate-900"
+                  >
+                    Close
+                  </button>
+                </div>
+              </footer>
+            </div>
+          </div>
+        )}
         {editingSubsystemId ? (
           <SubsystemEditorModal
             open={true}
