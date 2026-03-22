@@ -44,6 +44,7 @@ import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
+import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -70,6 +71,7 @@ const NODE_TYPES: NodeTypes = {
   [LUT_1D_BLOCK_TYPE]: CustomBlockNode,
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
   [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
+  [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -88,6 +90,7 @@ const LIBRARY_BLOCKS = [
   { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
   { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
   { label: "State Machine", type: STATE_MACHINE_BLOCK_TYPE },
+  { label: "Truth Table", type: TRUTH_TABLE_BLOCK_TYPE },
   { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
   { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
@@ -167,6 +170,16 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
         initialState: "idle",
         states: ["idle", "active"],
         transitions: [],
+      };
+    case TRUTH_TABLE_BLOCK_TYPE:
+      return {
+        label: "Truth Table",
+        inputHandles: ["in1", "in2"],
+        rows: [
+          { when: { in1: true, in2: true }, output: true },
+          { when: { in1: true, in2: false }, output: false },
+        ],
+        elseOutput: false,
       };
     case SUBSYSTEM_BLOCK_TYPE:
       return {

@@ -49,6 +49,7 @@ import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
+import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -141,6 +142,7 @@ const NODE_TYPES: NodeTypes = {
   [LUT_1D_BLOCK_TYPE]: CustomBlockNode,
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
   [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
+  [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -166,6 +168,7 @@ const LIBRARY_BLOCKS = [
   { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
   { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
   { label: "State Machine", type: STATE_MACHINE_BLOCK_TYPE },
+  { label: "Truth Table", type: TRUTH_TABLE_BLOCK_TYPE },
   { label: "Inport", type: INPORT_BLOCK_TYPE },
   { label: "Outport", type: OUTPORT_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
@@ -300,6 +303,16 @@ function makeNodeData(type: string): Record<string, unknown> {
           { from: "active", to: "idle", event: "falling", eventInput: "in", guardExpr: "inputs.in === false", output: false },
         ],
       };
+    case TRUTH_TABLE_BLOCK_TYPE:
+      return {
+        label: "Truth Table",
+        inputHandles: ["in1", "in2"],
+        rows: [
+          { when: { in1: true, in2: true }, output: true },
+          { when: { in1: true, in2: false }, output: false },
+        ],
+        elseOutput: false,
+      };
     case INTEGRATOR_BLOCK_TYPE:
       return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
@@ -407,6 +420,23 @@ interface StateMachineTransitionModel {
   event?: "rising" | "falling";
   eventInput?: string;
 }
+
+interface TruthTableRowModel {
+  when: Record<string, number | boolean | string>;
+  output: number | boolean;
+}
+
+interface TruthTableModel {
+  inputHandles: string[];
+  rows: TruthTableRowModel[];
+  elseOutput: number | boolean | null;
+}
+
+interface TruthTableInspectorData {
+  model: TruthTableModel;
+  modelJson: string;
+}
+
 
 interface StateMachineModel {
   initialState: string;
@@ -612,6 +642,109 @@ function formatStateMachineModelJson(model: StateMachineModel): string {
   return JSON.stringify(model, null, 2);
 }
 
+function normalizeTruthTableModel(raw: unknown): TruthTableModel {
+  const source =
+    typeof raw === "object" && raw !== null
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const seenHandles = new Set<string>();
+  const inputHandles = Array.isArray(source.inputHandles)
+    ? source.inputHandles
+        .map((entry) => sanitizeStateMachineName(entry))
+        .filter((entry): entry is string => {
+          if (!entry) {
+            return false;
+          }
+
+          const normalized = entry.toLowerCase();
+          if (seenHandles.has(normalized)) {
+            return false;
+          }
+
+          seenHandles.add(normalized);
+          return true;
+        })
+    : ["in1", "in2"];
+
+  const rows = Array.isArray(source.rows)
+    ? source.rows.reduce<TruthTableRowModel[]>((accumulator, row) => {
+        if (typeof row !== "object" || row === null) {
+          return accumulator;
+        }
+
+        const candidate = row as Record<string, unknown>;
+        const output =
+          typeof candidate.output === "boolean"
+            ? candidate.output
+            : typeof candidate.output === "number" && Number.isFinite(candidate.output)
+              ? candidate.output
+              : null;
+
+        if (output === null) {
+          return accumulator;
+        }
+
+        const whenRaw =
+          typeof candidate.when === "object" && candidate.when !== null
+            ? (candidate.when as Record<string, unknown>)
+            : {};
+
+        const when: Record<string, number | boolean | string> = {};
+        for (const [key, value] of Object.entries(whenRaw)) {
+          const normalizedKey = sanitizeStateMachineName(key);
+          const normalizedValue =
+            typeof value === "boolean"
+              ? value
+              : typeof value === "number" && Number.isFinite(value)
+                ? value
+                : typeof value === "string"
+                  ? value
+                  : null;
+
+          if (!normalizedKey || normalizedValue === null) {
+            continue;
+          }
+
+          when[normalizedKey] = normalizedValue;
+        }
+
+        accumulator.push({ when, output });
+        return accumulator;
+      }, [])
+    : [];
+
+  const elseOutput =
+    typeof source.elseOutput === "boolean"
+      ? source.elseOutput
+      : typeof source.elseOutput === "number" && Number.isFinite(source.elseOutput)
+        ? source.elseOutput
+        : null;
+
+  return {
+    inputHandles: inputHandles.length > 0 ? inputHandles : ["in1", "in2"],
+    rows,
+    elseOutput,
+  };
+}
+
+function parseTruthTableModelJson(rawValue: string): TruthTableModel | null {
+  try {
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return normalizeTruthTableModel(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function formatTruthTableModelJson(model: TruthTableModel): string {
+  return JSON.stringify(model, null, 2);
+}
+
 function triggerTextDownload(params: {
   fileName: string;
   extension: "json" | "csv";
@@ -644,6 +777,9 @@ export default function Home() {
   const [stateMachineModelDraft, setStateMachineModelDraft] = useState<string>("");
   const [stateMachineDraftNodeId, setStateMachineDraftNodeId] = useState<string | null>(null);
   const [stateMachineDraftError, setStateMachineDraftError] = useState<string | null>(null);
+  const [truthTableModelDraft, setTruthTableModelDraft] = useState<string>("");
+  const [truthTableDraftNodeId, setTruthTableDraftNodeId] = useState<string | null>(null);
+  const [truthTableDraftError, setTruthTableDraftError] = useState<string | null>(null);
   const lastPersistedCompletionRef = useRef<string | null>(null);
   const modelFileInputRef = useRef<HTMLInputElement | null>(null);
   const hasInitializedModelPersistenceRef = useRef(false);
@@ -1387,6 +1523,43 @@ export default function Home() {
     return stateMachineModelDraft !== selectedStateMachineData.modelJson;
   }, [selectedStateMachineData, stateMachineModelDraft]);
 
+  const selectedTruthTableData = useMemo<TruthTableInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== TRUTH_TABLE_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const model = normalizeTruthTableModel(raw);
+
+    return {
+      model,
+      modelJson: formatTruthTableModelJson(model),
+    };
+  }, [selectedNode]);
+
+  useEffect(() => {
+    if (!selectedTruthTableData || !selectedNodeId) {
+      setTruthTableDraftNodeId(null);
+      setTruthTableModelDraft("");
+      setTruthTableDraftError(null);
+      return;
+    }
+
+    if (truthTableDraftNodeId !== selectedNodeId) {
+      setTruthTableDraftNodeId(selectedNodeId);
+      setTruthTableModelDraft(selectedTruthTableData.modelJson);
+      setTruthTableDraftError(null);
+    }
+  }, [selectedNodeId, selectedTruthTableData, truthTableDraftNodeId]);
+
+  const truthTableDraftIsDirty = useMemo(() => {
+    if (!selectedTruthTableData) {
+      return false;
+    }
+
+    return truthTableModelDraft !== selectedTruthTableData.modelJson;
+  }, [selectedTruthTableData, truthTableModelDraft]);
+
   const selectedSampleTimeMs = useMemo<number | null>(() => {
     if (!selectedNode) {
       return null;
@@ -1719,6 +1892,55 @@ export default function Home() {
     setStateMachineDraftError(null);
     setModelActionMessage("State machine editor reset to node model.");
   }, [selectedStateMachineData]);
+
+  const applyTruthTableModelDraft = useCallback(() => {
+    if (!selectedTruthTableData) {
+      return;
+    }
+
+    const parsed = parseTruthTableModelJson(truthTableModelDraft);
+    if (!parsed) {
+      const message = "Truth table model must be valid JSON object.";
+      setTruthTableDraftError(message);
+      setModelActionMessage(message);
+      return;
+    }
+
+    patchSelectedNodeData({
+      inputHandles: parsed.inputHandles,
+      rows: parsed.rows,
+      elseOutput: parsed.elseOutput,
+    });
+
+    const formatted = formatTruthTableModelJson(parsed);
+    setTruthTableModelDraft(formatted);
+    setTruthTableDraftError(null);
+    setModelActionMessage("Truth table model updated.");
+  }, [patchSelectedNodeData, selectedTruthTableData, truthTableModelDraft]);
+
+  const formatTruthTableModelDraft = useCallback(() => {
+    const parsed = parseTruthTableModelJson(truthTableModelDraft);
+    if (!parsed) {
+      const message = "Truth table model must be valid JSON object.";
+      setTruthTableDraftError(message);
+      setModelActionMessage(message);
+      return;
+    }
+
+    setTruthTableModelDraft(formatTruthTableModelJson(parsed));
+    setTruthTableDraftError(null);
+    setModelActionMessage("Truth table model formatted.");
+  }, [truthTableModelDraft]);
+
+  const resetTruthTableModelDraft = useCallback(() => {
+    if (!selectedTruthTableData) {
+      return;
+    }
+
+    setTruthTableModelDraft(selectedTruthTableData.modelJson);
+    setTruthTableDraftError(null);
+    setModelActionMessage("Truth table editor reset to node model.");
+  }, [selectedTruthTableData]);
 
   const commitLut2DTable = useCallback(
     (rawValue: string) => {
@@ -2471,6 +2693,63 @@ export default function Home() {
             </div>
             {stateMachineDraftError ? (
               <p className="text-xs text-rose-700">{stateMachineDraftError}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {selectedTruthTableData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Truth Table Properties
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Inputs: {selectedTruthTableData.model.inputHandles.length} · Rows: {selectedTruthTableData.model.rows.length}
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Row schema: <span className="font-mono">{`{ when: { in1: true }, output: 1 }`}</span>
+            </p>
+            <label className="block text-xs text-slate-600">
+              Truth Table Model (JSON)
+              <textarea
+                rows={8}
+                value={truthTableModelDraft}
+                onChange={(event) => {
+                  setTruthTableModelDraft(event.target.value);
+                  if (truthTableDraftError) {
+                    setTruthTableDraftError(null);
+                  }
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={applyTruthTableModelDraft}
+                className="rounded-md border border-indigo-300 bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-700"
+              >
+                Apply JSON
+              </button>
+              <button
+                type="button"
+                onClick={formatTruthTableModelDraft}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              >
+                Format
+              </button>
+              <button
+                type="button"
+                onClick={resetTruthTableModelDraft}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              >
+                Reset
+              </button>
+              <span className="self-center text-[11px] text-slate-500">
+                {truthTableDraftIsDirty ? "Unsaved JSON changes" : "Synced"}
+              </span>
+            </div>
+            {truthTableDraftError ? (
+              <p className="text-xs text-rose-700">{truthTableDraftError}</p>
             ) : null}
           </div>
         ) : null}

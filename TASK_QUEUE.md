@@ -18,10 +18,10 @@
 ## P7 Queue (Logic State Machines & Code Generation)
 - [x] P7-1 State Machine Block v1 (states, transitions, guard/action expressions)
 - [x] P7-2 Temporal/Event Semantics (after/edge events + deterministic event queue)
-- [ ] P7-3 Truth Table / Logic Table Block (combinational decision modeling) [IN PROGRESS]
-- [ ] P7-4 C Code Generation Pipeline v1 (graph IR -> ANSI C subset)
-- [ ] P7-5 SIL Equivalence Harness (generated C trace vs runtime trace)
-- [ ] P7-6 Final Verification + Deployment
+- [x] P7-3 Truth Table / Logic Table Block (combinational decision modeling)
+- [x] P7-4 C Code Generation Pipeline v1 (graph IR -> ANSI C subset)
+- [x] P7-5 SIL Equivalence Harness (generated C trace vs runtime trace)
+- [ ] P7-6 Final Verification + Deployment [IN PROGRESS]
 
 ## P6 Queue (Advanced Control & Discrete Modeling)
 - [x] P6-1 PID Controller Block (P/I/D/N parameters + anti-windup clamping)

@@ -34,6 +34,7 @@ import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
+import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -71,6 +72,7 @@ interface BlockNodeData {
   tableData?: number[] | number[][];
   states?: unknown[];
   transitions?: unknown[];
+  rows?: unknown[];
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -191,6 +193,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isLut1D = type === LUT_1D_BLOCK_TYPE;
   const isLut2D = type === LUT_2D_BLOCK_TYPE;
   const isStateMachine = type === STATE_MACHINE_BLOCK_TYPE;
+  const isTruthTable = type === TRUTH_TABLE_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -208,7 +211,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDiscreteTransfer ||
     isLeadLag ||
     isGoto ||
-    isFrom || isLut1D || isLut2D || isStateMachine;
+    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -276,7 +279,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                               ? "H(z)"
                               : isLeadLag
                                 ? "L/L"
-                                : "";
+                                : isTruthTable
+                                  ? "TT"
+                                  : "";
   const gainValue =
     typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
 
@@ -368,6 +373,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">tag={String(data.tag ?? "signal")}</p>
               ) : isStateMachine ? (
                 <p className="text-[11px] text-slate-500">states={Array.isArray(data.states) ? data.states.length : 0} / tx={Array.isArray(data.transitions) ? data.transitions.length : 0}</p>
+              ) : isTruthTable ? (
+                <p className="text-[11px] text-slate-500">rows={Array.isArray(data.rows) ? data.rows.length : 0}</p>
               ) : isSubsystem ? (
                 <p className="text-[11px] text-slate-500 italic">I/O: {subsystemInputHandles.length}/{subsystemOutputHandles.length}</p>
               ) : (
@@ -377,7 +384,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isCounter || isMathNode || isInport || isMux || isStateMachine) ? (
+        {(isCounter || isMathNode || isInport || isMux || isStateMachine || isTruthTable) ? (
           <Handle
             type="source"
             id="default"
@@ -425,7 +432,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             />
           </>
         )}
-        {(isSum || isProduct || isCompare) && (
+        {(isSum || isProduct || isCompare || isTruthTable) && (
           <>
             <Handle
               type="target"

@@ -24,6 +24,7 @@ import { GotoBlock, GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { Lut1DBlock, LUT_1D_BLOCK_TYPE, Lut2DBlock, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
+import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -63,6 +64,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [LUT_1D_BLOCK_TYPE]: Lut1DBlock,
   [LUT_2D_BLOCK_TYPE]: Lut2DBlock,
   [STATE_MACHINE_BLOCK_TYPE]: StateMachineBlock,
+  [TRUTH_TABLE_BLOCK_TYPE]: TruthTableBlock,
 };
 
 /**
