@@ -69,6 +69,8 @@ interface BlockNodeData {
   breakpointsX?: number[];
   breakpointsY?: number[];
   tableData?: number[] | number[][];
+  states?: unknown[];
+  transitions?: unknown[];
 }
 
 const SOURCE_ORANGE = "#f97316";
@@ -364,8 +366,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">LUT</p>
               ) : isGoto || isFrom ? (
                 <p className="text-[11px] text-slate-500">tag={String(data.tag ?? "signal")}</p>
-) : isStateMachine ? (
-                <p className="text-[11px] text-slate-500">state machine</p>
+              ) : isStateMachine ? (
+                <p className="text-[11px] text-slate-500">states={Array.isArray(data.states) ? data.states.length : 0} / tx={Array.isArray(data.transitions) ? data.transitions.length : 0}</p>
               ) : isSubsystem ? (
                 <p className="text-[11px] text-slate-500 italic">I/O: {subsystemInputHandles.length}/{subsystemOutputHandles.length}</p>
               ) : (
@@ -380,7 +382,17 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             type="source"
             id="default"
             position={Position.Right}
-            style={handleStyle}
+            style={isStateMachine ? withTop(handleStyle, "68%") : handleStyle}
+            className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+          />
+        ) : null}
+
+        {isStateMachine ? (
+          <Handle
+            type="source"
+            id="state"
+            position={Position.Right}
+            style={withTop(handleStyle, "30%")}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
           />
         ) : null}

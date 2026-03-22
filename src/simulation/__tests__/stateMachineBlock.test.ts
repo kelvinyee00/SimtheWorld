@@ -43,7 +43,13 @@ describe("StateMachineBlock scaffold", () => {
         ],
       },
       inputs: {},
-      previousState: { state: "idle", memory: {} },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
       registry: {},
       globalSignals: {},
     });
@@ -64,7 +70,13 @@ describe("StateMachineBlock scaffold", () => {
         transitions: [{ from: "idle", to: "active", guardExpr: "inputs.in > 3", output: true }],
       },
       inputs: { in: 4 },
-      previousState: { state: "idle", memory: {} },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
       registry: {},
       globalSignals: {},
     });
@@ -92,18 +104,28 @@ describe("StateMachineBlock scaffold", () => {
         ],
       },
       inputs: {},
-      previousState: { state: "idle", memory: { count: 1 } },
+      previousState: {
+        state: "idle",
+        memory: { count: 1 },
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
       registry: {},
       globalSignals: {},
     });
 
-    expect(result.nextState).toEqual({
-      state: "active",
-      memory: {
-        count: 2,
-        seenTick: 2,
-      },
+    const nextState = result.nextState as {
+      state: string;
+      memory: Record<string, unknown>;
+      stateEnteredTimeMs: number;
+    };
+    expect(nextState.state).toBe("active");
+    expect(nextState.memory).toEqual({
+      count: 2,
+      seenTick: 2,
     });
+    expect(nextState.stateEnteredTimeMs).toBe(200);
   });
 
   it("rejects unsafe function-call guards and keeps current state", () => {
@@ -125,7 +147,13 @@ describe("StateMachineBlock scaffold", () => {
         ],
       },
       inputs: { in: true },
-      previousState: { state: "idle", memory: {} },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
       registry: {},
       globalSignals: {},
     });
@@ -153,7 +181,13 @@ describe("StateMachineBlock scaffold", () => {
         ],
       },
       inputs: {},
-      previousState: { state: "idle", memory: {} },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
       registry: {},
       globalSignals: {},
     });
@@ -164,4 +198,130 @@ describe("StateMachineBlock scaffold", () => {
     expect(({} as Record<string, unknown>).poisoned).toBeUndefined();
   });
 
+  it("supports temporal transition gating via afterMs", () => {
+    const params = {
+      initialState: "idle",
+      states: ["idle", "active"],
+      transitions: [
+        {
+          from: "idle",
+          to: "active",
+          afterMs: 200,
+          output: 99,
+        },
+      ],
+    };
+
+    const beforeWindow = StateMachineBlock.step({
+      tick: 1,
+      timeMs: 100,
+      stepTimeMs: 100,
+      nodeId: "sm1",
+      params,
+      inputs: {},
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: {},
+        lastEvents: [],
+      },
+      registry: {},
+      globalSignals: {},
+    });
+
+    expect(beforeWindow.outputs.state).toBe("idle");
+    expect(beforeWindow.outputs.default).toBeNull();
+
+    const atWindow = StateMachineBlock.step({
+      tick: 2,
+      timeMs: 200,
+      stepTimeMs: 100,
+      nodeId: "sm1",
+      params,
+      inputs: {},
+      previousState: beforeWindow.nextState,
+      registry: {},
+      globalSignals: {},
+    });
+
+    expect(atWindow.outputs.state).toBe("active");
+    expect(atWindow.outputs.default).toBe(99);
+  });
+
+  it("supports deterministic rising-edge event transitions", () => {
+    const params = {
+      initialState: "idle",
+      states: ["idle", "active"],
+      transitions: [
+        {
+          from: "idle",
+          to: "active",
+          event: "rising" as const,
+          eventInput: "in",
+          output: true,
+        },
+      ],
+    };
+
+    const result = StateMachineBlock.step({
+      tick: 1,
+      timeMs: 100,
+      stepTimeMs: 100,
+      nodeId: "sm1",
+      params,
+      inputs: { in: true },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: { in: false },
+        lastEvents: [],
+      },
+      registry: {},
+      globalSignals: {},
+    });
+
+    expect(result.outputs.state).toBe("active");
+    expect(result.outputs.default).toBe(true);
+  });
+
+  it("builds deterministic edge-event queue sorted by input handle", () => {
+    const result = StateMachineBlock.step({
+      tick: 1,
+      timeMs: 100,
+      stepTimeMs: 100,
+      nodeId: "sm1",
+      params: {
+        initialState: "idle",
+        states: ["idle"],
+        transitions: [],
+      },
+      inputs: { b: true, a: true },
+      previousState: {
+        state: "idle",
+        memory: {},
+        stateEnteredTimeMs: 0,
+        previousInputs: { b: false, a: false },
+        lastEvents: [],
+      },
+      registry: {},
+      globalSignals: {},
+    });
+
+    const nextState = result.nextState as {
+      lastEvents: Array<{ input: string; type: string; sequence: number }>;
+    };
+
+    const compactEvents = nextState.lastEvents.map((event) => ({
+      input: event.input,
+      type: event.type,
+      sequence: event.sequence,
+    }));
+
+    expect(compactEvents).toEqual([
+      { input: "a", type: "rising", sequence: 0 },
+      { input: "b", type: "rising", sequence: 1 },
+    ]);
+  });
 });

@@ -947,3 +947,34 @@
   - `npm run test` ✅ (9 files, 48 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-22 17:34 CET
+**Task Executed:** P7-2 Temporal/Event Semantics completed and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/stateMachineBlock.ts`
+- `src/simulation/__tests__/stateMachineBlock.test.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Extended State Machine transition model with temporal/event gates:
+  - `afterMs` for elapsed-in-state timing semantics.
+  - `event` (`rising`|`falling`) + `eventInput` handle filters.
+- Added deterministic per-tick edge-event queue in runtime state (`lastEvents`) derived from prior/current inputs in sorted-handle order.
+- Exposed temporal/event context to expression evaluator:
+  - `elapsedInStateMs`
+  - `events` queue snapshot
+- Hardened expression path retained without `Function`/`eval`; parser still rejects function calls and unsafe prototype/property vectors.
+- Inspector JSON normalization now supports and preserves `afterMs`, `event`, `eventInput` fields.
+- Node UI updated to expose dedicated `state` source handle and state-machine summary counts.
+- Added regression coverage for:
+  - temporal `afterMs` gating,
+  - rising-edge event transitions,
+  - deterministic event queue ordering.
+- Validation:
+  - `npm run test` ✅ (9 files, 51 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P7-3 marked `[IN PROGRESS]`.

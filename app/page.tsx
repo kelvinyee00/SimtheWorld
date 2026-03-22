@@ -296,8 +296,8 @@ function makeNodeData(type: string): Record<string, unknown> {
         initialState: "idle",
         states: ["idle", "active"],
         transitions: [
-          { from: "idle", to: "active", guardExpr: "inputs.in === true", output: true },
-          { from: "active", to: "idle", guardExpr: "inputs.in === false", output: false },
+          { from: "idle", to: "active", event: "rising", eventInput: "in", guardExpr: "inputs.in === true", output: true },
+          { from: "active", to: "idle", event: "falling", eventInput: "in", guardExpr: "inputs.in === false", output: false },
         ],
       };
     case INTEGRATOR_BLOCK_TYPE:
@@ -403,6 +403,9 @@ interface StateMachineTransitionModel {
   guardExpr?: string;
   actionExpr?: string;
   output?: number | boolean;
+  afterMs?: number;
+  event?: "rising" | "falling";
+  eventInput?: string;
 }
 
 interface StateMachineModel {
@@ -496,6 +499,19 @@ function sanitizeStateMachineName(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function sanitizeStateMachineEventType(value: unknown): "rising" | "falling" | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "rising" || normalized === "falling") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
 function normalizeStateMachineModel(raw: unknown): StateMachineModel {
   const source =
     typeof raw === "object" && raw !== null
@@ -545,6 +561,12 @@ function normalizeStateMachineModel(raw: unknown): StateMachineModel {
           typeof candidate.output === "boolean"
             ? candidate.output
             : numericOutput;
+        const afterMs =
+          typeof candidate.afterMs === "number" && Number.isFinite(candidate.afterMs) && candidate.afterMs >= 0
+            ? candidate.afterMs
+            : undefined;
+        const event = sanitizeStateMachineEventType(candidate.event);
+        const eventInput = sanitizeStateMachineName(candidate.eventInput) ?? undefined;
 
         const normalizedTransition: StateMachineTransitionModel = {
           from,
@@ -552,6 +574,9 @@ function normalizeStateMachineModel(raw: unknown): StateMachineModel {
           ...(guardExpr ? { guardExpr } : {}),
           ...(actionExpr ? { actionExpr } : {}),
           ...(typeof output !== "undefined" ? { output } : {}),
+          ...(typeof afterMs === "number" ? { afterMs } : {}),
+          ...(event ? { event } : {}),
+          ...(eventInput ? { eventInput } : {}),
         };
 
         accumulator.push(normalizedTransition);
@@ -2400,6 +2425,9 @@ export default function Home() {
             </p>
             <p className="text-[11px] text-slate-500">
               States: {selectedStateMachineData.model.states.length} · Transitions: {selectedStateMachineData.model.transitions.length}
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Transition fields: <span className="font-mono">from,to,guardExpr,actionExpr,output,afterMs,event,eventInput</span>
             </p>
             <label className="block text-xs text-slate-600">
               State Machine Model (JSON)

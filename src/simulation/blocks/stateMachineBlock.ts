@@ -1,14 +1,20 @@
 import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
- * State Machine block scaffold (P7-1).
+ * State Machine block scaffold (P7-1/P7-2).
  *
- * Design constraints:
+ * P7-1:
  * - Deterministic transition firing (first matching transition in list order).
- * - Guard/action expression path must be side-effect free.
+ * - Guard/action expression path is side-effect free.
  * - Runtime memory is explicit node-local state.
+ *
+ * P7-2:
+ * - Temporal and event semantics (`afterMs`, `event` + `eventInput`).
+ * - Deterministic per-tick edge-event queue derived from prior/current inputs.
  */
 export const STATE_MACHINE_BLOCK_TYPE = "stateMachine" as const;
+
+type StateMachineEventType = "rising" | "falling";
 
 interface StateMachineTransition {
   from: string;
@@ -16,6 +22,12 @@ interface StateMachineTransition {
   guardExpr?: string;
   actionExpr?: string;
   output?: number | boolean;
+  /** Optional temporal guard: transition enabled when elapsed-in-state >= afterMs. */
+  afterMs?: number;
+  /** Optional edge-event filter. */
+  event?: StateMachineEventType;
+  /** Optional event input handle (defaults to `in`). */
+  eventInput?: string;
 }
 
 interface StateMachineParams {
@@ -24,9 +36,20 @@ interface StateMachineParams {
   transitions: StateMachineTransition[];
 }
 
+interface StateMachineEvent {
+  type: StateMachineEventType;
+  input: string;
+  tick: number;
+  timeMs: number;
+  sequence: number;
+}
+
 interface StateMachineRuntimeState {
   state: string;
   memory: Record<string, unknown>;
+  stateEnteredTimeMs: number;
+  previousInputs: Record<string, SignalValue>;
+  lastEvents: StateMachineEvent[];
 }
 
 type ExpressionContext = {
@@ -36,6 +59,8 @@ type ExpressionContext = {
   tick: number;
   timeMs: number;
   stepTimeMs: number;
+  elapsedInStateMs: number;
+  events: StateMachineEvent[];
 };
 
 type TokenKind = "identifier" | "number" | "string" | "operator" | "punct" | "eof";
@@ -47,6 +72,7 @@ interface Token {
 
 const MAX_EXPRESSION_LENGTH = 240;
 const MAX_EXPRESSION_TOKENS = 256;
+const DEFAULT_EVENT_INPUT = "in";
 const FORBIDDEN_PROPERTY_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
 const DISALLOWED_EXPR_PATTERNS: RegExp[] = [
@@ -80,6 +106,21 @@ function toBoolean(value: unknown): boolean {
   return false;
 }
 
+function coerceSignalValue(value: unknown): SignalValue {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "boolean" || typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.filter(
+      (entry): entry is number => typeof entry === "number" && Number.isFinite(entry)
+    );
+  }
+  return null;
+}
+
 function sanitizeExpression(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -92,6 +133,19 @@ function sanitizeExpression(value: unknown): string | undefined {
   return trimmed;
 }
 
+function parseEdgeEventType(value: unknown): StateMachineEventType | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "rising" || normalized === "falling") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
 function parseTransition(value: unknown): StateMachineTransition | null {
   if (!isPlainObject(value)) return null;
 
@@ -101,6 +155,7 @@ function parseTransition(value: unknown): StateMachineTransition | null {
 
   const outputNumber = toFiniteNumber(value.output);
   const output = typeof value.output === "boolean" ? value.output : outputNumber ?? undefined;
+  const afterMsRaw = toFiniteNumber(value.afterMs);
 
   return {
     from,
@@ -108,6 +163,9 @@ function parseTransition(value: unknown): StateMachineTransition | null {
     guardExpr: sanitizeExpression(value.guardExpr),
     actionExpr: sanitizeExpression(value.actionExpr),
     output,
+    afterMs: typeof afterMsRaw === "number" && afterMsRaw >= 0 ? afterMsRaw : undefined,
+    event: parseEdgeEventType(value.event),
+    eventInput: toStateName(value.eventInput) ?? undefined,
   };
 }
 
@@ -144,15 +202,115 @@ function parseParams(raw: Record<string, unknown>): StateMachineParams {
   };
 }
 
-function coerceRuntimeState(previousState: unknown, fallbackState: string): StateMachineRuntimeState {
-  if (!isPlainObject(previousState)) {
-    return { state: fallbackState, memory: {} };
+function coerceInputRecord(raw: unknown): Record<string, SignalValue> {
+  if (!isPlainObject(raw)) {
+    return {};
   }
 
+  const normalized: Record<string, SignalValue> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    normalized[key] = coerceSignalValue(value);
+  }
+  return normalized;
+}
+
+function coerceEventQueue(raw: unknown): StateMachineEvent[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .map((entry, index) => {
+      if (!isPlainObject(entry)) {
+        return null;
+      }
+
+      const type = parseEdgeEventType(entry.type);
+      const input = toStateName(entry.input);
+      if (!type || !input) {
+        return null;
+      }
+
+      return {
+        type,
+        input,
+        tick: toFiniteNumber(entry.tick) ?? 0,
+        timeMs: toFiniteNumber(entry.timeMs) ?? 0,
+        sequence: toFiniteNumber(entry.sequence) ?? index,
+      } satisfies StateMachineEvent;
+    })
+    .filter((event): event is StateMachineEvent => event !== null)
+    .sort((left, right) => left.sequence - right.sequence);
+}
+
+function coerceRuntimeState(params: {
+  previousState: unknown;
+  fallbackState: string;
+  currentTimeMs: number;
+}): StateMachineRuntimeState {
+  const { previousState, fallbackState, currentTimeMs } = params;
+
+  if (!isPlainObject(previousState)) {
+    return {
+      state: fallbackState,
+      memory: {},
+      stateEnteredTimeMs: currentTimeMs,
+      previousInputs: {},
+      lastEvents: [],
+    };
+  }
+
+  const resolvedState = toStateName(previousState.state);
+  const hasResolvedState = typeof resolvedState === "string";
+
   return {
-    state: toStateName(previousState.state) ?? fallbackState,
+    state: resolvedState ?? fallbackState,
     memory: isPlainObject(previousState.memory) ? previousState.memory : {},
+    stateEnteredTimeMs:
+      hasResolvedState && typeof previousState.stateEnteredTimeMs === "number"
+        ? previousState.stateEnteredTimeMs
+        : currentTimeMs,
+    previousInputs: coerceInputRecord(previousState.previousInputs),
+    lastEvents: coerceEventQueue(previousState.lastEvents),
   };
+}
+
+function buildEventQueue(params: {
+  previousInputs: Record<string, SignalValue>;
+  currentInputs: Record<string, SignalValue>;
+  tick: number;
+  timeMs: number;
+}): StateMachineEvent[] {
+  const { previousInputs, currentInputs, tick, timeMs } = params;
+
+  const handles = new Set<string>([
+    ...Object.keys(previousInputs),
+    ...Object.keys(currentInputs),
+  ]);
+
+  const orderedHandles = Array.from(handles).sort((left, right) => left.localeCompare(right));
+  const events: StateMachineEvent[] = [];
+  let sequence = 0;
+
+  for (const input of orderedHandles) {
+    const previous = previousInputs[input] ?? null;
+    const current = currentInputs[input] ?? null;
+    const previousBool = toBoolean(previous);
+    const currentBool = toBoolean(current);
+
+    if (!previousBool && currentBool) {
+      events.push({ type: "rising", input, tick, timeMs, sequence });
+      sequence += 1;
+      continue;
+    }
+
+    if (previousBool && !currentBool) {
+      events.push({ type: "falling", input, tick, timeMs, sequence });
+      sequence += 1;
+    }
+  }
+
+  return events;
 }
 
 function tokenizeExpression(expression: string): Token[] | null {
@@ -522,6 +680,10 @@ class ExpressionParser {
         return this.context.timeMs;
       case "stepTimeMs":
         return this.context.stepTimeMs;
+      case "elapsedInStateMs":
+        return this.context.elapsedInStateMs;
+      case "events":
+        return this.context.events;
       default:
         return undefined;
     }
@@ -569,33 +731,80 @@ function evaluateExpression(expression: string, context: ExpressionContext): unk
   return parser.parse();
 }
 
+function transitionMatchesEvent(params: {
+  transition: StateMachineTransition;
+  eventQueue: StateMachineEvent[];
+}): boolean {
+  const { transition, eventQueue } = params;
+  if (!transition.event) {
+    return true;
+  }
+
+  const requiredInput = transition.eventInput ?? DEFAULT_EVENT_INPUT;
+  return eventQueue.some(
+    (event) => event.type === transition.event && event.input === requiredInput
+  );
+}
+
 export const StateMachineBlock: SimulationBlockDefinition = {
   type: STATE_MACHINE_BLOCK_TYPE,
   inputPortTypes: { in: "any", default: "any" },
   outputPortTypes: { default: "any", state: "any" },
   initialize: (rawParams) => {
     const params = parseParams(rawParams);
-    return { state: params.initialState, memory: {} } as StateMachineRuntimeState;
+    return {
+      state: params.initialState,
+      memory: {},
+      stateEnteredTimeMs: 0,
+      previousInputs: {},
+      lastEvents: [],
+    } satisfies StateMachineRuntimeState;
   },
   step: ({ params: rawParams, inputs, previousState, tick, timeMs, stepTimeMs }) => {
     const params = parseParams(rawParams);
-    const runtimeState = coerceRuntimeState(previousState, params.initialState);
+    const runtimeState = coerceRuntimeState({
+      previousState,
+      fallbackState: params.initialState,
+      currentTimeMs: timeMs,
+    });
 
+    const normalizedInputs = coerceInputRecord(inputs);
+    const eventQueue = buildEventQueue({
+      previousInputs: runtimeState.previousInputs,
+      currentInputs: normalizedInputs,
+      tick,
+      timeMs,
+    });
+
+    const elapsedInStateMs = Math.max(0, timeMs - runtimeState.stateEnteredTimeMs);
     const context: ExpressionContext = {
-      inputs,
+      inputs: normalizedInputs,
       memory: runtimeState.memory,
       state: runtimeState.state,
       tick,
       timeMs,
       stepTimeMs,
+      elapsedInStateMs,
+      events: eventQueue,
     };
 
     let nextStateName = runtimeState.state;
     let nextMemory = runtimeState.memory;
     let defaultOutput: SignalValue = null;
+    let transitionFired = false;
 
     for (const transition of params.transitions) {
       if (transition.from !== runtimeState.state) {
+        continue;
+      }
+
+      const temporalSatisfied =
+        typeof transition.afterMs === "number" ? elapsedInStateMs >= transition.afterMs : true;
+      if (!temporalSatisfied) {
+        continue;
+      }
+
+      if (!transitionMatchesEvent({ transition, eventQueue })) {
         continue;
       }
 
@@ -607,6 +816,7 @@ export const StateMachineBlock: SimulationBlockDefinition = {
       }
 
       nextStateName = transition.to;
+      transitionFired = true;
 
       if (transition.actionExpr) {
         const actionResult = evaluateExpression(transition.actionExpr, context);
@@ -633,6 +843,9 @@ export const StateMachineBlock: SimulationBlockDefinition = {
       nextState: {
         state: nextStateName,
         memory: nextMemory,
+        stateEnteredTimeMs: transitionFired ? timeMs : runtimeState.stateEnteredTimeMs,
+        previousInputs: normalizedInputs,
+        lastEvents: eventQueue,
       } satisfies StateMachineRuntimeState,
     };
   },
