@@ -329,3 +329,52 @@ Constraints for P0:
 - Upgraded model schema to version 3 to include enhanced metadata (model name, description).
 - Implemented a robust migration layer that transparently promotes v1 and v2 models to v3 on load.
 - Added localStorage cross-key fallback to ensure seamless user transition between schema generations.
+
+### 18) Advanced Control & Discrete Modeling (P6)
+- Added closed-loop control and discrete filter primitives:
+  - **PID** with anti-windup clamping and derivative filter coefficient `N`
+  - **Discrete Transfer Fcn** via deterministic difference-equation stepping
+  - **Lead/Lag** with Tustin discretization and static-gain fallback
+- Added subsystem mask contracts for multi-I/O parameterized interfaces:
+  - `mask.inputs`, `mask.outputs`, `mask.parameters`
+  - dynamic handle rendering + validation for masked alias wiring
+  - nested block parameter substitution via `$parameterName`
+- Added global signal bus blocks:
+  - **GOTO/FROM** with deterministic same-tick ordering via virtual execution dependencies
+- Added lookup tables:
+  - **LUT 1D** linear interpolation + clamp
+  - **LUT 2D** bilinear interpolation + clamp
+- Regression safety maintained through expanded deterministic test suite.
+
+### 19) Iteration 7 Roadmap — Logic State Machines + Code Generation (P7)
+
+#### 19.1 State-Oriented Modeling Layer
+- Introduce **State Machine Block v1** with explicit state set, transition list, guard predicates, and transition actions.
+- Deterministic contract:
+  - one transition firing policy per tick/event step,
+  - stable transition priority resolution,
+  - reproducible state entry/exit action ordering.
+
+#### 19.2 Temporal/Event Semantics
+- Add deterministic event queue and temporal operators:
+  - edge events (`rising`, `falling`),
+  - time-qualified triggers (`after(t)`),
+  - optional event broadcast scope controls.
+- Ensure compatibility with multi-rate base scheduler without introducing non-deterministic races.
+
+#### 19.3 Logic Table Authoring
+- Add **Truth Table / Logic Table** block for combinational decision models.
+- Support explicit boolean input mapping, row priority, and default/fallback rows.
+- Integrate with existing typed-signal validation (`number|boolean|vector`) and subsystem nesting.
+
+#### 19.4 Code Generation Path (C subset)
+- Add graph-lowering pass to a typed intermediate representation (IR).
+- Add **C backend v1** for a deterministic executable subset:
+  - arithmetic, compare/switch, delays, PID/discrete primitives, LUTs,
+  - state machine step function emission.
+- Emit build-ready artifact package (`.c/.h`, model metadata, checksum).
+
+#### 19.5 SIL Equivalence + Verification
+- Add Software-in-the-Loop harness comparing runtime trace vs generated C trace.
+- Define acceptance thresholds for numeric tolerance and exact match domains.
+- Keep release gate unchanged: `npm run test`, `npm run lint`, `npm run build` + SIL equivalence pass for generated models.

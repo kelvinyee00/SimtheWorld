@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P6 tasks focus on advanced control and discrete modeling blocks, maintaining P1-P5 stability and deterministic behavior.
+- P7 planning targets hybrid logic/state-machine modeling and deterministic code generation while preserving P1-P6 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -13,6 +13,15 @@
 4. Run relevant validation commands and report exact outputs.
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
+
+
+## P7 Queue (Logic State Machines & Code Generation)
+- [ ] P7-1 State Machine Block v1 (states, transitions, guard/action expressions)
+- [ ] P7-2 Temporal/Event Semantics (after/edge events + deterministic event queue)
+- [ ] P7-3 Truth Table / Logic Table Block (combinational decision modeling)
+- [ ] P7-4 C Code Generation Pipeline v1 (graph IR -> ANSI C subset)
+- [ ] P7-5 SIL Equivalence Harness (generated C trace vs runtime trace)
+- [ ] P7-6 Final Verification + Deployment
 
 ## P6 Queue (Advanced Control & Discrete Modeling)
 - [x] P6-1 PID Controller Block (P/I/D/N parameters + anti-windup clamping)

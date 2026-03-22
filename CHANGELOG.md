@@ -857,3 +857,24 @@
   - P6-6 marked complete.
   - Added explicit phase closeout marker for P6 Advanced Control & Discrete Modeling.
 - Deployment action: pushed final closeout commit to `origin/master`.
+
+---
+**Date/Time:** 2026-03-22 11:33 CET
+**Task Executed:** P7 formalization (planning-only) after P6 phase completion
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Confirmed no active execution task after P6 closeout.
+- Added full **P7 queue** to `TASK_QUEUE.md`:
+  - State Machine block
+  - Temporal/event semantics
+  - Truth/logic table modeling
+  - C code generation pipeline
+  - SIL equivalence harness
+  - Final verification/deployment
+- Extended `ARCHITECTURE.md` with:
+  - P6 architectural completion summary
+  - P7 architectural roadmap (runtime semantics + codegen + validation gates)
+- No production code changes in this step (documentation planning only).
