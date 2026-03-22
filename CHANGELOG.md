@@ -878,3 +878,72 @@
   - P6 architectural completion summary
   - P7 architectural roadmap (runtime semantics + codegen + validation gates)
 - No production code changes in this step (documentation planning only).
+
+---
+**Date/Time:** 2026-03-22 15:36 CET
+**Task Executed:** P7-1 State Machine Block v1 scaffold implemented (in progress, not phase-complete)
+**Files Modified/Created:**
+- `src/simulation/blocks/stateMachineBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `src/simulation/types.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/__tests__/stateMachineBlock.test.ts` (new)
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added State Machine runtime scaffold with typed params/state:
+  - params: `initialState`, `states[]`, `transitions[]`
+  - transition fields: `from`, `to`, `guardExpr?`, `actionExpr?`, `output?`
+- Transition evaluation is deterministic by transition list order; first matching transition fires.
+- Guard/action expression path is sandbox-minimal (character + pattern constrained, no assignment/statements), evaluated against deterministic context (`inputs`, `memory`, `state`, `tick`, `timeMs`, `stepTimeMs`).
+- Action expression can return an object patch merged into node-local memory.
+- Outputs include:
+  - `state` handle (current state string)
+  - `default` handle (optional numeric/boolean transition output, otherwise `null`).
+- Integrated state-machine block into:
+  - simulation block registry
+  - main canvas library menu + node defaults
+  - subsystem editor library menu + node defaults
+  - custom node rendering/handles
+  - inspector scaffold (JSON textarea model edit)
+- Added focused tests for:
+  1) initial state/output behavior,
+  2) deterministic transition order,
+  3) guard expression behavior,
+  4) action expression memory update behavior.
+- Validation:
+  - `npm run test` ✅ (9 files, 46 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-22 16:40 CET
+**Task Executed:** P7-1 State Machine Block v1 completed and verified
+**Files Modified/Created:**
+- `src/simulation/blocks/stateMachineBlock.ts`
+- `src/simulation/__tests__/stateMachineBlock.test.ts`
+- `app/page.tsx`
+- `src/simulation/registry.ts`
+- `src/simulation/types.ts`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Implemented **State Machine Block v1** with deterministic transition firing (list order priority).
+- Developed a **Hardened Expression Parser** for guards and actions:
+  - Recursive descent parser supporting logical, comparison, and arithmetic operations.
+  - Strict sandboxing (no `Function`/`eval`, restricted character set, segment blacklists like `__proto__`).
+  - Context binding for `inputs`, `memory`, `state`, and timing primitives.
+- Upgraded **Inspector UX**:
+  - Draft-based JSON editor with Apply/Format/Reset workflow.
+  - Error reporting and dirty-state tracking to prevent accidental data loss.
+- Enhanced **Custom Node UI**:
+  - Dedicated "state" and "default" handles for State Machine blocks.
+  - Symbol and property display.
+- Validation pass:
+  - `npm run test` ✅ (9 files, 48 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

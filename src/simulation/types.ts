@@ -22,7 +22,7 @@ export type SimulationStatus = "idle" | "running" | "paused" | "completed";
  */
 export type SignalType = "number" | "boolean" | "vector" | "any";
 
-export type SignalValue = number | boolean | number[] | null;
+export type SignalValue = number | boolean | string | number[] | null;
 
 /**
  * Node instance metadata owned by the graph layer.

@@ -48,6 +48,7 @@ import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
+import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -139,6 +140,7 @@ const NODE_TYPES: NodeTypes = {
   [FROM_BLOCK_TYPE]: CustomBlockNode,
   [LUT_1D_BLOCK_TYPE]: CustomBlockNode,
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
+  [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -163,6 +165,7 @@ const LIBRARY_BLOCKS = [
   { label: "FROM", type: FROM_BLOCK_TYPE },
   { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
   { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
+  { label: "State Machine", type: STATE_MACHINE_BLOCK_TYPE },
   { label: "Inport", type: INPORT_BLOCK_TYPE },
   { label: "Outport", type: OUTPORT_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
@@ -287,6 +290,16 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "LUT 1D", breakpointsX: [0, 10], tableData: [0, 100] };
     case LUT_2D_BLOCK_TYPE:
       return { label: "LUT 2D", breakpointsX: [0, 10], breakpointsY: [0, 10], tableData: [[0, 100], [100, 200]] };
+    case STATE_MACHINE_BLOCK_TYPE:
+      return {
+        label: "State Machine",
+        initialState: "idle",
+        states: ["idle", "active"],
+        transitions: [
+          { from: "idle", to: "active", guardExpr: "inputs.in === true", output: true },
+          { from: "active", to: "idle", guardExpr: "inputs.in === false", output: false },
+        ],
+      };
     case INTEGRATOR_BLOCK_TYPE:
       return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
@@ -384,6 +397,25 @@ interface SubsystemMaskInspectorData {
   parameters: string;
 }
 
+interface StateMachineTransitionModel {
+  from: string;
+  to: string;
+  guardExpr?: string;
+  actionExpr?: string;
+  output?: number | boolean;
+}
+
+interface StateMachineModel {
+  initialState: string;
+  states: string[];
+  transitions: StateMachineTransitionModel[];
+}
+
+interface StateMachineInspectorData {
+  model: StateMachineModel;
+  modelJson: string;
+}
+
 const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
@@ -455,6 +487,106 @@ function formatMsAsSeconds(ms: number): string {
   return String(ms / MS_PER_SECOND);
 }
 
+function sanitizeStateMachineName(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeStateMachineModel(raw: unknown): StateMachineModel {
+  const source =
+    typeof raw === "object" && raw !== null
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const seenStates = new Set<string>();
+  const states = Array.isArray(source.states)
+    ? source.states
+        .map((entry) => sanitizeStateMachineName(entry))
+        .filter((entry): entry is string => {
+          if (!entry) {
+            return false;
+          }
+          const normalized = entry.toLowerCase();
+          if (seenStates.has(normalized)) {
+            return false;
+          }
+          seenStates.add(normalized);
+          return true;
+        })
+    : [];
+
+  const initialStateCandidate = sanitizeStateMachineName(source.initialState);
+  const initialState = initialStateCandidate ?? states[0] ?? "idle";
+
+  const transitions = Array.isArray(source.transitions)
+    ? source.transitions.reduce<StateMachineTransitionModel[]>((accumulator, transition) => {
+        if (typeof transition !== "object" || transition === null) {
+          return accumulator;
+        }
+
+        const candidate = transition as Record<string, unknown>;
+        const from = sanitizeStateMachineName(candidate.from);
+        const to = sanitizeStateMachineName(candidate.to);
+        if (!from || !to) {
+          return accumulator;
+        }
+
+        const guardExpr = sanitizeStateMachineName(candidate.guardExpr) ?? undefined;
+        const actionExpr = sanitizeStateMachineName(candidate.actionExpr) ?? undefined;
+        const numericOutput =
+          typeof candidate.output === "number" && Number.isFinite(candidate.output)
+            ? candidate.output
+            : undefined;
+        const output =
+          typeof candidate.output === "boolean"
+            ? candidate.output
+            : numericOutput;
+
+        const normalizedTransition: StateMachineTransitionModel = {
+          from,
+          to,
+          ...(guardExpr ? { guardExpr } : {}),
+          ...(actionExpr ? { actionExpr } : {}),
+          ...(typeof output !== "undefined" ? { output } : {}),
+        };
+
+        accumulator.push(normalizedTransition);
+        return accumulator;
+      }, [])
+    : [];
+
+  const normalizedStates = states.includes(initialState)
+    ? states
+    : [initialState, ...states];
+
+  return {
+    initialState,
+    states: normalizedStates,
+    transitions,
+  };
+}
+
+function parseStateMachineModelJson(rawValue: string): StateMachineModel | null {
+  try {
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return normalizeStateMachineModel(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function formatStateMachineModelJson(model: StateMachineModel): string {
+  return JSON.stringify(model, null, 2);
+}
+
 function triggerTextDownload(params: {
   fileName: string;
   extension: "json" | "csv";
@@ -484,6 +616,9 @@ export default function Home() {
   const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
   const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
   const [modelActionMessage, setModelActionMessage] = useState<string | null>(null);
+  const [stateMachineModelDraft, setStateMachineModelDraft] = useState<string>("");
+  const [stateMachineDraftNodeId, setStateMachineDraftNodeId] = useState<string | null>(null);
+  const [stateMachineDraftError, setStateMachineDraftError] = useState<string | null>(null);
   const lastPersistedCompletionRef = useRef<string | null>(null);
   const modelFileInputRef = useRef<HTMLInputElement | null>(null);
   const hasInitializedModelPersistenceRef = useRef(false);
@@ -1190,6 +1325,43 @@ export default function Home() {
     };
   }, [selectedNode]);
 
+  const selectedStateMachineData = useMemo<StateMachineInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== STATE_MACHINE_BLOCK_TYPE) {
+      return null;
+    }
+
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    const model = normalizeStateMachineModel(raw);
+
+    return {
+      model,
+      modelJson: formatStateMachineModelJson(model),
+    };
+  }, [selectedNode]);
+
+  useEffect(() => {
+    if (!selectedStateMachineData || !selectedNodeId) {
+      setStateMachineDraftNodeId(null);
+      setStateMachineModelDraft("");
+      setStateMachineDraftError(null);
+      return;
+    }
+
+    if (stateMachineDraftNodeId !== selectedNodeId) {
+      setStateMachineDraftNodeId(selectedNodeId);
+      setStateMachineModelDraft(selectedStateMachineData.modelJson);
+      setStateMachineDraftError(null);
+    }
+  }, [selectedNodeId, selectedStateMachineData, stateMachineDraftNodeId]);
+
+  const stateMachineDraftIsDirty = useMemo(() => {
+    if (!selectedStateMachineData) {
+      return false;
+    }
+
+    return stateMachineModelDraft !== selectedStateMachineData.modelJson;
+  }, [selectedStateMachineData, stateMachineModelDraft]);
+
   const selectedSampleTimeMs = useMemo<number | null>(() => {
     if (!selectedNode) {
       return null;
@@ -1473,6 +1645,55 @@ export default function Home() {
     },
     [parseCoefficientList, patchSelectedNodeData]
   );
+
+  const applyStateMachineModelDraft = useCallback(() => {
+    if (!selectedStateMachineData) {
+      return;
+    }
+
+    const parsed = parseStateMachineModelJson(stateMachineModelDraft);
+    if (!parsed) {
+      const message = "State machine model must be valid JSON object.";
+      setStateMachineDraftError(message);
+      setModelActionMessage(message);
+      return;
+    }
+
+    patchSelectedNodeData({
+      initialState: parsed.initialState,
+      states: parsed.states,
+      transitions: parsed.transitions,
+    });
+
+    const formatted = formatStateMachineModelJson(parsed);
+    setStateMachineModelDraft(formatted);
+    setStateMachineDraftError(null);
+    setModelActionMessage("State machine model updated.");
+  }, [patchSelectedNodeData, selectedStateMachineData, stateMachineModelDraft]);
+
+  const formatStateMachineModelDraft = useCallback(() => {
+    const parsed = parseStateMachineModelJson(stateMachineModelDraft);
+    if (!parsed) {
+      const message = "State machine model must be valid JSON object.";
+      setStateMachineDraftError(message);
+      setModelActionMessage(message);
+      return;
+    }
+
+    setStateMachineModelDraft(formatStateMachineModelJson(parsed));
+    setStateMachineDraftError(null);
+    setModelActionMessage("State machine model formatted.");
+  }, [stateMachineModelDraft]);
+
+  const resetStateMachineModelDraft = useCallback(() => {
+    if (!selectedStateMachineData) {
+      return;
+    }
+
+    setStateMachineModelDraft(selectedStateMachineData.modelJson);
+    setStateMachineDraftError(null);
+    setModelActionMessage("State machine editor reset to node model.");
+  }, [selectedStateMachineData]);
 
   const commitLut2DTable = useCallback(
     (rawValue: string) => {
@@ -2169,6 +2390,60 @@ export default function Home() {
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
               />
             </label>
+          </div>
+        ) : null}
+
+        {selectedStateMachineData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              State Machine Properties
+            </p>
+            <p className="text-[11px] text-slate-500">
+              States: {selectedStateMachineData.model.states.length} · Transitions: {selectedStateMachineData.model.transitions.length}
+            </p>
+            <label className="block text-xs text-slate-600">
+              State Machine Model (JSON)
+              <textarea
+                rows={10}
+                value={stateMachineModelDraft}
+                onChange={(event) => {
+                  setStateMachineModelDraft(event.target.value);
+                  if (stateMachineDraftError) {
+                    setStateMachineDraftError(null);
+                  }
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={applyStateMachineModelDraft}
+                className="rounded-md border border-indigo-300 bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-700"
+              >
+                Apply JSON
+              </button>
+              <button
+                type="button"
+                onClick={formatStateMachineModelDraft}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              >
+                Format
+              </button>
+              <button
+                type="button"
+                onClick={resetStateMachineModelDraft}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              >
+                Reset
+              </button>
+              <span className="self-center text-[11px] text-slate-500">
+                {stateMachineDraftIsDirty ? "Unsaved JSON changes" : "Synced"}
+              </span>
+            </div>
+            {stateMachineDraftError ? (
+              <p className="text-xs text-rose-700">{stateMachineDraftError}</p>
+            ) : null}
           </div>
         ) : null}
 

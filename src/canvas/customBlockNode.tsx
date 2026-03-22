@@ -33,6 +33,7 @@ import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
+import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -187,6 +188,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isFrom = type === FROM_BLOCK_TYPE;
   const isLut1D = type === LUT_1D_BLOCK_TYPE;
   const isLut2D = type === LUT_2D_BLOCK_TYPE;
+  const isStateMachine = type === STATE_MACHINE_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -204,7 +206,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDiscreteTransfer ||
     isLeadLag ||
     isGoto ||
-    isFrom || isLut1D || isLut2D;
+    isFrom || isLut1D || isLut2D || isStateMachine;
   const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
@@ -362,6 +364,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                 <p className="text-[11px] text-slate-500">LUT</p>
               ) : isGoto || isFrom ? (
                 <p className="text-[11px] text-slate-500">tag={String(data.tag ?? "signal")}</p>
+) : isStateMachine ? (
+                <p className="text-[11px] text-slate-500">state machine</p>
               ) : isSubsystem ? (
                 <p className="text-[11px] text-slate-500 italic">I/O: {subsystemInputHandles.length}/{subsystemOutputHandles.length}</p>
               ) : (
@@ -371,7 +375,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isCounter || isMathNode || isInport || isMux) ? (
+        {(isCounter || isMathNode || isInport || isMux || isStateMachine) ? (
           <Handle
             type="source"
             id="default"
@@ -381,10 +385,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
