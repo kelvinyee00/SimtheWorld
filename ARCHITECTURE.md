@@ -420,3 +420,42 @@ Constraints for P0:
 - Added SIL strict mode and report export:
   - strict unsupported-block failure gate,
   - structured mismatch report payload and JSON serialization.
+
+### 22) Iteration 9 Roadmap — State-Machine Parity + Delivery Tooling (P9)
+
+#### 22.1 State Machine C Lowering v2
+- Extend state-machine backend from skeleton to semantic lowering:
+  - richer guard expression subset (numeric/boolean comparisons and conjunctions),
+  - action-expression lowering path for deterministic memory/state writes,
+  - temporal/event gate lowering (`afterMs`, edge-event conditions).
+- Preserve deterministic transition priority (list order, first fire).
+
+#### 22.2 SIL Equivalence for Temporal State Machines
+- Add dedicated SIL scenarios for state-machine temporal/event transitions.
+- Compare state/output traces across runtime and generated backend for:
+  - timed transitions,
+  - rising/falling event gates,
+  - guarded transitions with action side effects.
+- Add tolerance policy for numeric domains and exact matching for discrete state transitions.
+
+#### 22.3 Standalone Codegen CLI Driver
+- Add command-line entrypoint to generate artifacts from model JSON files.
+- Expected workflow:
+  - input: model JSON path,
+  - output: artifact package (`.c`, `.h`, `.ir.json`, manifest/metadata),
+  - deterministic exit codes for CI automation.
+
+#### 22.4 Documentation / Wiki Coverage
+- Add markdown documentation for:
+  - block catalog (including Truth Table, State Machine, PID, LUT, GOTO/FROM),
+  - codegen IR and generated C API,
+  - SIL workflow and strict mode behavior,
+  - CLI usage examples.
+
+#### 22.5 P9 Release Gate
+- Final closeout requires:
+  - `npm run test`
+  - `npm run lint`
+  - `npm run build`
+  - state-machine SIL parity suite green,
+  - CLI driver smoke verification.

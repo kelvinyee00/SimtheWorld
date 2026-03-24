@@ -1116,3 +1116,20 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue updated to mark P8 closeout complete.
+
+---
+**Date/Time:** 2026-03-24 21:33 CET
+**Task Executed:** P9 formalization + P9-1 kickoff
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Formalized P9 queue (P9-1..P9-5) in `TASK_QUEUE.md`.
+- Added Iteration 9 architectural roadmap in `ARCHITECTURE.md`:
+  - state-machine lowering v2,
+  - temporal/event SIL parity,
+  - standalone codegen CLI,
+  - docs/wiki coverage,
+  - final P9 verification gate.
+- Set P9-1 as `[IN PROGRESS]` and initiated execution planning using Codex.

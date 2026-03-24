@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P8 planning targets codegen fidelity, SIL rigor, and deployment-grade artifact workflows while preserving P1-P7 stability.
+- P9 planning targets full state-machine codegen semantics, SIL parity for temporal/event behavior, and delivery/tooling hardening while preserving P1-P8 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,6 +14,13 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
+
+## P9 Queue (State-Machine Codegen Parity & Delivery Tooling)
+- [ ] P9-1 State Machine C-Code Lowering v2 (complex guard/action expressions + temporal/event gates) [IN PROGRESS]
+- [ ] P9-2 SIL Equivalence for State Machines (trace comparison for temporal transitions)
+- [ ] P9-3 CLI Codegen Driver (standalone CLI for generating artifacts from .json models)
+- [ ] P9-4 Documentation / Wiki (Markdown docs for all block types and C API)
+- [ ] P9-5 Final Verification + Deployment
 
 ## P8 Queue (Codegen Fidelity & Verification Hardening)
 - [x] P8-1 Truth Table C-Code Lowering v1 (non-stub branch emission)
