@@ -1133,3 +1133,23 @@
   - docs/wiki coverage,
   - final P9 verification gate.
 - Set P9-1 as `[IN PROGRESS]` and initiated execution planning using Codex.
+
+---
+**Date/Time:** 2026-03-24 23:31 CET
+**Task Executed:** P9-1 State Machine C-Code Lowering v2 completed and verified
+**Files Modified/Created:**
+- `src/codegen/cCodegen.ts`
+- `src/codegen/__tests__/cCodegen.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Extended C backend state-machine lowering from v1 skeleton to v2 safe-subset semantics:
+  - Guard lowering for deterministic subset (`true/false`, boolean checks, numeric/boolean comparisons).
+  - Temporal/event gate lowering with generated elapsed/event state arrays and edge checks.
+  - Constrained action lowering for `outputs.default` and `memory.slot0..slot3` assignments.
+  - Explicit fallback comments for unsupported guard/action/event input forms.
+- Validation:
+  - `npm run test` ✅ (13 files, 67 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P9-2 marked `[IN PROGRESS]`.
