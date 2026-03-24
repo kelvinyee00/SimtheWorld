@@ -409,3 +409,14 @@ Constraints for P0:
   - `npm run lint`
   - `npm run build`
   - SIL strict pass on supported reference models.
+
+### 21) P8 Implementation Outcome (Codegen Fidelity & Verification Hardening)
+- Truth Table backend lowering now emits deterministic C branch logic (`if/else if/else`) with row-priority semantics and numeric-tolerance equality checks.
+- State Machine backend lowering now emits deterministic state-index transition skeletons with single-fire gating and ordered transition traversal.
+- Added deterministic artifact package envelope for codegen outputs:
+  - source/header/IR files,
+  - reproducible checksum manifest,
+  - metadata envelope for downstream tooling.
+- Added SIL strict mode and report export:
+  - strict unsupported-block failure gate,
+  - structured mismatch report payload and JSON serialization.

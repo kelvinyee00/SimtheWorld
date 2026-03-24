@@ -1073,3 +1073,46 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P8-3 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-24 03:45 CET
+**Task Executed:** P8-3 Artifact Package Manifests + P8-4 SIL Strict Mode completed
+**Files Modified/Created:**
+- `src/codegen/artifactPackage.ts` (new)
+- `src/codegen/__tests__/artifactPackage.test.ts` (new)
+- `src/codegen/silHarness.ts`
+- `src/codegen/__tests__/silHarness.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added deterministic codegen artifact envelope:
+  - files: `<model>.h`, `<model>.c`, `<model>.ir.json`
+  - manifest: per-file checksum/bytes + package checksum (`fnv1a32`)
+  - metadata: schema version, node/edge counts, unsupported block set
+- Added artifact package serialization helper for export/integration paths.
+- Added SIL strict mode (`unsupported-fail`) to hard-fail runs with unsupported block types even when trace values match.
+- Added structured SIL report object and JSON serializer for CI/report export.
+- Regression coverage added for:
+  - deterministic artifact package checksums,
+  - unsupported metadata propagation,
+  - strict-mode SIL fail gates,
+  - report serialization.
+- Validation:
+  - `npm run test` ✅ (13 files, 65 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-24 03:46 CET
+**Task Executed:** P8-5 Final Verification + Deployment (P8 PHASE COMPLETE)
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Completed final P8 verification/deployment sweep on latest integration state.
+- Confirmed P8-1 through P8-4 remain stable and deterministic.
+- Final validation gates:
+  - `npm run test` ✅ (13 files, 65 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue updated to mark P8 closeout complete.
