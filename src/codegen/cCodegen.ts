@@ -35,6 +35,25 @@ interface TruthTableCodegenRow {
   output: number | boolean;
 }
 
+type StateMachineEventType = "rising" | "falling";
+
+interface StateMachineCodegenTransition {
+  fromIndex: number;
+  toIndex: number;
+  output?: number | boolean;
+  guardExpr?: string;
+  actionExpr?: string;
+  afterMs?: number;
+  event?: StateMachineEventType;
+  eventInput?: string;
+}
+
+interface StateMachineCodegenDefinition {
+  states: string[];
+  initialStateIndex: number;
+  transitions: StateMachineCodegenTransition[];
+}
+
 const SUPPORTED_BLOCK_TYPES = new Set<string>([
   "counter",
   "gain",
@@ -220,7 +239,10 @@ function resolveInputExpression(params: {
   const { incomingEdges, nodeIdToIndex, handle } = params;
 
   const direct = incomingEdges.find((edge) => edge.targetHandle === handle);
-  const fallback = handle === "in1" ? incomingEdges.find((edge) => edge.targetHandle === "default") : undefined;
+  const fallback =
+    handle === "in1"
+      ? incomingEdges.find((edge) => edge.targetHandle === "default")
+      : undefined;
   const chosen = direct ?? fallback;
 
   if (!chosen) {
@@ -284,6 +306,191 @@ function emitTruthTableCode(params: {
   sourceLines.push("  else {");
   sourceLines.push(`    state->node_outputs[${nodeIndex}] = ${toCOutputLiteral(elseOutput)};`);
   sourceLines.push("  }");
+}
+
+function normalizeStateName(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeStateMachineDefinition(raw: Record<string, unknown>): StateMachineCodegenDefinition {
+  const seen = new Set<string>();
+  const declaredStates = Array.isArray(raw.states)
+    ? raw.states
+        .map((entry) => normalizeStateName(entry))
+        .filter((entry): entry is string => {
+          if (!entry) {
+            return false;
+          }
+
+          const normalized = entry.toLowerCase();
+          if (seen.has(normalized)) {
+            return false;
+          }
+
+          seen.add(normalized);
+          return true;
+        })
+    : [];
+
+  const initialStateCandidate = normalizeStateName(raw.initialState);
+  const initialState = initialStateCandidate ?? declaredStates[0] ?? "idle";
+  const states = declaredStates.includes(initialState)
+    ? declaredStates
+    : [initialState, ...declaredStates];
+
+  const stateToIndex = new Map(states.map((state, index) => [state, index]));
+
+  const transitions = Array.isArray(raw.transitions)
+    ? raw.transitions.reduce<StateMachineCodegenTransition[]>((accumulator, transition) => {
+        if (typeof transition !== "object" || transition === null) {
+          return accumulator;
+        }
+
+        const transitionRecord = transition as Record<string, unknown>;
+        const from = normalizeStateName(transitionRecord.from);
+        const to = normalizeStateName(transitionRecord.to);
+        if (!from || !to) {
+          return accumulator;
+        }
+
+        const fromIndex = stateToIndex.get(from);
+        const toIndex = stateToIndex.get(to);
+        if (typeof fromIndex !== "number" || typeof toIndex !== "number") {
+          return accumulator;
+        }
+
+        const output =
+          typeof transitionRecord.output === "boolean"
+            ? transitionRecord.output
+            : typeof transitionRecord.output === "number" && Number.isFinite(transitionRecord.output)
+              ? transitionRecord.output
+              : undefined;
+
+        const guardExpr = normalizeStateName(transitionRecord.guardExpr) ?? undefined;
+        const actionExpr = normalizeStateName(transitionRecord.actionExpr) ?? undefined;
+        const afterMs =
+          typeof transitionRecord.afterMs === "number" &&
+          Number.isFinite(transitionRecord.afterMs) &&
+          transitionRecord.afterMs >= 0
+            ? transitionRecord.afterMs
+            : undefined;
+        const event =
+          transitionRecord.event === "rising" || transitionRecord.event === "falling"
+            ? transitionRecord.event
+            : undefined;
+        const eventInput = normalizeStateName(transitionRecord.eventInput) ?? undefined;
+
+        accumulator.push({
+          fromIndex,
+          toIndex,
+          output,
+          guardExpr,
+          actionExpr,
+          afterMs,
+          event,
+          eventInput,
+        });
+        return accumulator;
+      }, [])
+    : [];
+
+  return {
+    states,
+    initialStateIndex: stateToIndex.get(initialState) ?? 0,
+    transitions,
+  };
+}
+
+function toStateMachineGuardCondition(guardExpr: string | undefined): { condition: string; note?: string } {
+  if (!guardExpr) {
+    return { condition: "1" };
+  }
+
+  const normalized = guardExpr.trim().toLowerCase();
+  if (normalized === "true") {
+    return { condition: "1" };
+  }
+
+  if (normalized === "false") {
+    return { condition: "0" };
+  }
+
+  return {
+    condition: "0",
+    note: `guardExpr not lowered in v1 (${guardExpr})`,
+  };
+}
+
+function emitStateMachineCode(params: {
+  sourceLines: string[];
+  nodeIndex: number;
+  nodeParams: Record<string, unknown>;
+}): void {
+  const { sourceLines, nodeIndex, nodeParams } = params;
+  const definition = normalizeStateMachineDefinition(nodeParams);
+
+  sourceLines.push("  /* State Machine logic emitted (state-index skeleton) */");
+  sourceLines.push(`  int sm_prev_state_${nodeIndex} = state->state_machine_active_state[${nodeIndex}];`);
+  sourceLines.push(`  int sm_next_state_${nodeIndex} = sm_prev_state_${nodeIndex};`);
+  sourceLines.push(`  int sm_transition_fired_${nodeIndex} = 0;`);
+
+  if (definition.transitions.length === 0) {
+    sourceLines.push(`  state->node_outputs[${nodeIndex}] = 0.0;`);
+    sourceLines.push(`  state->state_machine_active_state[${nodeIndex}] = sm_next_state_${nodeIndex};`);
+    return;
+  }
+
+  definition.transitions.forEach((transition, transitionIndex) => {
+    const { condition: guardCondition, note } = toStateMachineGuardCondition(transition.guardExpr);
+    const conditions = [
+      `!sm_transition_fired_${nodeIndex}`,
+      `sm_prev_state_${nodeIndex} == ${transition.fromIndex}`,
+      guardCondition,
+    ];
+
+    if (typeof transition.afterMs === "number") {
+      conditions.push("0");
+      sourceLines.push(
+        `  /* transition[${transitionIndex}] afterMs=${toCNumberLiteral(transition.afterMs)} not lowered in v1 */`
+      );
+    }
+
+    if (transition.event) {
+      conditions.push("0");
+      sourceLines.push(
+        `  /* transition[${transitionIndex}] event=${transition.event} input=${transition.eventInput ?? "in"} not lowered in v1 */`
+      );
+    }
+
+    if (note) {
+      sourceLines.push(`  /* transition[${transitionIndex}] ${note} */`);
+    }
+
+    if (transition.actionExpr) {
+      sourceLines.push(
+        `  /* transition[${transitionIndex}] actionExpr not lowered in v1 (${transition.actionExpr}) */`
+      );
+    }
+
+    sourceLines.push(`  if (${conditions.join(" && ")}) {`);
+    sourceLines.push(`    sm_next_state_${nodeIndex} = ${transition.toIndex};`);
+    sourceLines.push(`    sm_transition_fired_${nodeIndex} = 1;`);
+    sourceLines.push(`    state->node_outputs[${nodeIndex}] = ${toCOutputLiteral(transition.output)};`);
+    sourceLines.push("  }");
+  });
+
+  sourceLines.push(`  if (!sm_transition_fired_${nodeIndex}) {`);
+  sourceLines.push(`    state->node_outputs[${nodeIndex}] = 0.0;`);
+  sourceLines.push("  }");
+  sourceLines.push(`  state->state_machine_active_state[${nodeIndex}] = sm_next_state_${nodeIndex};`);
+  sourceLines.push(
+    `  /* states: ${definition.states.map((state, index) => `${index}:${state}`).join(", ")} */`
+  );
 }
 
 export function buildCodegenIR(params: {
@@ -383,6 +590,14 @@ export function generateAnsiCArtifacts(params: {
     if (node.type === "counter") {
       const start = toFiniteNumber(node.params.start, 0);
       sourceLines.push(`  state->node_internal_state[${index}] = ${toCNumberLiteral(start)};`);
+      return;
+    }
+
+    if (node.type === "stateMachine") {
+      const definition = normalizeStateMachineDefinition(node.params);
+      sourceLines.push(
+        `  state->state_machine_active_state[${index}] = ${definition.initialStateIndex};`
+      );
     }
   });
 
@@ -423,13 +638,14 @@ export function generateAnsiCArtifacts(params: {
     switch (node.type) {
       case "gain": {
         const gain = toFiniteNumber(node.params.gain, 1);
-        const sourceExpression = incomingEdges.length > 0
-          ? resolveInputExpression({
-              incomingEdges,
-              nodeIdToIndex,
-              handle: incomingEdges[0].targetHandle,
-            })
-          : "0.0";
+        const sourceExpression =
+          incomingEdges.length > 0
+            ? resolveInputExpression({
+                incomingEdges,
+                nodeIdToIndex,
+                handle: incomingEdges[0].targetHandle,
+              })
+            : "0.0";
         sourceLines.push(
           `  state->node_outputs[${nodeIndex}] = ${sourceExpression} * ${toCNumberLiteral(gain)};`
         );
@@ -477,10 +693,14 @@ export function generateAnsiCArtifacts(params: {
         break;
       }
 
-      case "stateMachine":
-        sourceLines.push("  /* State Machine logic stub */");
-        sourceLines.push(`  state->node_outputs[${nodeIndex}] = 0.0;`);
+      case "stateMachine": {
+        emitStateMachineCode({
+          sourceLines,
+          nodeIndex,
+          nodeParams: node.params,
+        });
         break;
+      }
     }
 
     sourceLines.push("");

@@ -1047,3 +1047,29 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P8-2 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-24 03:40 CET
+**Task Executed:** P8-2 State Machine C-Code Lowering v1 completed
+**Files Modified/Created:**
+- `src/codegen/cCodegen.ts`
+- `src/codegen/__tests__/cCodegen.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Implemented deterministic **state-machine C lowering skeleton** in codegen backend:
+  - State index normalization from declared state names.
+  - Init-time active-state index assignment.
+  - Transition-list-order skeleton emission with single-fire gate.
+  - Output emission on fired transition + fallback output when no transition fires.
+- Added explicit comments for currently non-lowered semantics in v1:
+  - complex `guardExpr` expressions beyond literal true/false,
+  - `actionExpr`,
+  - temporal `afterMs`,
+  - event filters (`event`, `eventInput`).
+- Added regression test asserting state-index init and transition skeleton emission markers.
+- Validation:
+  - `npm run test` ✅ (12 files, 61 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P8-3 marked `[IN PROGRESS]`.

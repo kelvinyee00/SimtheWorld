@@ -17,8 +17,8 @@
 
 ## P8 Queue (Codegen Fidelity & Verification Hardening)
 - [x] P8-1 Truth Table C-Code Lowering v1 (non-stub branch emission)
-- [ ] P8-2 State Machine C-Code Lowering v1 (state index + transition skeleton) [IN PROGRESS]
-- [ ] P8-3 Artifact Package Manifests (checksums + metadata envelope)
+- [x] P8-2 State Machine C-Code Lowering v1 (state index + transition skeleton)
+- [ ] P8-3 Artifact Package Manifests (checksums + metadata envelope) [IN PROGRESS]
 - [ ] P8-4 SIL Strict Mode (unsupported-block fail gates + trace report export)
 - [ ] P8-5 Final Verification + Deployment
 
