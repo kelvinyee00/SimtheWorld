@@ -248,6 +248,24 @@ function makeProbeKey(probe: SilProbe): string {
   return `${probe.nodeId}.${handle}`;
 }
 
+function normalizeProbes(probes: SilProbe[]): SilProbe[] {
+  return probes
+    .map((probe) => ({
+      nodeId: probe.nodeId,
+      ...(probe.handle ? { handle: probe.handle } : {}),
+    }))
+    .sort((left, right) => {
+      const nodeCompare = left.nodeId.localeCompare(right.nodeId);
+      if (nodeCompare !== 0) {
+        return nodeCompare;
+      }
+
+      const leftHandle = left.handle ?? "default";
+      const rightHandle = right.handle ?? "default";
+      return leftHandle.localeCompare(rightHandle);
+    });
+}
+
 function buildTraceEntry(params: {
   tick: number;
   timeMs: number;
@@ -427,6 +445,8 @@ export function runSilEquivalence(params: {
     strictMode = "off",
   } = params;
 
+  const normalizedProbes = normalizeProbes(probes);
+
   const codegen = generateAnsiCArtifacts({ modelName, graph });
 
   const runtimeTrace = runRuntimeTrace({
@@ -435,7 +455,7 @@ export function runSilEquivalence(params: {
     ticks,
     stepTimeMs,
     simulationTimeMs,
-    probes,
+    probes: normalizedProbes,
   });
 
   const generatedTrace = runGeneratedTrace({
@@ -443,7 +463,7 @@ export function runSilEquivalence(params: {
     ticks,
     stepTimeMs,
     simulationTimeMs,
-    probes,
+    probes: normalizedProbes,
   });
 
   const mismatches: SilMismatch[] = [];
@@ -498,7 +518,7 @@ export function runSilEquivalence(params: {
     mismatchCount: mismatches.length,
     unsupportedBlockTypes,
     epsilon,
-    probes,
+    probes: normalizedProbes,
     ...(failureReason ? { failureReason } : {}),
     mismatches,
   };

@@ -1153,3 +1153,25 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P9-2 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-24 23:39 CET
+**Task Executed:** P9-2 SIL Equivalence for State Machines completed
+**Files Modified/Created:**
+- `src/codegen/silHarness.ts`
+- `src/codegen/__tests__/silHarness.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Extended SIL coverage for state-machine temporal/event semantics:
+  - Added parity test covering rising/falling edge gates and `afterMs` temporal transition behavior.
+  - Added deterministic expected trace assertions for state and output handles.
+- Hardened SIL harness determinism:
+  - Added probe normalization/sorting (`nodeId`, then `handle`) before trace generation.
+  - Report payload now emits normalized probe ordering.
+- Added regression test asserting deterministic probe ordering and generated trace key ordering.
+- Validation:
+  - `npm run test` ✅ (13 files, 69 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P9-3 marked `[IN PROGRESS]`.

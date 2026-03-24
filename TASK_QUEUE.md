@@ -17,8 +17,8 @@
 
 ## P9 Queue (State-Machine Codegen Parity & Delivery Tooling)
 - [x] P9-1 State Machine C-Code Lowering v2 (complex guard/action expressions + temporal/event gates)
-- [ ] P9-2 SIL Equivalence for State Machines (trace comparison for temporal transitions) [IN PROGRESS]
-- [ ] P9-3 CLI Codegen Driver (standalone CLI for generating artifacts from .json models)
+- [x] P9-2 SIL Equivalence for State Machines (trace comparison for temporal transitions)
+- [ ] P9-3 CLI Codegen Driver (standalone CLI for generating artifacts from .json models) [IN PROGRESS]
 - [ ] P9-4 Documentation / Wiki (Markdown docs for all block types and C API)
 - [ ] P9-5 Final Verification + Deployment
 
