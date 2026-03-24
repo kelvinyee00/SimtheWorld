@@ -3,10 +3,22 @@ import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
 import { PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
-import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
-import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import {
+  StateMachineBlock,
+  STATE_MACHINE_BLOCK_TYPE,
+} from "@/src/simulation/blocks/stateMachineBlock";
+import {
+  TruthTableBlock,
+  TRUTH_TABLE_BLOCK_TYPE,
+} from "@/src/simulation/blocks/truthTableBlock";
 import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
-import { BlockRegistry, SignalValue, SimulationEdge, SimulationGraph, SimulationNode } from "@/src/simulation/types";
+import {
+  BlockRegistry,
+  SignalValue,
+  SimulationEdge,
+  SimulationGraph,
+  SimulationNode,
+} from "@/src/simulation/types";
 import { getTopologicalOrder } from "@/src/simulation/topology";
 
 export interface SilProbe {
@@ -27,13 +39,30 @@ export interface SilMismatch {
   generated: SignalValue;
 }
 
+export type SilStrictMode = "off" | "unsupported-fail";
+
+export interface SilReport {
+  modelName: string;
+  strictMode: SilStrictMode;
+  pass: boolean;
+  mismatchCount: number;
+  unsupportedBlockTypes: string[];
+  epsilon: number;
+  probes: SilProbe[];
+  failureReason?: string;
+  mismatches: SilMismatch[];
+}
+
 export interface SilResult {
   pass: boolean;
+  strictMode: SilStrictMode;
+  failureReason?: string;
   codegen: ReturnType<typeof generateAnsiCArtifacts>;
   runtimeTrace: SilTraceEntry[];
   generatedTrace: SilTraceEntry[];
   mismatches: SilMismatch[];
   unsupportedBlockTypes: string[];
+  report: SilReport;
 }
 
 function toFiniteNumber(value: unknown, fallback: number): number {
@@ -128,9 +157,10 @@ function evaluateGeneratedNode(params: {
       const start = toFiniteNumber(data.start, 0);
       const step = toFiniteNumber(data.step, 1);
       const mode = data.mode === "dec" ? "dec" : "inc";
-      const current = typeof previousState === "number" && Number.isFinite(previousState)
-        ? previousState
-        : start;
+      const current =
+        typeof previousState === "number" && Number.isFinite(previousState)
+          ? previousState
+          : start;
       const delta = mode === "dec" ? -step : step;
       return {
         outputs: { default: current },
@@ -150,7 +180,9 @@ function evaluateGeneratedNode(params: {
     case SUM_BLOCK_TYPE: {
       const values = collectNumericInputs(inputs);
       return {
-        outputs: { default: values.length > 0 ? values.reduce((acc, value) => acc + value, 0) : null },
+        outputs: {
+          default: values.length > 0 ? values.reduce((acc, value) => acc + value, 0) : null,
+        },
         nextState: previousState,
       };
     }
@@ -308,9 +340,8 @@ function runGeneratedTrace(params: {
       });
 
       nodeOutputs[nodeId] = stepped.outputs;
-      nodeInternalState[nodeId] = typeof stepped.nextState === "undefined"
-        ? previousState
-        : stepped.nextState;
+      nodeInternalState[nodeId] =
+        typeof stepped.nextState === "undefined" ? previousState : stepped.nextState;
     }
 
     trace.push(
@@ -369,6 +400,10 @@ function runRuntimeTrace(params: {
   return trace;
 }
 
+export function serializeSilReport(report: SilReport): string {
+  return JSON.stringify(report, null, 2);
+}
+
 export function runSilEquivalence(params: {
   modelName: string;
   graph: SimulationGraph;
@@ -378,6 +413,7 @@ export function runSilEquivalence(params: {
   stepTimeMs?: number;
   simulationTimeMs?: number;
   epsilon?: number;
+  strictMode?: SilStrictMode;
 }): SilResult {
   const {
     modelName,
@@ -388,6 +424,7 @@ export function runSilEquivalence(params: {
     stepTimeMs = 100,
     simulationTimeMs = 10_000,
     epsilon = 1e-9,
+    strictMode = "off",
   } = params;
 
   const codegen = generateAnsiCArtifacts({ modelName, graph });
@@ -442,12 +479,39 @@ export function runSilEquivalence(params: {
     }
   }
 
+  const unsupportedBlockTypes = codegen.ir.unsupportedBlockTypes;
+  const strictUnsupportedFailure =
+    strictMode === "unsupported-fail" && unsupportedBlockTypes.length > 0;
+
+  const failureReason = strictUnsupportedFailure
+    ? `Unsupported block types in strict mode: ${unsupportedBlockTypes.join(", ")}`
+    : mismatches.length > 0
+      ? `Trace mismatches detected: ${mismatches.length}`
+      : undefined;
+
+  const pass = mismatches.length === 0 && !strictUnsupportedFailure;
+
+  const report: SilReport = {
+    modelName: codegen.ir.modelName,
+    strictMode,
+    pass,
+    mismatchCount: mismatches.length,
+    unsupportedBlockTypes,
+    epsilon,
+    probes,
+    ...(failureReason ? { failureReason } : {}),
+    mismatches,
+  };
+
   return {
-    pass: mismatches.length === 0,
+    pass,
+    strictMode,
+    ...(failureReason ? { failureReason } : {}),
     codegen,
     runtimeTrace,
     generatedTrace,
     mismatches,
-    unsupportedBlockTypes: codegen.ir.unsupportedBlockTypes,
+    unsupportedBlockTypes,
+    report,
   };
 }
