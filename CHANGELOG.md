@@ -1024,3 +1024,26 @@
   - P7-6 marked complete.
   - Added explicit P7 phase closeout marker.
 - Deployment action: pushed final closeout commit to `origin/master`.
+
+---
+**Date/Time:** 2026-03-24 03:36 CET
+**Task Executed:** P8 formalization + P8-1 Truth Table C-Code Lowering v1 completed
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`
+- `src/codegen/cCodegen.ts`
+- `src/codegen/__tests__/cCodegen.test.ts`
+**Notes/Bugs:**
+- Formalized **P8 queue** (P8-1..P8-5) in `TASK_QUEUE.md`.
+- Extended architecture with **Iteration 8 roadmap** focused on codegen fidelity and SIL hardening.
+- Implemented P8-1 upgrade in C backend:
+  - Replaced Truth Table stub with deterministic branch emission (`if/else if/else`) honoring row priority.
+  - Added numeric and boolean condition lowering semantics.
+  - Added deterministic fallback output emission and `math.h` tolerance-based numeric equality checks.
+- Added regression test verifying Truth Table C emission path.
+- Validation:
+  - `npm run test` ✅ (12 files, 60 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P8-2 marked `[IN PROGRESS]`.

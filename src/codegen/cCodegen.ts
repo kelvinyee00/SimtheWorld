@@ -30,6 +30,11 @@ export interface CodegenArtifacts {
   sourceSource: string;
 }
 
+interface TruthTableCodegenRow {
+  when: Record<string, number | boolean>;
+  output: number | boolean;
+}
+
 const SUPPORTED_BLOCK_TYPES = new Set<string>([
   "counter",
   "gain",
@@ -64,6 +69,223 @@ function normalizeEdge(edge: SimulationEdge): CodegenIREdge {
   };
 }
 
+function toFiniteNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toCNumberLiteral(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(6) : "0.0";
+}
+
+function toCOutputLiteral(value: unknown): string {
+  if (typeof value === "boolean") {
+    return value ? "1.0" : "0.0";
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return toCNumberLiteral(value);
+  }
+
+  return "0.0";
+}
+
+function normalizeTruthTableInputHandles(raw: unknown): string[] {
+  const seen = new Set<string>();
+  if (!Array.isArray(raw)) {
+    return ["in1", "in2"];
+  }
+
+  const handles = raw
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => {
+      if (entry.length === 0) {
+        return false;
+      }
+
+      const normalized = entry.toLowerCase();
+      if (seen.has(normalized)) {
+        return false;
+      }
+
+      seen.add(normalized);
+      return true;
+    });
+
+  return handles.length > 0 ? handles : ["in1", "in2"];
+}
+
+function normalizeTruthTableRows(raw: unknown): TruthTableCodegenRow[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const rows: TruthTableCodegenRow[] = [];
+
+  for (const candidate of raw) {
+    if (typeof candidate !== "object" || candidate === null) {
+      continue;
+    }
+
+    const rowRecord = candidate as Record<string, unknown>;
+    const output =
+      typeof rowRecord.output === "boolean"
+        ? rowRecord.output
+        : typeof rowRecord.output === "number" && Number.isFinite(rowRecord.output)
+          ? rowRecord.output
+          : null;
+
+    if (output === null) {
+      continue;
+    }
+
+    const whenRaw =
+      typeof rowRecord.when === "object" && rowRecord.when !== null
+        ? (rowRecord.when as Record<string, unknown>)
+        : {};
+
+    const when: Record<string, number | boolean> = {};
+    let invalidDomain = false;
+
+    for (const [rawHandle, rawValue] of Object.entries(whenRaw)) {
+      const handle = rawHandle.trim();
+      if (handle.length === 0) {
+        continue;
+      }
+
+      if (typeof rawValue === "boolean") {
+        when[handle] = rawValue;
+        continue;
+      }
+
+      if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+        when[handle] = rawValue;
+        continue;
+      }
+
+      invalidDomain = true;
+      break;
+    }
+
+    if (invalidDomain) {
+      continue;
+    }
+
+    rows.push({ when, output });
+  }
+
+  return rows;
+}
+
+function normalizeTruthTableElseOutput(raw: unknown): number | boolean | null {
+  if (typeof raw === "boolean") {
+    return raw;
+  }
+
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw;
+  }
+
+  return null;
+}
+
+function sortIncomingEdges(edges: CodegenIREdge[], targetNodeId: string): CodegenIREdge[] {
+  return edges
+    .filter((edge) => edge.target === targetNodeId)
+    .slice()
+    .sort((left, right) => {
+      const targetHandleCompare = left.targetHandle.localeCompare(right.targetHandle);
+      if (targetHandleCompare !== 0) {
+        return targetHandleCompare;
+      }
+
+      const sourceCompare = left.source.localeCompare(right.source);
+      if (sourceCompare !== 0) {
+        return sourceCompare;
+      }
+
+      const sourceHandleCompare = left.sourceHandle.localeCompare(right.sourceHandle);
+      if (sourceHandleCompare !== 0) {
+        return sourceHandleCompare;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+}
+
+function resolveInputExpression(params: {
+  incomingEdges: CodegenIREdge[];
+  nodeIdToIndex: Map<string, number>;
+  handle: string;
+}): string {
+  const { incomingEdges, nodeIdToIndex, handle } = params;
+
+  const direct = incomingEdges.find((edge) => edge.targetHandle === handle);
+  const fallback = handle === "in1" ? incomingEdges.find((edge) => edge.targetHandle === "default") : undefined;
+  const chosen = direct ?? fallback;
+
+  if (!chosen) {
+    return "0.0";
+  }
+
+  const sourceIndex = nodeIdToIndex.get(chosen.source);
+  return typeof sourceIndex === "number" ? `state->node_outputs[${sourceIndex}]` : "0.0";
+}
+
+function emitTruthTableCode(params: {
+  sourceLines: string[];
+  nodeIndex: number;
+  nodeParams: Record<string, unknown>;
+  incomingEdges: CodegenIREdge[];
+  nodeIdToIndex: Map<string, number>;
+}): void {
+  const { sourceLines, nodeIndex, nodeParams, incomingEdges, nodeIdToIndex } = params;
+
+  const inputHandles = normalizeTruthTableInputHandles(nodeParams.inputHandles);
+  const rows = normalizeTruthTableRows(nodeParams.rows);
+  const elseOutput = normalizeTruthTableElseOutput(nodeParams.elseOutput);
+
+  const expressionsByHandle = new Map<string, string>();
+  for (const handle of inputHandles) {
+    expressionsByHandle.set(
+      handle,
+      resolveInputExpression({
+        incomingEdges,
+        nodeIdToIndex,
+        handle,
+      })
+    );
+  }
+
+  sourceLines.push("  /* Truth Table logic emitted (row-priority) */");
+
+  if (rows.length === 0) {
+    sourceLines.push(`  state->node_outputs[${nodeIndex}] = ${toCOutputLiteral(elseOutput)};`);
+    return;
+  }
+
+  rows.forEach((row, rowIndex) => {
+    const clauses = Object.entries(row.when).map(([handle, expected]) => {
+      const expression = expressionsByHandle.get(handle) ?? "0.0";
+      if (typeof expected === "boolean") {
+        return expected ? `(${expression} != 0.0)` : `(${expression} == 0.0)`;
+      }
+
+      return `(fabs(${expression} - ${toCNumberLiteral(expected)}) <= 1e-9)`;
+    });
+
+    const condition = clauses.length > 0 ? clauses.join(" && ") : "1";
+    const prefix = rowIndex === 0 ? "  if" : "  else if";
+
+    sourceLines.push(`${prefix} (${condition}) {`);
+    sourceLines.push(`    state->node_outputs[${nodeIndex}] = ${toCOutputLiteral(row.output)};`);
+    sourceLines.push("  }");
+  });
+
+  sourceLines.push("  else {");
+  sourceLines.push(`    state->node_outputs[${nodeIndex}] = ${toCOutputLiteral(elseOutput)};`);
+  sourceLines.push("  }");
+}
+
 export function buildCodegenIR(params: {
   modelName: string;
   graph: SimulationGraph;
@@ -79,10 +301,16 @@ export function buildCodegenIR(params: {
     .slice()
     .sort((left, right) => {
       const sourceCompare = left.source.localeCompare(right.source);
-      if (sourceCompare !== 0) return sourceCompare;
+      if (sourceCompare !== 0) {
+        return sourceCompare;
+      }
+
       const targetCompare = left.target.localeCompare(right.target);
-      if (targetCompare !== 0) return targetCompare;
-      return (left.id).localeCompare(right.id);
+      if (targetCompare !== 0) {
+        return targetCompare;
+      }
+
+      return left.id.localeCompare(right.id);
     })
     .map((edge) => normalizeEdge(edge));
 
@@ -90,7 +318,7 @@ export function buildCodegenIR(params: {
   try {
     executionOrder = getTopologicalOrder(params.graph);
   } catch {
-    executionOrder = nodes.map(n => n.id);
+    executionOrder = nodes.map((node) => node.id);
   }
 
   const unsupportedBlockTypes = Array.from(
@@ -139,7 +367,8 @@ export function generateAnsiCArtifacts(params: {
   ].join("\n");
 
   const sourceLines: string[] = [
-    `#include \"${modelName}.h\"`,
+    `#include "${modelName}.h"`,
+    "#include <math.h>",
     "",
     `void ${modelName}_init(${modelName}_state* state) {`,
     "  if (state == NULL) return;",
@@ -150,10 +379,10 @@ export function generateAnsiCArtifacts(params: {
     "  }",
   ];
 
-  nodes.forEach((node, idx) => {
+  nodes.forEach((node, index) => {
     if (node.type === "counter") {
-      const start = (node.params.start as number) || 0;
-      sourceLines.push(`  state->node_internal_state[${idx}] = ${start.toFixed(4)};`);
+      const start = toFiniteNumber(node.params.start, 0);
+      sourceLines.push(`  state->node_internal_state[${index}] = ${toCNumberLiteral(start)};`);
     }
   });
 
@@ -168,61 +397,92 @@ export function generateAnsiCArtifacts(params: {
     sourceLines.push(`  /* unsupported block types: ${unsupportedBlockTypes.join(", ")} */`);
   }
 
-  const nodeIdToIndex = new Map(nodes.map((n, i) => [n.id, i]));
+  const nodeIdToIndex = new Map(nodes.map((node, index) => [node.id, index]));
 
   executionOrder.forEach((nodeId) => {
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) return;
-
-    const idx = nodeIdToIndex.get(nodeId)!;
-    sourceLines.push(`  /* node[${idx}] id=${node.id} type=${node.type} */`);
-
-    if (!SUPPORTED_BLOCK_TYPES.has(node.type)) {
-       sourceLines.push(`  /* skipping generation for unsupported block type ${node.type} */`);
-       sourceLines.push("");
-       return;
+    const node = nodes.find((candidate) => candidate.id === nodeId);
+    if (!node) {
+      return;
     }
 
-    const incomingEdges = edges.filter(e => e.target === nodeId);
+    const nodeIndex = nodeIdToIndex.get(nodeId);
+    if (typeof nodeIndex !== "number") {
+      return;
+    }
+
+    sourceLines.push(`  /* node[${nodeIndex}] id=${node.id} type=${node.type} */`);
+
+    if (!SUPPORTED_BLOCK_TYPES.has(node.type)) {
+      sourceLines.push(`  /* skipping generation for unsupported block type ${node.type} */`);
+      sourceLines.push("");
+      return;
+    }
+
+    const incomingEdges = sortIncomingEdges(edges, nodeId);
 
     switch (node.type) {
       case "gain": {
-        const gain = (node.params.gain as number) || 1;
-        const srcEdge = incomingEdges[0];
-        const inputStr = srcEdge 
-          ? `state->node_outputs[${nodeIdToIndex.get(srcEdge.source)}]`
+        const gain = toFiniteNumber(node.params.gain, 1);
+        const sourceExpression = incomingEdges.length > 0
+          ? resolveInputExpression({
+              incomingEdges,
+              nodeIdToIndex,
+              handle: incomingEdges[0].targetHandle,
+            })
           : "0.0";
-        sourceLines.push(`  state->node_outputs[${idx}] = ${inputStr} * ${gain.toFixed(4)};`);
+        sourceLines.push(
+          `  state->node_outputs[${nodeIndex}] = ${sourceExpression} * ${toCNumberLiteral(gain)};`
+        );
         break;
       }
+
       case "sum": {
-        const inputs = incomingEdges.map(e => `state->node_outputs[${nodeIdToIndex.get(e.source)}]`);
-        const expr = inputs.length > 0 ? inputs.join(" + ") : "0.0";
-        sourceLines.push(`  state->node_outputs[${idx}] = ${expr};`);
+        const inputExpressions = incomingEdges.map((edge) => {
+          const sourceIndex = nodeIdToIndex.get(edge.source);
+          return typeof sourceIndex === "number" ? `state->node_outputs[${sourceIndex}]` : "0.0";
+        });
+        const expression = inputExpressions.length > 0 ? inputExpressions.join(" + ") : "0.0";
+        sourceLines.push(`  state->node_outputs[${nodeIndex}] = ${expression};`);
         break;
       }
+
       case "product": {
-        const inputs = incomingEdges.map(e => `state->node_outputs[${nodeIdToIndex.get(e.source)}]`);
-        const expr = inputs.length > 0 ? inputs.join(" * ") : "0.0";
-        sourceLines.push(`  state->node_outputs[${idx}] = ${expr};`);
+        const inputExpressions = incomingEdges.map((edge) => {
+          const sourceIndex = nodeIdToIndex.get(edge.source);
+          return typeof sourceIndex === "number" ? `state->node_outputs[${sourceIndex}]` : "0.0";
+        });
+        const expression = inputExpressions.length > 0 ? inputExpressions.join(" * ") : "0.0";
+        sourceLines.push(`  state->node_outputs[${nodeIndex}] = ${expression};`);
         break;
       }
+
       case "counter": {
-        const step = (node.params.step as number) || 1;
-        const isDec = node.params.mode === "dec";
-        sourceLines.push(`  state->node_outputs[${idx}] = state->node_internal_state[${idx}];`);
-        sourceLines.push(`  state->node_internal_state[${idx}] += ${isDec ? "-" : ""}${step.toFixed(4)};`);
+        const step = toFiniteNumber(node.params.step, 1);
+        const isDecrement = node.params.mode === "dec";
+        sourceLines.push(`  state->node_outputs[${nodeIndex}] = state->node_internal_state[${nodeIndex}];`);
+        sourceLines.push(
+          `  state->node_internal_state[${nodeIndex}] += ${isDecrement ? "-" : ""}${toCNumberLiteral(step)};`
+        );
         break;
       }
-      case "truthTable":
-        sourceLines.push(`  /* Truth Table logic stub */`);
-        sourceLines.push(`  state->node_outputs[${idx}] = 0.0;`);
+
+      case "truthTable": {
+        emitTruthTableCode({
+          sourceLines,
+          nodeIndex,
+          nodeParams: node.params,
+          incomingEdges,
+          nodeIdToIndex,
+        });
         break;
+      }
+
       case "stateMachine":
-        sourceLines.push(`  /* State Machine logic stub */`);
-        sourceLines.push(`  state->node_outputs[${idx}] = 0.0;`);
+        sourceLines.push("  /* State Machine logic stub */");
+        sourceLines.push(`  state->node_outputs[${nodeIndex}] = 0.0;`);
         break;
     }
+
     sourceLines.push("");
   });
 

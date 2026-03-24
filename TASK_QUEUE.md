@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P7 planning targets hybrid logic/state-machine modeling and deterministic code generation while preserving P1-P6 stability.
+- P8 planning targets codegen fidelity, SIL rigor, and deployment-grade artifact workflows while preserving P1-P7 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,6 +14,13 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
+
+## P8 Queue (Codegen Fidelity & Verification Hardening)
+- [x] P8-1 Truth Table C-Code Lowering v1 (non-stub branch emission)
+- [ ] P8-2 State Machine C-Code Lowering v1 (state index + transition skeleton) [IN PROGRESS]
+- [ ] P8-3 Artifact Package Manifests (checksums + metadata envelope)
+- [ ] P8-4 SIL Strict Mode (unsupported-block fail gates + trace report export)
+- [ ] P8-5 Final Verification + Deployment
 
 ## P7 Queue (Logic State Machines & Code Generation)
 - [x] P7-1 State Machine Block v1 (states, transitions, guard/action expressions)

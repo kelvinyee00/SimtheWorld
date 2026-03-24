@@ -378,3 +378,34 @@ Constraints for P0:
 - Add Software-in-the-Loop harness comparing runtime trace vs generated C trace.
 - Define acceptance thresholds for numeric tolerance and exact match domains.
 - Keep release gate unchanged: `npm run test`, `npm run lint`, `npm run build` + SIL equivalence pass for generated models.
+
+### 20) Iteration 8 Roadmap — Codegen Fidelity & Verification Hardening (P8)
+
+#### 20.1 Truth Table C Lowering
+- Replace Truth Table backend stubs with deterministic branch emission in generated C.
+- Preserve row-priority semantics and fallback output behavior from runtime block semantics.
+- Restrict v1 lowering to numeric/boolean condition domains with explicit comments for unsupported domains.
+
+#### 20.2 State Machine C Lowering
+- Introduce deterministic state-index encoding and transition skeleton emission.
+- Keep ordering identical to runtime transition priority (list order) and preserve event/temporal extensibility.
+- Add generated-state memory slots for future action/guard lowering.
+
+#### 20.3 Artifact Packaging
+- Add deterministic model artifact envelope:
+  - generated `.c/.h`,
+  - normalized IR JSON,
+  - checksum manifest and metadata.
+- Ensure package is reproducible for identical model graphs.
+
+#### 20.4 SIL Strict Verification Mode
+- Add strict-mode gates that fail equivalence when unsupported block types are present.
+- Add structured mismatch reporting for CI-style regression consumption.
+- Keep epsilon-based numeric tolerance for supported floating-point paths.
+
+#### 20.5 P8 Release Gate
+- Required checks before closeout:
+  - `npm run test`
+  - `npm run lint`
+  - `npm run build`
+  - SIL strict pass on supported reference models.
