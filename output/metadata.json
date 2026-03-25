@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "modelName": "test_model",
+  "nodeCount": 2,
+  "edgeCount": 1,
+  "unsupportedBlockTypes": [],
+  "generatedAt": "deterministic"
+}

@@ -1,0 +1,36 @@
+{
+  "modelName": "test_model",
+  "nodes": [
+    {
+      "id": "counter",
+      "type": "counter",
+      "index": 0,
+      "params": {
+        "start": 0,
+        "step": 1
+      }
+    },
+    {
+      "id": "gain",
+      "type": "gain",
+      "index": 1,
+      "params": {
+        "gain": 2
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "c2g",
+      "source": "counter",
+      "target": "gain",
+      "sourceHandle": "default",
+      "targetHandle": "default"
+    }
+  ],
+  "executionOrder": [
+    "counter",
+    "gain"
+  ],
+  "unsupportedBlockTypes": []
+}

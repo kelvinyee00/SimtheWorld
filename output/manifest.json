@@ -1,0 +1,21 @@
+{
+  "algorithm": "fnv1a32",
+  "entries": [
+    {
+      "path": "test_model.c",
+      "checksum": "dac50c73",
+      "bytes": 838
+    },
+    {
+      "path": "test_model.h",
+      "checksum": "5762b3c9",
+      "bytes": 471
+    },
+    {
+      "path": "test_model.ir.json",
+      "checksum": "f4bc7bdf",
+      "bytes": 557
+    }
+  ],
+  "packageChecksum": "9b80cd82"
+}

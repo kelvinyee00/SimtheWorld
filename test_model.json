@@ -1,0 +1,9 @@
+{
+  "nodes": [
+    { "id": "counter", "type": "counter", "data": { "start": 0, "step": 1 } },
+    { "id": "gain", "type": "gain", "data": { "gain": 2 } }
+  ],
+  "edges": [
+    { "id": "c2g", "source": "counter", "target": "gain" }
+  ]
+}

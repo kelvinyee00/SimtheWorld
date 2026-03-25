@@ -1,0 +1,17 @@
+{
+  "modelName": "test_model",
+  "strictMode": "off",
+  "pass": true,
+  "mismatchCount": 0,
+  "unsupportedBlockTypes": [],
+  "epsilon": 1e-9,
+  "probes": [
+    {
+      "nodeId": "counter"
+    },
+    {
+      "nodeId": "gain"
+    }
+  ],
+  "mismatches": []
+}
