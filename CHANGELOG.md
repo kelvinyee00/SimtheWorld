@@ -1175,3 +1175,29 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P9-3 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-25 02:35 CET
+**Task Executed:** P9-4 Documentation / Wiki completed
+**Files Modified/Created:**
+- `docs/BLOCK_TYPES.md` (new)
+- `docs/C_API.md` (new)
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Added block catalog documentation covering all currently registered simulation blocks and their runtime contracts.
+- Added C-codegen/SIL API documentation for generated C interface, codegen modules, artifact packaging, and SIL strict/report workflows.
+- Documentation reflects current deterministic subset and explicitly calls out constrained state-machine lowering behavior.
+
+---
+**Date/Time:** 2026-03-25 02:36 CET
+**Task Executed:** P9-5 Final Verification + Deployment gate run completed (local, no push)
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Executed full validation suite after documentation updates:
+  - `npm run test` ✅ (13 files, 69 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Deployment/remote push intentionally skipped per directive (`Do NOT push to origin master yet`).

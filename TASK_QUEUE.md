@@ -19,8 +19,8 @@
 - [x] P9-1 State Machine C-Code Lowering v2 (complex guard/action expressions + temporal/event gates)
 - [x] P9-2 SIL Equivalence for State Machines (trace comparison for temporal transitions)
 - [x] P9-3 CLI Codegen Driver (standalone CLI for generating artifacts from .json models)
-- [ ] P9-4 Documentation / Wiki (Markdown docs for all block types and C API)
-- [ ] P9-5 Final Verification + Deployment
+- [x] P9-4 Documentation / Wiki (Markdown docs for all block types and C API)
+- [x] P9-5 Final Verification + Deployment
 
 ## P8 Queue (Codegen Fidelity & Verification Hardening)
 - [x] P8-1 Truth Table C-Code Lowering v1 (non-stub branch emission)
