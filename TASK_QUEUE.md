@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P9 planning targets full state-machine codegen semantics, SIL parity for temporal/event behavior, and delivery/tooling hardening while preserving P1-P8 stability.
+- P10 planning targets hierarchical codegen, model navigation ergonomics, and expression-based parameterization while preserving P1-P9 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,6 +14,14 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
+
+
+## P10 Queue (Hierarchical Codegen & Advanced UI)
+- [ ] P10-1 Hierarchical C-Code Generation (recursive subsystem lowering)
+- [ ] P10-2 Model Search & Navigator (sidebar block search + zoom)
+- [ ] P10-3 Signal Path Highlighting (visual chain tracing)
+- [ ] P10-4 Block Parameter Expressions (arithmetic in numeric fields)
+- [ ] P10-5 Final Verification + Deployment
 
 ## P9 Queue (State-Machine Codegen Parity & Delivery Tooling)
 - [x] P9-1 State Machine C-Code Lowering v2 (complex guard/action expressions + temporal/event gates)
@@ -85,3 +93,5 @@
 - [x] P7 Logic State Machines & Code Generation phase complete.
 
 - [x] P8 Codegen Fidelity & Verification Hardening phase complete.
+
+- [x] P9 State-Machine Codegen Parity & Delivery Tooling phase complete.

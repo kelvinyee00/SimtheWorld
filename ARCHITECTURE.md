@@ -459,3 +459,32 @@ Constraints for P0:
   - `npm run build`
   - state-machine SIL parity suite green,
   - CLI driver smoke verification.
+
+### 23) Iteration 10 Roadmap — Hierarchical Codegen & Advanced UI (P10)
+
+#### 23.1 Hierarchical C-Code Generation
+- Upgrade the codegen pipeline to support recursive lowering of **Subsystem** blocks.
+- Map internal Inport/Outport signals to generated state buffers or local evaluation slots.
+- Ensure deterministic execution order across the hierarchy mirrors the runtime engine's behavior.
+
+#### 23.2 Model Search & Navigator
+- Implement a searchable block list in the UI sidebar.
+- Allow users to filter by label, block type, or ID.
+- Add "Zoom to Node" interaction to quickly locate entities in large models.
+
+#### 23.3 Signal Path Highlighting
+- Add visual feedback for signal propagation chains.
+- Selecting a node or edge should highlight all connected upstream/downstream paths.
+- Enhances observability for complex routing topologies (Mux/Demux, GOTO/FROM).
+
+#### 23.4 Block Parameter Expressions
+- Extend numeric parameter fields (e.g., Gain, PID coefficients) to support arithmetic expressions.
+- Support resolution against Subsystem mask parameters.
+- Re-use the hardened expression parser for safe evaluation.
+
+#### 23.5 P10 Release Gate
+- Full validation sweep:
+  - `npm run test`
+  - `npm run lint`
+  - `npm run build`
+  - Hierarchical SIL verification.
