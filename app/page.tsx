@@ -774,6 +774,7 @@ export default function Home() {
   const [recentRunRecords, setRecentRunRecords] = useState<PersistedSimulationRunRecord[]>([]);
   const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
   const [modelActionMessage, setModelActionMessage] = useState<string | null>(null);
+  const [blockSearchTerm, setBlockSearchTerm] = useState("");
   const [stateMachineModelDraft, setStateMachineModelDraft] = useState<string>("");
   const [stateMachineDraftNodeId, setStateMachineDraftNodeId] = useState<string | null>(null);
   const [stateMachineDraftError, setStateMachineDraftError] = useState<string | null>(null);
@@ -828,6 +829,23 @@ export default function Home() {
       })),
     });
   }, [edges, nodes, setGraph]);
+
+
+  const searchResults = useMemo(() => {
+    const term = blockSearchTerm.trim().toLowerCase();
+    if (term.length < 1) {
+      return [];
+    }
+
+    return nodes.filter((node) => {
+      const data = node.data as Record<string, unknown> | undefined;
+      const labelRaw = typeof data?.label === "string" ? data.label : "";
+      const label = labelRaw.toLowerCase();
+      const type = (node.type ?? "").toLowerCase();
+      const id = node.id.toLowerCase();
+      return label.includes(term) || type.includes(term) || id.includes(term);
+    });
+  }, [nodes, blockSearchTerm]);
 
   const stopTimeInputValue = isEditingStopTime
     ? stopTimeSecondsInput
@@ -938,6 +956,24 @@ export default function Home() {
    * presentation state. This keeps runtime deterministic and avoids mixing simulation concerns
    * with view concerns as the editor surface scales.
    */
+
+  const focusNode = useCallback(
+    (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node || !reactFlowInstance) {
+        return;
+      }
+
+      const x = node.position.x + (node.width ?? 220) / 2;
+      const y = node.position.y + (node.height ?? 100) / 2;
+      const zoom = 1.2;
+
+      reactFlowInstance.setCenter(x, y, { zoom, duration: 800 });
+      setSelectedNodeId(nodeId);
+    },
+    [nodes, reactFlowInstance]
+  );
+
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNodeId(node.id);
     setIsMobileInspectorOpen(true);
@@ -2974,6 +3010,48 @@ export default function Home() {
                 Show Full Trace
               </button>
             </div>
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <h2 className="text-sm font-semibold text-slate-700">Navigator</h2>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  placeholder="Search blocks..."
+                  value={blockSearchTerm}
+                  onChange={(e) => setBlockSearchTerm(e.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+              {searchResults.length > 0 ? (
+                <ul className="mt-3 max-h-48 overflow-y-auto space-y-1 pr-1">
+                  {searchResults.map((node) => (
+                    <li key={node.id} className="group flex items-center justify-between rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 transition-colors hover:border-sky-200 hover:bg-sky-50">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-slate-700">
+                          {String((node.data as Record<string, unknown> | undefined)?.label ?? node.type ?? "Untitled")}
+                        </p>
+                        <p className="truncate text-[10px] text-slate-400 font-mono">
+                          {node.id}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => focusNode(node.id)}
+                        className="ml-2 rounded p-1 text-slate-400 hover:bg-white hover:text-sky-600 transition-colors"
+                        title="Zoom to block"
+                      >
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : blockSearchTerm.trim().length > 0 ? (
+                <p className="mt-3 text-xs text-slate-400 italic">No blocks found matching &ldquo;{blockSearchTerm}&rdquo;</p>
+              ) : null}
+            </div>
+
             <div className="mt-2 flex gap-2">
               <button
                 type="button"

@@ -67,7 +67,127 @@ const SUPPORTED_BLOCK_TYPES = new Set<string>([
   "product",
   "truthTable",
   "stateMachine",
+  "inport",
+  "outport",
 ]);
+
+function getInterfaceLabel(rawData: unknown, fallback: string): string {
+  const candidate =
+    typeof (rawData as Record<string, unknown> | undefined)?.label === "string"
+      ? ((rawData as Record<string, unknown>).label as string).trim()
+      : "";
+  return candidate.length > 0 ? candidate : fallback;
+}
+
+function getSortedInterfaceNodeIds(graph: SimulationGraph, type: string): string[] {
+  return graph.nodes
+    .filter((node) => node.type === type)
+    .map((node) => node.id)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+/**
+ * Recursively flattens a hierarchical graph into a single flat set of nodes and edges.
+ * Stitches subsystem boundaries by remapping external edges directly to internal ports.
+ */
+function flattenGraph(params: {
+  graph: SimulationGraph;
+  path: string[];
+  nodeList: SimulationNode[];
+  edgeList: SimulationEdge[];
+}): void {
+  const { graph, path, nodeList, edgeList } = params;
+  const prefix = path.length > 0 ? path.join("_") + "_" : "";
+
+  // 1. Collect all non-subsystem nodes and recurse into subsystems
+  graph.nodes.forEach((node) => {
+    if (node.type === "subsystem") {
+      const subGraph = (node.data?.graph as SimulationGraph) ?? { nodes: [], edges: [] };
+      flattenGraph({
+        graph: subGraph,
+        path: [...path, node.id],
+        nodeList,
+        edgeList,
+      });
+    } else {
+      nodeList.push({
+        ...node,
+        id: prefix + node.id,
+      });
+    }
+  });
+
+  // 2. Map all edges, resolving subsystem boundaries
+  graph.edges.forEach((edge) => {
+    const sourceNode = graph.nodes.find((n) => n.id === edge.source);
+    const targetNode = graph.nodes.find((n) => n.id === edge.target);
+
+    let remappedSource = prefix + edge.source;
+    let remappedSourceHandle = edge.sourceHandle ?? "default";
+    let remappedTarget = prefix + edge.target;
+    let remappedTargetHandle = edge.targetHandle ?? "default";
+
+    // If source is a subsystem, find the internal outport
+    if (sourceNode?.type === "subsystem") {
+      const subGraph = (sourceNode.data?.graph as SimulationGraph) ?? { nodes: [], edges: [] };
+      const outportIds = getSortedInterfaceNodeIds(subGraph, "outport");
+      const handle = (edge.sourceHandle ?? "default").toLowerCase();
+
+      let matchedPortId: string | undefined;
+      for (let i = 0; i < outportIds.length; i++) {
+        const portNode = subGraph.nodes.find((n) => n.id === outportIds[i])!;
+        const label = getInterfaceLabel(portNode.data, `out${i + 1}`).toLowerCase();
+        if (
+          label === handle ||
+          `out${i + 1}` === handle ||
+          (i === 0 && handle === "default")
+        ) {
+          matchedPortId = outportIds[i];
+          break;
+        }
+      }
+
+      if (matchedPortId) {
+        remappedSource = prefix + sourceNode.id + "_" + matchedPortId;
+        remappedSourceHandle = "default";
+      }
+    }
+
+    // If target is a subsystem, find the internal inport
+    if (targetNode?.type === "subsystem") {
+      const subGraph = (targetNode.data?.graph as SimulationGraph) ?? { nodes: [], edges: [] };
+      const inportIds = getSortedInterfaceNodeIds(subGraph, "inport");
+      const handle = (edge.targetHandle ?? "default").toLowerCase();
+
+      let matchedPortId: string | undefined;
+      for (let i = 0; i < inportIds.length; i++) {
+        const portNode = subGraph.nodes.find((n) => n.id === inportIds[i])!;
+        const label = getInterfaceLabel(portNode.data, `in${i + 1}`).toLowerCase();
+        if (
+          label === handle ||
+          `in${i + 1}` === handle ||
+          (i === 0 && handle === "default")
+        ) {
+          matchedPortId = inportIds[i];
+          break;
+        }
+      }
+
+      if (matchedPortId) {
+        remappedTarget = prefix + targetNode.id + "_" + matchedPortId;
+        remappedTargetHandle = "default";
+      }
+    }
+
+    edgeList.push({
+      id: prefix + edge.id,
+      source: remappedSource,
+      sourceHandle: remappedSourceHandle,
+      target: remappedTarget,
+      targetHandle: remappedTargetHandle,
+    });
+  });
+}
 
 function sanitizeModelName(value: string): string {
   const trimmed = value.trim();
@@ -663,13 +783,22 @@ export function buildCodegenIR(params: {
   graph: SimulationGraph;
 }): CodegenIR {
   const modelName = sanitizeModelName(params.modelName);
+  
+  const flattenedNodes: SimulationNode[] = [];
+  const flattenedEdges: SimulationEdge[] = [];
+  flattenGraph({
+    graph: params.graph,
+    path: [],
+    nodeList: flattenedNodes,
+    edgeList: flattenedEdges,
+  });
 
-  const nodes = params.graph.nodes
+  const nodes = flattenedNodes
     .slice()
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((node, index) => normalizeNode(node, index));
 
-  const edges = params.graph.edges
+  const edges = flattenedEdges
     .slice()
     .sort((left, right) => {
       const sourceCompare = left.source.localeCompare(right.source);
@@ -688,7 +817,7 @@ export function buildCodegenIR(params: {
 
   let executionOrder: string[] = [];
   try {
-    executionOrder = getTopologicalOrder(params.graph);
+    executionOrder = getTopologicalOrder({ nodes: flattenedNodes, edges: flattenedEdges });
   } catch {
     executionOrder = nodes.map((node) => node.id);
   }
@@ -870,6 +999,19 @@ export function generateAnsiCArtifacts(params: {
           incomingEdges,
           nodeIdToIndex,
         });
+        break;
+      }
+      case "inport":
+      case "outport": {
+        const sourceExpression =
+          incomingEdges.length > 0
+            ? resolveInputExpression({
+                incomingEdges,
+                nodeIdToIndex,
+                handle: incomingEdges[0].targetHandle,
+              })
+            : "0.0";
+        sourceLines.push(`  state->node_outputs[${nodeIndex}] = ${sourceExpression};`);
         break;
       }
     }

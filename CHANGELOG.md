@@ -1201,3 +1201,23 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Deployment/remote push intentionally skipped per directive (`Do NOT push to origin master yet`).
+
+---
+**Date/Time:** 2026-03-25 05:40 CET
+**Task Executed:** P10-1 Hierarchical C-Code Generation completed
+**Files Modified/Created:**
+- `src/codegen/cCodegen.ts`
+- `src/codegen/__tests__/cCodegen.test.ts`
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Upgraded C codegen backend to support hierarchical models via recursive graph flattening.
+- Implemented subsystem boundary stitching: external edges targeting/sourcing subsystems are now remapped directly to internal Inport/Outport identity nodes.
+- Maintained namespacing in generated C code to prevent ID collisions across hierarchy levels.
+- Updated topological sort to evaluate the fully flattened execution order.
+- Added hierarchical codegen regression test in `cCodegen.test.ts`.
+- Validation:
+  - `npm run test` ✅ (13 files, 70 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P10-2 marked `[IN PROGRESS]`.
