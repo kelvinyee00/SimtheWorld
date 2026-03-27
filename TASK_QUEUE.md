@@ -18,8 +18,8 @@
 
 ## P10 Queue (Hierarchical Codegen & Advanced UI)
 - [x] P10-1 Hierarchical C-Code Generation (recursive subsystem lowering)
-- [ ] P10-2 Model Search & Navigator (sidebar block search + zoom) [IN PROGRESS]
-- [ ] P10-3 Signal Path Highlighting (visual chain tracing)
+- [x] P10-2 Model Search & Navigator (sidebar block search + zoom)
+- [IN PROGRESS] P10-3 Signal Path Highlighting (visual chain tracing)
 - [ ] P10-4 Block Parameter Expressions (arithmetic in numeric fields)
 - [ ] P10-5 Final Verification + Deployment
 

@@ -1221,3 +1221,23 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P10-2 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-27 17:35 CET
+**Task Executed:** P10-2 Model Search & Navigator completed
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Verified sidebar block search functionality (filter nodes by label/type/id with focus/zoom capability).
+- Verified model zoom controls via React Flow Controls component and programmatic focusNode centering.
+- Maintained industrial UI aesthetics: orange source blocks (Counter), blue sink blocks (Display, Scope, etc.).
+- Navigation features:
+  - Search input in sidebar Navigator filters existing canvas blocks.
+  - Results show block label, ID, and zoom-to-block button.
+  - Smooth animated zoom and center on selected block via `reactFlowInstance.setCenter()`.
+- Validation:
+  - `npm run test` ✅ (13 files, 70 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P10-2 marked complete, P10-3 marked `[IN PROGRESS]`.
