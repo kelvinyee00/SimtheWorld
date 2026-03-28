@@ -22,6 +22,7 @@ import "reactflow/dist/style.css";
 import { CustomBlockNode } from "@/src/canvas/customBlockNode";
 import { SubsystemEditorModal } from "@/src/canvas/subsystemEditorModal";
 import { DEFAULT_EDGE_OPTIONS } from "@/src/canvas/edgeDefaults";
+import { traceSignalPath, computeEdgeStyles } from "@/src/canvas/signalPath";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
@@ -775,6 +776,8 @@ export default function Home() {
   const [toFileActionMessage, setToFileActionMessage] = useState<string | null>(null);
   const [modelActionMessage, setModelActionMessage] = useState<string | null>(null);
   const [blockSearchTerm, setBlockSearchTerm] = useState("");
+  // P10-3: Signal path highlighting state
+  const [selectedSignalSource, setSelectedSignalSource] = useState<string | null>(null);
   const [stateMachineModelDraft, setStateMachineModelDraft] = useState<string>("");
   const [stateMachineDraftNodeId, setStateMachineDraftNodeId] = useState<string | null>(null);
   const [stateMachineDraftError, setStateMachineDraftError] = useState<string | null>(null);
@@ -831,7 +834,23 @@ export default function Home() {
   }, [edges, nodes, setGraph]);
 
 
-  const searchResults = useMemo(() => {
+  // P10-3: Compute styled edges for signal path highlighting
+  const styledEdges = useMemo(() => {
+    if (!selectedSignalSource) {
+      return edges;
+    }
+    const trace = traceSignalPath({
+      sourceNodeId: selectedSignalSource,
+      nodes,
+      edges,
+    });
+    return computeEdgeStyles({
+      edges,
+      highlightedEdgeIds: trace.edgeIds,
+      isActive: true,
+    });
+  }, [edges, nodes, selectedSignalSource]);
+const searchResults = useMemo(() => {
     const term = blockSearchTerm.trim().toLowerCase();
     if (term.length < 1) {
       return [];
@@ -974,7 +993,16 @@ export default function Home() {
     [nodes, reactFlowInstance]
   );
 
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+  // P10-3: Signal path highlighting - node click handler
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    // P10-3: Ctrl/Cmd+Click toggles signal path source selection
+    if (event.ctrlKey || event.metaKey) {
+      event.stopPropagation();
+      setSelectedSignalSource((current) =>
+        current === node.id ? null : node.id
+      );
+      return;
+    }
     setSelectedNodeId(node.id);
     setIsMobileInspectorOpen(true);
   }, []);
@@ -1035,7 +1063,12 @@ export default function Home() {
         return;
       }
 
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (event.key === "Escape") {
+      event.preventDefault();
+      setSelectedSignalSource(null);
+      return;
+    }
+    if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         deleteSelectedNodes();
       }
@@ -3082,7 +3115,7 @@ export default function Home() {
           <section className="order-1 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-slate-300 bg-white lg:order-2 lg:min-h-[560px]">
             <ReactFlow
               nodes={nodes}
-              edges={edges}
+              edges={styledEdges}
               onInit={setReactFlowInstance}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
