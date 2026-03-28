@@ -1,6 +1,16 @@
 # CHANGELOG.md — Mobile-Reactive Simulink Web Environment
 
 ---
+**Date/Time:** 2026-03-28 22:45 CET
+**Task Executed:** P10 Complete - Signal Path Highlighting + Parameter Expressions
+**Files Modified/Created:** `src/canvas/signalPath.ts`, `src/simulation/expressions.ts`, `src/simulation/__tests__/expressions.test.ts`, `app/page.tsx`, `TASK_QUEUE.md`
+**Notes/Bugs:**
+- P10-3: Signal Path Highlighting - BFS traversal with Ctrl+Click source selection
+- P10-4: Block Parameter Expressions - safe arithmetic parser, 19 unit tests
+- P10-5: Final Verification - 89 tests passing, lint clean, build successful
+- P10 phase complete - P1-P10 scope delivered
+
+---
 **Date/Time:** 2026-03-17 21:27 CET
 **Task Executed:** Project initialization + architecture/task formalization
 **Files Modified/Created:** `ARCHITECTURE.md`, `TASK_QUEUE.md`, `CHANGELOG.md`

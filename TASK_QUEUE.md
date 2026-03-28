@@ -21,7 +21,7 @@
 - [x] P10-2 Model Search & Navigator (sidebar block search + zoom)
 - [x] P10-3 Signal Path Highlighting (visual chain tracing)
 - [x] P10-4 Block Parameter Expressions (arithmetic in numeric fields)
-- [ ] P10-5 Final Verification + Deployment
+- [x] P10-5 Final Verification + Deployment
 
 ## P9 Queue (State-Machine Codegen Parity & Delivery Tooling)
 - [x] P9-1 State Machine C-Code Lowering v2 (complex guard/action expressions + temporal/event gates)
