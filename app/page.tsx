@@ -71,6 +71,7 @@ import {
 import {
   validateConnectionCandidate,
 } from "@/src/simulation/validation";
+import { parseNumericExpression } from "@/src/simulation/expressions";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -1690,8 +1691,8 @@ const searchResults = useMemo(() => {
         return;
       }
 
-      const parsed = Number(rawValue);
-      const safeValue = Number.isFinite(parsed) ? parsed : selectedCounterData[field];
+      // P10-4: Support arithmetic expressions in numeric fields
+      const safeValue = parseNumericExpression(rawValue, selectedCounterData[field]);
       patchSelectedNodeData({ [field]: safeValue });
     },
     [patchSelectedNodeData, selectedCounterData]
