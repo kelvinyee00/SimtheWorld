@@ -14,6 +14,13 @@ import {
 } from "@/src/simulation/types";
 
 /**
+ * P11-3: Execution modes
+ * - fast: Execute ticks as fast as the host allows (default)
+ * - real-time: Sync simulation time with real-world wall clock
+ */
+export type ExecutionMode = "fast" | "real-time";
+
+/**
  * Zustand runtime store for scheduler + simulation snapshot.
  */
 export interface RuntimePerformanceMetrics {
@@ -38,9 +45,11 @@ export interface SimulationRuntimeStore {
   runtime: SimulationRuntimeSnapshot;
   metrics: RuntimePerformanceMetrics;
   trace: RuntimeTraceEvent[];
+  executionMode: ExecutionMode;
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
+  setExecutionMode: (mode: ExecutionMode) => void;
   run: () => void;
   pause: () => void;
   reset: () => void;
@@ -85,6 +94,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     runtime: DEFAULT_RUNTIME,
     metrics: DEFAULT_METRICS,
     trace: [],
+    executionMode: "fast",
 
     setGraph: (graph) => {
       set({ graph });
@@ -116,6 +126,15 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       if (wasRunning) {
         scheduleNextTick();
       }
+    },
+
+    setExecutionMode: (executionMode) => {
+      const wasRunning = get().runtime.status === "running";
+      if (wasRunning) clearScheduler();
+      
+      set({ executionMode });
+      
+      if (wasRunning) scheduleNextTick();
     },
 
     stepOnce: () => {
@@ -254,7 +273,11 @@ function scheduleNextTick(): void {
     return;
   }
 
-  const startedAt = performance.now() - state.runtime.tick * state.runtime.stepTimeMs;
+  /**
+   * Wall-clock synchronization (P11-3).
+   * Calculate a dynamic delay to keep simulation time matched with real-world time.
+   */
+  const wallClockStartedAt = performance.now() - state.runtime.tick * state.runtime.stepTimeMs;
 
   const tickLoop = () => {
     const current = useSimulationRuntimeStore.getState();
@@ -271,9 +294,15 @@ function scheduleNextTick(): void {
       return;
     }
 
-    const expectedNextAt =
-      startedAt + afterStep.runtime.tick * afterStep.runtime.stepTimeMs;
-    const delay = Math.max(0, expectedNextAt - performance.now());
+    // Default: fast mode (minimal delay)
+    let delay = 0;
+
+    if (afterStep.executionMode === "real-time") {
+      // Real-time: align with wall clock
+      const expectedNextAt = wallClockStartedAt + afterStep.runtime.tick * afterStep.runtime.stepTimeMs;
+      delay = Math.max(0, expectedNextAt - performance.now());
+    }
+
     timerId = setTimeout(tickLoop, delay);
   };
 
