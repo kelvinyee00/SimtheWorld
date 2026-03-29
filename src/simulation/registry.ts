@@ -25,6 +25,7 @@ import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { Lut1DBlock, LUT_1D_BLOCK_TYPE, Lut2DBlock, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import { GaugeBlock, GAUGE_BLOCK_TYPE, LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/dashboardBlocks";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -65,6 +66,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [LUT_2D_BLOCK_TYPE]: Lut2DBlock,
   [STATE_MACHINE_BLOCK_TYPE]: StateMachineBlock,
   [TRUTH_TABLE_BLOCK_TYPE]: TruthTableBlock,
+  [GAUGE_BLOCK_TYPE]: GaugeBlock,
+  [LAMP_BLOCK_TYPE]: LampBlock,
 };
 
 /**
@@ -74,7 +77,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
 export function createBlockRegistry(
   definitions: SimulationBlockDefinition[]
 ): BlockRegistry {
-  const registry: BlockRegistry = {};
+  const registry: BlockRegistry = {  [GAUGE_BLOCK_TYPE]: GaugeBlock,
+  [LAMP_BLOCK_TYPE]: LampBlock,
+};
 
   for (const definition of definitions) {
     if (registry[definition.type]) {
