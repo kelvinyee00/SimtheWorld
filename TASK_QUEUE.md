@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P11 planning targets interactive dashboard components and real-time engine synchronization while preserving P1-P10 stability.
+- P10 planning targets hierarchical codegen, model navigation ergonomics, and expression-based parameterization while preserving P1-P9 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -15,14 +15,6 @@
 6. Return summary, files changed, validation, and risks."
 
 
-
-
-## P11 Queue (Interactive Dashboard & Real-time Tuning)
-- [ ] P11-1 Dashboard Sink Blocks (Gauge & Lamp) [IN PROGRESS]
-- [ ] P11-2 Interactive Source Blocks (Knob & Slider)
-- [ ] P11-3 Engine Wall-clock Sync (Real-time mode)
-- [ ] P11-4 Live Edge Probing (Value tooltips)
-- [ ] P11-5 Final Verification + Deployment
 
 ## P10 Queue (Hierarchical Codegen & Advanced UI)
 - [x] P10-1 Hierarchical C-Code Generation (recursive subsystem lowering)

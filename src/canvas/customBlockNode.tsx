@@ -39,7 +39,6 @@ import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
 } from "@/src/simulation/blocks/toFileBlock";
-import { GaugeBlockView, GAUGE_BLOCK_TYPE, LampBlockView, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/dashboardBlocks";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 /**
@@ -193,8 +192,6 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isFrom = type === FROM_BLOCK_TYPE;
   const isLut1D = type === LUT_1D_BLOCK_TYPE;
   const isLut2D = type === LUT_2D_BLOCK_TYPE;
-  const isGauge = type === GAUGE_BLOCK_TYPE;
-  const isLamp = type === LAMP_BLOCK_TYPE;
   const isStateMachine = type === STATE_MACHINE_BLOCK_TYPE;
   const isTruthTable = type === TRUTH_TABLE_BLOCK_TYPE;
   const isMathNode =
@@ -215,7 +212,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isLeadLag ||
     isGoto ||
     isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable;
-  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp;
+  const isSinkNode = isDisplay || isScope || isToFile;
 
   const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
@@ -318,14 +315,6 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {isGauge ? (
-          <GaugeBlockView state={internalState} params={data} className="border-sky-200 bg-sky-50/70" />
-        ) : null}
-
-        {isLamp ? (
-          <LampBlockView state={internalState} className="border-sky-200 bg-sky-50/70" />
-        ) : null}
-
         {isToFile ? (
           <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2">
             <div className="flex items-center justify-between">
@@ -415,10 +404,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           />
         ) : null}
 
-        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine || isGauge || isLamp) && (
+        {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine) && (
           <Handle
             type="target"
-            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine || isGauge || isLamp ? "in" : "default"}
+            id={isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine ? "in" : "default"}
             position={Position.Left}
             style={handleStyle}
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"

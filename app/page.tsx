@@ -39,7 +39,6 @@ import { SWITCH_BLOCK_TYPE } from "@/src/simulation/blocks/switchBlock";
 import { INPORT_BLOCK_TYPE } from "@/src/simulation/blocks/inportBlock";
 import { OUTPORT_BLOCK_TYPE } from "@/src/simulation/blocks/outportBlock";
 import { SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/subsystemBlock";
-import { GAUGE_BLOCK_TYPE, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/dashboardBlocks";
 import { MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import { PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
@@ -146,8 +145,6 @@ const NODE_TYPES: NodeTypes = {
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
   [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
   [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -182,8 +179,6 @@ const LIBRARY_BLOCKS = [
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
   { label: "Switch", type: SWITCH_BLOCK_TYPE },
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
-    { label: "Gauge", type: GAUGE_BLOCK_TYPE },
-  { label: "Lamp", type: LAMP_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
 ] as const;
@@ -231,9 +226,7 @@ function deriveSubsystemMaskFromGraph(graph: { nodes: Node[]; edges: Edge[] }): 
 
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : fallback;
-    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+  };
 
   const inports = graph.nodes
     .filter((node) => node.type === INPORT_BLOCK_TYPE)
@@ -254,37 +247,23 @@ function deriveSubsystemMaskFromGraph(graph: { nodes: Node[]; edges: Edge[] }): 
   return {
     inputs: inports,
     outputs: outports,
-    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+  };
 }
 
 function makeNodeData(type: string): Record<string, unknown> {
   switch (type) {
     case COUNTER_BLOCK_TYPE:
-      return { label: "Counter", start: 0, step: 1, mode: "inc"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Counter", start: 0, step: 1, mode: "inc" };
     case GAIN_BLOCK_TYPE:
-      return { label: "Gain", gain: 1   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Gain", gain: 1 };
     case SUM_BLOCK_TYPE:
-      return { label: "Sum"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Sum" };
     case PRODUCT_BLOCK_TYPE:
-      return { label: "Product"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Product" };
     case MUX_BLOCK_TYPE:
-      return { label: "Mux"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Mux" };
     case DEMUX_BLOCK_TYPE:
-      return { label: "Demux"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Demux" };
     case PID_BLOCK_TYPE:
       return {
         label: "PID",
@@ -294,42 +273,28 @@ function makeNodeData(type: string): Record<string, unknown> {
         n: 10,
         lowerSaturation: null,
         upperSaturation: null,
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     case DISCRETE_TRANSFER_FCN_BLOCK_TYPE:
       return {
         label: "Discrete Transfer Fcn",
         numerator: [1],
         denominator: [1, 0],
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     case LEAD_LAG_BLOCK_TYPE:
       return {
         label: "Lead/Lag",
         gain: 1,
         leadTimeConstantSec: 0.1,
         lagTimeConstantSec: 1,
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     case GOTO_BLOCK_TYPE:
-      return { label: "GOTO", tag: "signal"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "GOTO", tag: "signal" };
     case FROM_BLOCK_TYPE:
-      return { label: "FROM", tag: "signal"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "FROM", tag: "signal" };
     case LUT_1D_BLOCK_TYPE:
-      return { label: "LUT 1D", breakpointsX: [0, 10], tableData: [0, 100]   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "LUT 1D", breakpointsX: [0, 10], tableData: [0, 100] };
     case LUT_2D_BLOCK_TYPE:
-      return { label: "LUT 2D", breakpointsX: [0, 10], breakpointsY: [0, 10], tableData: [[0, 100], [100, 200]]   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "LUT 2D", breakpointsX: [0, 10], breakpointsY: [0, 10], tableData: [[0, 100], [100, 200]] };
     case STATE_MACHINE_BLOCK_TYPE:
       return {
         label: "State Machine",
@@ -339,9 +304,7 @@ function makeNodeData(type: string): Record<string, unknown> {
           { from: "idle", to: "active", event: "rising", eventInput: "in", guardExpr: "inputs.in === true", output: true },
           { from: "active", to: "idle", event: "falling", eventInput: "in", guardExpr: "inputs.in === false", output: false },
         ],
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     case TRUTH_TABLE_BLOCK_TYPE:
       return {
         label: "Truth Table",
@@ -351,61 +314,33 @@ function makeNodeData(type: string): Record<string, unknown> {
           { when: { in1: true, in2: false }, output: false },
         ],
         elseOutput: false,
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     case INTEGRATOR_BLOCK_TYPE:
-      return { label: "Integrator", initialCondition: 0   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Integrator", initialCondition: 0 };
     case UNIT_DELAY_BLOCK_TYPE:
-      return { label: "Unit Delay", initialValue: 0   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Unit Delay", initialValue: 0 };
     case COMPARE_BLOCK_TYPE:
-      return { label: "Compare", operator: "gt"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Compare", operator: "gt" };
     case SWITCH_BLOCK_TYPE:
-      return { label: "Switch"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Switch" };
     case TO_FILE_BLOCK_TYPE:
-      return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "To File", format: "json", fileName: "simulation-log", maxRows: 2000 };
     case INPORT_BLOCK_TYPE:
-      return { label: "Inport"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Inport" };
     case OUTPORT_BLOCK_TYPE:
-      return { label: "Outport"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Outport" };
     case SUBSYSTEM_BLOCK_TYPE:
       return {
         label: "Subsystem",
         graph: { nodes: [], edges: [] },
         mask: { inputs: ["in1"], outputs: ["out1"], parameters: {} },
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
-        case GAUGE_BLOCK_TYPE:
-      return { label: "Gauge", min: 0, max: 100 };
-    case LAMP_BLOCK_TYPE:
-      return { label: "Lamp", threshold: 0.5 };
+      };
     case DISPLAY_BLOCK_TYPE:
-      return { label: "Display"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Display" };
     case SCOPE_BLOCK_TYPE:
-      return { label: "Scope", maxPoints: 240   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Scope", maxPoints: 240 };
     default:
-      return { label: "Block"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { label: "Block" };
   }
 }
 
@@ -520,32 +455,22 @@ const DEFAULT_COUNTER_INSPECTOR_DATA: CounterInspectorData = {
   start: 0,
   step: 1,
   mode: "inc",
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_GAIN_INSPECTOR_DATA: GainInspectorData = {
   gain: 1,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_INTEGRATOR_INSPECTOR_DATA: IntegratorInspectorData = {
   initialCondition: 0,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_UNIT_DELAY_INSPECTOR_DATA: UnitDelayInspectorData = {
   initialValue: 0,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_COMPARE_INSPECTOR_DATA: CompareInspectorData = {
   operator: "gt",
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_PID_INSPECTOR_DATA: PidInspectorData = {
@@ -555,23 +480,17 @@ const DEFAULT_PID_INSPECTOR_DATA: PidInspectorData = {
   n: 10,
   lowerSaturation: null,
   upperSaturation: null,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_DISCRETE_TRANSFER_INSPECTOR_DATA: DiscreteTransferInspectorData = {
   numerator: [1],
   denominator: [1, 0],
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const DEFAULT_LEAD_LAG_INSPECTOR_DATA: LeadLagInspectorData = {
   gain: 1,
   leadTimeConstantSec: 0.1,
   lagTimeConstantSec: 1,
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const MS_PER_SECOND = 1_000;
@@ -588,8 +507,6 @@ const MIN_TIMING_SECONDS = 0.001;
 const CANVAS_STYLE: React.CSSProperties = {
   touchAction: "none",
   backgroundColor: "#eceff3",
-  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -631,9 +548,7 @@ function normalizeStateMachineModel(raw: unknown): StateMachineModel {
   const source =
     typeof raw === "object" && raw !== null
       ? (raw as Record<string, unknown>)
-      : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      : {};
 
   const seenStates = new Set<string>();
   const states = Array.isArray(source.states)
@@ -694,9 +609,7 @@ function normalizeStateMachineModel(raw: unknown): StateMachineModel {
           ...(typeof afterMs === "number" ? { afterMs } : {}),
           ...(event ? { event } : {}),
           ...(eventInput ? { eventInput } : {}),
-          [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+        };
 
         accumulator.push(normalizedTransition);
         return accumulator;
@@ -711,9 +624,7 @@ function normalizeStateMachineModel(raw: unknown): StateMachineModel {
     initialState,
     states: normalizedStates,
     transitions,
-    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+  };
 }
 
 function parseStateMachineModelJson(rawValue: string): StateMachineModel | null {
@@ -737,9 +648,7 @@ function normalizeTruthTableModel(raw: unknown): TruthTableModel {
   const source =
     typeof raw === "object" && raw !== null
       ? (raw as Record<string, unknown>)
-      : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      : {};
 
   const seenHandles = new Set<string>();
   const inputHandles = Array.isArray(source.inputHandles)
@@ -781,13 +690,9 @@ function normalizeTruthTableModel(raw: unknown): TruthTableModel {
         const whenRaw =
           typeof candidate.when === "object" && candidate.when !== null
             ? (candidate.when as Record<string, unknown>)
-            : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+            : {};
 
-        const when: Record<string, number | boolean | string> = {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+        const when: Record<string, number | boolean | string> = {};
         for (const [key, value] of Object.entries(whenRaw)) {
           const normalizedKey = sanitizeStateMachineName(key);
           const normalizedValue =
@@ -822,9 +727,7 @@ function normalizeTruthTableModel(raw: unknown): TruthTableModel {
     inputHandles: inputHandles.length > 0 ? inputHandles : ["in1", "in2"],
     rows,
     elseOutput,
-    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+  };
 }
 
 function parseTruthTableModelJson(rawValue: string): TruthTableModel | null {
@@ -1026,9 +929,7 @@ const searchResults = useMemo(() => {
         id: makeEdgeId(connection.source ?? "source", connection.target ?? "target"),
         // Belt-and-suspenders safety: preserve straight-edge policy even if call-sites evolve.
         type: DEFAULT_EDGE_OPTIONS.type ?? "straight",
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
 
       const issue = validateConnectionCandidate({
         graph: {
@@ -1172,9 +1073,7 @@ const searchResults = useMemo(() => {
         event.preventDefault();
         deleteSelectedNodes();
       }
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -1248,9 +1147,7 @@ const searchResults = useMemo(() => {
 
     return () => {
       cancelled = true;
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, []);
 
   useEffect(() => {
@@ -1276,9 +1173,7 @@ const searchResults = useMemo(() => {
       const saved: PersistedSimulationRunRecord[] = [];
 
       for (const node of toFileNodes) {
-        const nodeParams = (node.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+        const nodeParams = (node.data as Record<string, unknown> | undefined) ?? {};
         const parsedState = toToFileState(runtime.nodeInternalState[node.id], nodeParams);
         const payload = buildToFilePayload({
           format: parsedState.format,
@@ -1307,9 +1202,7 @@ const searchResults = useMemo(() => {
         setRecentRunRecords(latest);
         setToFileActionMessage(`Persisted ${saved.length} To File run(s) to IndexedDB.`);
       }
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
 
     lastPersistedCompletionRef.current = completionSignature;
 
@@ -1321,9 +1214,7 @@ const searchResults = useMemo(() => {
 
     return () => {
       cancelled = true;
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [nodes, runtime.nodeInternalState, runtime.status, runtime.tick, runtime.timeMs]);
 
   useEffect(() => {
@@ -1397,15 +1288,11 @@ const searchResults = useMemo(() => {
 
   const editingSubsystemGraph = useMemo<{ nodes: Node[]; edges: Edge[] }>(() => {
     if (!editingSubsystemId) {
-      return { nodes: [], edges: []   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      return { nodes: [], edges: [] };
     }
 
     const subsystemNode = nodes.find((node) => node.id === editingSubsystemId);
-    const rawData = (subsystemNode?.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const rawData = (subsystemNode?.data as Record<string, unknown> | undefined) ?? {};
     const rawGraph = rawData.graph;
 
     if (
@@ -1419,14 +1306,10 @@ const searchResults = useMemo(() => {
       return {
         nodes: (rawGraph as { nodes: Node[] }).nodes,
         edges: (rawGraph as { edges: Edge[] }).edges,
-        [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      };
     }
 
-    return { nodes: [], edges: []   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { nodes: [], edges: [] };
   }, [editingSubsystemId, nodes]);
 
   const selectedEdgeIds = useMemo(
@@ -1447,9 +1330,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const start =
       typeof raw.start === "number" && Number.isFinite(raw.start)
         ? raw.start
@@ -1460,9 +1341,7 @@ const searchResults = useMemo(() => {
         : DEFAULT_COUNTER_INSPECTOR_DATA.step;
     const mode: CounterMode = raw.mode === "dec" ? "dec" : "inc";
 
-    return { start, step, mode   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { start, step, mode };
   }, [selectedNode]);
 
   const selectedGainData = useMemo<GainInspectorData | null>(() => {
@@ -1470,17 +1349,13 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const gain =
       typeof raw.gain === "number" && Number.isFinite(raw.gain)
         ? raw.gain
         : DEFAULT_GAIN_INSPECTOR_DATA.gain;
 
-    return { gain   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { gain };
   }, [selectedNode]);
 
   const selectedToFileData = useMemo<ToFileInspectorData | null>(() => {
@@ -1488,9 +1363,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const parsedState = toToFileState(runtime.nodeInternalState[selectedNode.id], raw);
 
     return {
@@ -1498,9 +1371,7 @@ const searchResults = useMemo(() => {
       fileName: parsedState.fileName,
       maxRows: parsedState.maxRows,
       sampleCount: parsedState.samples.length,
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [runtime.nodeInternalState, selectedNode]);
 
   const selectedIntegratorData = useMemo<IntegratorInspectorData | null>(() => {
@@ -1508,17 +1379,13 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const initialCondition =
       typeof raw.initialCondition === "number" && Number.isFinite(raw.initialCondition)
         ? raw.initialCondition
         : DEFAULT_INTEGRATOR_INSPECTOR_DATA.initialCondition;
 
-    return { initialCondition   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { initialCondition };
   }, [selectedNode]);
 
   const selectedUnitDelayData = useMemo<UnitDelayInspectorData | null>(() => {
@@ -1526,17 +1393,13 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const initialValue =
       typeof raw.initialValue === "number" && Number.isFinite(raw.initialValue)
         ? raw.initialValue
         : DEFAULT_UNIT_DELAY_INSPECTOR_DATA.initialValue;
 
-    return { initialValue   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { initialValue };
   }, [selectedNode]);
 
   const selectedCompareData = useMemo<CompareInspectorData | null>(() => {
@@ -1544,9 +1407,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const operator: CompareOperator =
       raw.operator === "gte" ||
       raw.operator === "lt" ||
@@ -1557,9 +1418,7 @@ const searchResults = useMemo(() => {
         ? raw.operator
         : DEFAULT_COMPARE_INSPECTOR_DATA.operator;
 
-    return { operator   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { operator };
   }, [selectedNode]);
 
   const selectedPidData = useMemo<PidInspectorData | null>(() => {
@@ -1567,9 +1426,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const kp = typeof raw.kp === "number" && Number.isFinite(raw.kp) ? raw.kp : DEFAULT_PID_INSPECTOR_DATA.kp;
     const ki = typeof raw.ki === "number" && Number.isFinite(raw.ki) ? raw.ki : DEFAULT_PID_INSPECTOR_DATA.ki;
     const kd = typeof raw.kd === "number" && Number.isFinite(raw.kd) ? raw.kd : DEFAULT_PID_INSPECTOR_DATA.kd;
@@ -1586,9 +1443,7 @@ const searchResults = useMemo(() => {
         ? raw.upperSaturation
         : null;
 
-    return { kp, ki, kd, n, lowerSaturation, upperSaturation   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { kp, ki, kd, n, lowerSaturation, upperSaturation };
   }, [selectedNode]);
 
   const selectedDiscreteTransferData = useMemo<DiscreteTransferInspectorData | null>(() => {
@@ -1596,9 +1451,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const numerator = Array.isArray(raw.numerator)
       ? raw.numerator.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
       : [];
@@ -1613,9 +1466,7 @@ const searchResults = useMemo(() => {
         denominator.length > 0
           ? denominator
           : DEFAULT_DISCRETE_TRANSFER_INSPECTOR_DATA.denominator,
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   const selectedLeadLagData = useMemo<LeadLagInspectorData | null>(() => {
@@ -1623,9 +1474,7 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     return {
       gain:
         typeof raw.gain === "number" && Number.isFinite(raw.gain)
@@ -1639,9 +1488,7 @@ const searchResults = useMemo(() => {
         typeof raw.lagTimeConstantSec === "number" && Number.isFinite(raw.lagTimeConstantSec)
           ? Math.max(0, raw.lagTimeConstantSec)
           : DEFAULT_LEAD_LAG_INSPECTOR_DATA.lagTimeConstantSec,
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   const selectedGotoFromData = useMemo<{ tag: string } | null>(() => {
@@ -1649,12 +1496,8 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
-    return { tag: typeof raw.tag === "string" ? raw.tag : "signal"   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return { tag: typeof raw.tag === "string" ? raw.tag : "signal" };
   }, [selectedNode]);
 
   const selectedSubsystemMaskData = useMemo<SubsystemMaskInspectorData | null>(() => {
@@ -1662,15 +1505,11 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const rawMask =
       typeof raw.mask === "object" && raw.mask !== null
         ? (raw.mask as Record<string, unknown>)
-        : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+        : {};
 
     const sanitize = (value: unknown): string | null => {
       if (typeof value !== "string") {
@@ -1678,9 +1517,7 @@ const searchResults = useMemo(() => {
       }
       const trimmed = value.trim();
       return trimmed.length > 0 ? trimmed : null;
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
 
     const inputs = Array.isArray(rawMask.inputs)
       ? rawMask.inputs
@@ -1697,36 +1534,26 @@ const searchResults = useMemo(() => {
         ? JSON.stringify(rawMask.parameters, null, 2)
         : "{}";
 
-    return { inputs, outputs, parameters   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    return { inputs, outputs, parameters };
   }, [selectedNode]);
 
   const selectedLut1DData = useMemo<Lut1DInspectorData | null>(() => {
     if (!selectedNode || selectedNode.type !== LUT_1D_BLOCK_TYPE) return null;
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     return {
       breakpointsX: Array.isArray(raw.breakpointsX) ? raw.breakpointsX : [0, 10],
       tableData: Array.isArray(raw.tableData) ? raw.tableData : [0, 100],
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   const selectedLut2DData = useMemo<Lut2DInspectorData | null>(() => {
     if (!selectedNode || selectedNode.type !== LUT_2D_BLOCK_TYPE) return null;
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     return {
       breakpointsX: Array.isArray(raw.breakpointsX) ? raw.breakpointsX : [0, 10],
       breakpointsY: Array.isArray(raw.breakpointsY) ? raw.breakpointsY : [0, 10],
       tableData: JSON.stringify(raw.tableData ?? [[0, 100], [100, 200]], null, 2),
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   const selectedStateMachineData = useMemo<StateMachineInspectorData | null>(() => {
@@ -1734,17 +1561,13 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const model = normalizeStateMachineModel(raw);
 
     return {
       model,
       modelJson: formatStateMachineModelJson(model),
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   useEffect(() => {
@@ -1775,17 +1598,13 @@ const searchResults = useMemo(() => {
       return null;
     }
 
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const model = normalizeTruthTableModel(raw);
 
     return {
       model,
       modelJson: formatTruthTableModelJson(model),
-      [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    };
   }, [selectedNode]);
 
   useEffect(() => {
@@ -1810,16 +1629,6 @@ const searchResults = useMemo(() => {
 
     return truthTableModelDraft !== selectedTruthTableData.modelJson;
   }, [selectedTruthTableData, truthTableModelDraft]);
-
-  const selectedDashboardData = useMemo(() => {
-    if (!selectedNode || (selectedNode.type !== GAUGE_BLOCK_TYPE && selectedNode.type !== LAMP_BLOCK_TYPE)) return null;
-    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
-    return {
-      min: typeof raw.min === "number" ? raw.min : 0,
-      max: typeof raw.max === "number" ? raw.max : 100,
-      threshold: typeof raw.threshold === "number" ? raw.threshold : 0.5,
-    };
-  }, [selectedNode]);
 
   const selectedSampleTimeMs = useMemo<number | null>(() => {
     if (!selectedNode) {
@@ -1855,18 +1664,14 @@ const searchResults = useMemo(() => {
             return node;
           }
 
-          const previousData = (node.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+          const previousData = (node.data as Record<string, unknown> | undefined) ?? {};
           return {
             ...node,
             data: {
               ...previousData,
               ...patch,
             },
-            [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+          };
         })
       );
     },
@@ -2047,15 +1852,11 @@ const searchResults = useMemo(() => {
         .map((segment) => segment.trim())
         .filter((segment) => segment.length > 0);
 
-      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {};
       const existingMask =
         typeof raw.mask === "object" && raw.mask !== null
           ? (raw.mask as Record<string, unknown>)
-          : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+          : {};
 
       patchSelectedNodeData({
         mask: {
@@ -2069,15 +1870,11 @@ const searchResults = useMemo(() => {
 
   const commitSubsystemMaskParameters = useCallback(
     (rawValue: string) => {
-      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+      const raw = (selectedNode?.data as Record<string, unknown> | undefined) ?? {};
       const existingMask =
         typeof raw.mask === "object" && raw.mask !== null
           ? (raw.mask as Record<string, unknown>)
-          : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+          : {};
 
       try {
         const parsed = JSON.parse(rawValue) as unknown;
@@ -2257,9 +2054,7 @@ const searchResults = useMemo(() => {
       return;
     }
 
-    const nodeParams = (selectedNode.data as Record<string, unknown> | undefined) ?? {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+    const nodeParams = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
     const parsedState = toToFileState(runtime.nodeInternalState[selectedNode.id], nodeParams);
     const payload = buildToFilePayload({
       format: parsedState.format,
@@ -3029,47 +2824,6 @@ const searchResults = useMemo(() => {
           </div>
         ) : null}
 
-        {selectedDashboardData ? (
-          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-              Dashboard Properties
-            </p>
-            {selectedNode?.type === GAUGE_BLOCK_TYPE && (
-              <>
-                <label className="block text-xs text-slate-600">
-                  Min Value
-                  <input
-                    type="number"
-                    value={selectedDashboardData.min}
-                    onChange={(e) => patchSelectedNodeData({ min: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
-                  />
-                </label>
-                <label className="block text-xs text-slate-600">
-                  Max Value
-                  <input
-                    type="number"
-                    value={selectedDashboardData.max}
-                    onChange={(e) => patchSelectedNodeData({ max: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
-                  />
-                </label>
-              </>
-            )}
-            {selectedNode?.type === LAMP_BLOCK_TYPE && (
-              <label className="block text-xs text-slate-600">
-                Threshold
-                <input
-                  type="number"
-                  value={selectedDashboardData.threshold}
-                  onChange={(e) => patchSelectedNodeData({ threshold: Number(e.target.value) })}
-                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
-                />
-              </label>
-            )}
-          </div>
-        ) : null}
-
         {selectedToFileData ? (
           <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -3126,9 +2880,7 @@ const searchResults = useMemo(() => {
         ) : null}
       </div>
     );
-    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -3605,15 +3357,11 @@ const searchResults = useMemo(() => {
                   const currentMask =
                     typeof currentData.mask === "object" && currentData.mask !== null
                       ? (currentData.mask as Record<string, unknown>)
-                      : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+                      : {};
                   const parameters =
                     typeof currentMask.parameters === "object" && currentMask.parameters !== null
                       ? currentMask.parameters
-                      : {  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+                      : {};
 
                   return {
                     ...node,
@@ -3626,9 +3374,7 @@ const searchResults = useMemo(() => {
                         parameters,
                       },
                     },
-                    [GAUGE_BLOCK_TYPE]: CustomBlockNode,
-  [LAMP_BLOCK_TYPE]: CustomBlockNode,
-};
+                  };
                 })
               );
             }}

@@ -1,6 +1,4 @@
-"use client";
-
-import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
+import { SimulationBlockDefinition } from "@/src/simulation/types";
 
 // --- GAUGE BLOCK ---
 export const GAUGE_BLOCK_TYPE = "gauge" as const;
@@ -67,7 +65,7 @@ export const LampBlock: SimulationBlockDefinition = {
 
 // --- VIEW COMPONENTS ---
 
-export function GaugeBlockView({ state, params, className }: { state: unknown; params: any; className?: string }) {
+export function GaugeBlockView({ state, params, className }: { state: unknown; params: Record<string, unknown>; className?: string }) {
   const { value } = toGaugeState(state);
   const min = typeof params.min === "number" ? params.min : 0;
   const max = typeof params.max === "number" ? params.max : 100;
