@@ -22,6 +22,7 @@ import "reactflow/dist/style.css";
 import { CustomBlockNode } from "@/src/canvas/customBlockNode";
 import { SubsystemEditorModal } from "@/src/canvas/subsystemEditorModal";
 import { DEFAULT_EDGE_OPTIONS } from "@/src/canvas/edgeDefaults";
+import { ProbingEdge } from "@/src/canvas/probingEdge";
 import { traceSignalPath, computeEdgeStyles } from "@/src/canvas/signalPath";
 import { COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
@@ -122,6 +123,10 @@ const INITIAL_EDGES: Edge[] = [
     type: "straight",
   },
 ];
+
+const EDGE_TYPES = {
+  probing: ProbingEdge,
+};
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -3260,6 +3265,7 @@ const searchResults = useMemo(() => {
             <ReactFlow
               nodes={nodes}
               edges={styledEdges}
+              edgeTypes={EDGE_TYPES}
               onInit={setReactFlowInstance}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
@@ -3268,7 +3274,10 @@ const searchResults = useMemo(() => {
               onNodeDoubleClick={(_, node) => { if(node.type === SUBSYSTEM_BLOCK_TYPE) setEditingSubsystemId(node.id); }}
               onDragOver={onCanvasDragOver}
               onDrop={onCanvasDrop}
-              defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+              defaultEdgeOptions={{
+                ...DEFAULT_EDGE_OPTIONS,
+                type: "probing",
+              }}
               nodeTypes={NODE_TYPES}
               fitView
               /**
