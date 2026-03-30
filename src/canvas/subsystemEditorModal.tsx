@@ -45,6 +45,8 @@ import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
+import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
@@ -72,6 +74,8 @@ const NODE_TYPES: NodeTypes = {
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
   [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
   [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
+  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
+  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -96,6 +100,8 @@ const LIBRARY_BLOCKS = [
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
   { label: "Switch", type: SWITCH_BLOCK_TYPE },
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
+  { label: "Gauge", type: GAUGE_BLOCK_TYPE },
+  { label: "Lamp", type: LAMP_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
 ] as const;
 
@@ -164,6 +170,10 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
         breakpointsY: [0, 10],
         tableData: [[0, 100], [100, 200]],
       };
+    case GAUGE_BLOCK_TYPE:
+      return { label: "Gauge", min: 0, max: 100 };
+    case LAMP_BLOCK_TYPE:
+      return { label: "Lamp", colorTrue: "#22c55e", colorFalse: "#ef4444" };
     case STATE_MACHINE_BLOCK_TYPE:
       return {
         label: "State Machine",

@@ -35,6 +35,10 @@ import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import { GaugeBlockView, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
+import { LampBlockView, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
+import { KnobBlockView, KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
+import { SliderBlockView, SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
@@ -167,6 +171,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const internalState = useSimulationRuntimeStore(
     (state) => state.runtime.nodeInternalState[id]
   );
+  const updateNodeInternalState = useSimulationRuntimeStore(
+    (state) => state.updateNodeInternalState
+  );
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
 
   const isCounter = type === COUNTER_BLOCK_TYPE;
@@ -194,6 +201,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isLut2D = type === LUT_2D_BLOCK_TYPE;
   const isStateMachine = type === STATE_MACHINE_BLOCK_TYPE;
   const isTruthTable = type === TRUTH_TABLE_BLOCK_TYPE;
+  const isGauge = type === GAUGE_BLOCK_TYPE;
+  const isLamp = type === LAMP_BLOCK_TYPE;
+  const isKnob = type === KNOB_BLOCK_TYPE;
+  const isSlider = type === SLIDER_BLOCK_TYPE;
   const isMathNode =
     isGain ||
     isSum ||
@@ -211,10 +222,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDiscreteTransfer ||
     isLeadLag ||
     isGoto ||
-    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable;
-  const isSinkNode = isDisplay || isScope || isToFile;
+    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider;
+  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp;
 
-  const accentColor = isCounter ? SOURCE_ORANGE : SINK_BLUE;
+  const accentColor = (isCounter || isKnob || isSlider) ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
 
   const subsystemInputHandles = useMemo(
@@ -237,14 +248,14 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     [data, isSubsystem]
   );
 
-  const containerClass = isCounter
+  const containerClass = (isCounter || isKnob || isSlider)
     ? "group min-h-[82px] w-[88px] rounded-xl border-2 bg-white px-2 py-2 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.18)] transition-[border-color,box-shadow]"
     : "group min-w-[220px] rounded-xl border-2 bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.14)] transition-[border-color,box-shadow]";
 
-  const borderColorClass = isCounter ? "border-orange-500" : "border-sky-500";
+  const borderColorClass = (isCounter || isKnob || isSlider) ? "border-orange-500" : "border-sky-500";
 
   const selectedClass = selected
-    ? isCounter
+    ? (isCounter || isKnob || isSlider)
       ? "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(249,115,22,0.35),0_8px_18px_rgba(194,65,12,0.24)]"
       : "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(14,165,233,0.32),0_8px_18px_rgba(2,132,199,0.22)]"
     : "";
@@ -304,6 +315,34 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             {data.label ?? type ?? "Block"}
           </p>
         )}
+
+        {isKnob ? (
+          <KnobBlockView 
+            id={id} 
+            state={internalState} 
+            params={data as Record<string, unknown>} 
+            onUpdateValue={(val) => updateNodeInternalState(id, { value: val })}
+            className="border-orange-200 bg-orange-50/70" 
+          />
+        ) : null}
+
+        {isSlider ? (
+          <SliderBlockView 
+            id={id} 
+            state={internalState} 
+            params={data as Record<string, unknown>} 
+            onUpdateValue={(val) => updateNodeInternalState(id, { value: val })}
+            className="border-orange-200 bg-orange-50/70" 
+          />
+        ) : null}
+
+        {isGauge ? (
+          <GaugeBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-sky-50/70" />
+        ) : null}
+
+        {isLamp ? (
+          <LampBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-sky-50/70" />
+        ) : null}
 
         {isDisplay ? (
           <DisplayBlockView state={internalState} className="border-sky-200 bg-sky-50/70" />

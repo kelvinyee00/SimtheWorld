@@ -1,61 +1,83 @@
-import { GaugeBlock, LampBlock } from "../blocks/dashboardBlocks";
-import { BlockStepContext } from "../types";
+import { GaugeBlock } from "../blocks/gaugeBlock";
+import { LampBlock } from "../blocks/lampBlock";
 
-describe("Dashboard Blocks", () => {
+describe("Dashboard Blocks (P11-1)", () => {
   describe("GaugeBlock", () => {
-    it("captures numeric input into state", () => {
-      const context = {
-        inputs: { in: 42 },
-      } as unknown as BlockStepContext;
-
-      const result = GaugeBlock.step(context);
+    it("updates its state with numeric input", () => {
+      const result = GaugeBlock.step({
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 100,
+        nodeId: "g1",
+        params: { min: 0, max: 100 },
+        inputs: { default: 42 },
+        previousState: { value: 0 },
+        registry: {},
+        globalSignals: {},
+      });
       expect(result.nextState).toEqual({ value: 42 });
     });
 
-    it("handles null/non-finite inputs", () => {
-      const context = {
-        inputs: { in: NaN },
-      } as unknown as BlockStepContext;
-
-      const result = GaugeBlock.step(context);
+    it("handles null/invalid input", () => {
+      const result = GaugeBlock.step({
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 100,
+        nodeId: "g1",
+        params: { min: 0, max: 100 },
+        inputs: { default: null },
+        previousState: { value: 42 },
+        registry: {},
+        globalSignals: {},
+      });
       expect(result.nextState).toEqual({ value: null });
     });
   });
 
   describe("LampBlock", () => {
-    it("activates when numeric input exceeds threshold", () => {
-      const context = {
-        params: { threshold: 10 },
-        inputs: { in: 11 },
-      } as unknown as BlockStepContext;
-
-      const result = LampBlock.step(context);
+    it("becomes active with boolean true input", () => {
+      const result = LampBlock.step({
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 100,
+        nodeId: "l1",
+        params: {},
+        inputs: { default: true },
+        previousState: { active: false },
+        registry: {},
+        globalSignals: {},
+      });
       expect(result.nextState).toEqual({ active: true });
     });
 
-    it("remains inactive when numeric input is below threshold", () => {
-      const context = {
-        params: { threshold: 10 },
-        inputs: { in: 9 },
-      } as unknown as BlockStepContext;
-
-      const result = LampBlock.step(context);
-      expect(result.nextState).toEqual({ active: false });
+    it("becomes active with numeric positive input", () => {
+      const result = LampBlock.step({
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 100,
+        nodeId: "l1",
+        params: {},
+        inputs: { default: 1 },
+        previousState: { active: false },
+        registry: {},
+        globalSignals: {},
+      });
+      expect(result.nextState).toEqual({ active: true });
     });
 
-    it("respects boolean inputs directly", () => {
-      const contextTrue = {
+    it("becomes inactive with boolean false input", () => {
+      const result = LampBlock.step({
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 100,
+        nodeId: "l1",
         params: {},
-        inputs: { in: true },
-      } as unknown as BlockStepContext;
-
-      const contextFalse = {
-        params: {},
-        inputs: { in: false },
-      } as unknown as BlockStepContext;
-
-      expect(LampBlock.step(contextTrue).nextState).toEqual({ active: true });
-      expect(LampBlock.step(contextFalse).nextState).toEqual({ active: false });
+        inputs: { default: false },
+        previousState: { active: true },
+        registry: {},
+        globalSignals: {},
+      });
+      expect(result.nextState).toEqual({ active: false });
     });
   });
 });

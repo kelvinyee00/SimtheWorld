@@ -56,6 +56,7 @@ export interface SimulationRuntimeStore {
   complete: () => void;
   stepOnce: () => void;
   clearTrace: () => void;
+  updateNodeInternalState: (nodeId: string, state: unknown) => void;
 }
 
 const DEFAULT_RUNTIME = createInitialSnapshot({
@@ -259,6 +260,18 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           timeMs: runtime.simulationTimeMs,
         },
       });
+    },
+
+    updateNodeInternalState: (nodeId, state) => {
+      set((current) => ({
+        runtime: {
+          ...current.runtime,
+          nodeInternalState: {
+            ...current.runtime.nodeInternalState,
+            [nodeId]: state,
+          },
+        },
+      }));
     },
 
     clearTrace: () => {

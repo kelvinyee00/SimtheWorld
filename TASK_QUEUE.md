@@ -96,4 +96,4 @@
 
 - [x] P9 State-Machine Codegen Parity & Delivery Tooling phase complete.
 
-- [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [ ] P11-2 Interactive Source Blocks (Knob & Slider)\n- [ ] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [ ] P11-4 Live Edge Probing (Value tooltips)\n- [ ] P11-5 Final Verification + Deployment
+- [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [ ] P11-3 Engine Wall-clock Sync (Real-time mode) [IN PROGRESS]\n- [ ] P11-4 Live Edge Probing (Value tooltips)\n- [ ] P11-5 Final Verification + Deployment

@@ -1251,3 +1251,49 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P10-2 marked complete, P10-3 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-30 06:50 CET
+**Task Executed:** P11-1 Dashboard Sink Blocks (Gauge & Lamp) completed
+**Files Modified/Created:**
+- `src/simulation/blocks/gaugeBlock.tsx` (new)
+- `src/simulation/blocks/lampBlock.tsx` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/simulation/__tests__/dashboardBlocks.test.ts` (new)
+**Notes/Bugs:**
+- Implemented **Gauge** sink block for real-time numeric visualization with range [min, max].
+- Implemented **Lamp** sink block for boolean/numeric status indication with configurable colors.
+- Integrated dashboard blocks into main canvas, subsystem editor, and inspector with dedicated property controls.
+- Added regression tests for dashboard block state updates and input handling.
+- Validation:
+  - `npm run test` ✅ (17 files, 101 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P11-2 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-30 07:10 CET
+**Task Executed:** P11-2 Interactive Source Blocks (Knob & Slider) completed
+**Files Modified/Created:**
+- `src/simulation/blocks/knobBlock.tsx` (new)
+- `src/simulation/blocks/sliderBlock.tsx` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/canvas/subsystemEditorModal.tsx`
+- `src/store/simulationRuntimeStore.ts`
+- `src/simulation/__tests__/interactiveBlocks.test.ts` (new)
+**Notes/Bugs:**
+- Implemented **Knob** and **Slider** interactive source blocks for real-time parameter tuning on the canvas.
+- Added `updateNodeInternalState` action to `simulationRuntimeStore` to allow UI-driven state updates for interactive blocks.
+- Updated `customBlockNode` to render interactive inputs (number for knob, range for slider) and handle value changes.
+- Integrated interactive sources into libraries and inspector with dedicated range and initial value controls.
+- Added regression tests for interactive block initialization and value emission.
+- Validation:
+  - `npm run test` ✅ (18 files, 105 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Queue advanced: P11-3 marked `[IN PROGRESS]`.

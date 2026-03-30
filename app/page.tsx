@@ -51,6 +51,10 @@ import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
+import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
+import { KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
+import { SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import {
   buildToFilePayload,
   TO_FILE_BLOCK_TYPE,
@@ -145,6 +149,8 @@ const NODE_TYPES: NodeTypes = {
   [LUT_2D_BLOCK_TYPE]: CustomBlockNode,
   [STATE_MACHINE_BLOCK_TYPE]: CustomBlockNode,
   [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
+  [GAUGE_BLOCK_TYPE]: CustomBlockNode,
+  [LAMP_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -179,6 +185,8 @@ const LIBRARY_BLOCKS = [
   { label: "Compare", type: COMPARE_BLOCK_TYPE },
   { label: "Switch", type: SWITCH_BLOCK_TYPE },
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
+  { label: "Gauge", type: GAUGE_BLOCK_TYPE },
+  { label: "Lamp", type: LAMP_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
 ] as const;
@@ -305,6 +313,10 @@ function makeNodeData(type: string): Record<string, unknown> {
           { from: "active", to: "idle", event: "falling", eventInput: "in", guardExpr: "inputs.in === false", output: false },
         ],
       };
+    case GAUGE_BLOCK_TYPE:
+      return { label: "Gauge", min: 0, max: 100 };
+    case LAMP_BLOCK_TYPE:
+      return { label: "Lamp", colorTrue: "#22c55e", colorFalse: "#ef4444" };
     case TRUTH_TABLE_BLOCK_TYPE:
       return {
         label: "Truth Table",
@@ -444,6 +456,22 @@ interface StateMachineModel {
   initialState: string;
   states: string[];
   transitions: StateMachineTransitionModel[];
+}
+
+interface KnobSliderInspectorData {
+  min: number;
+  max: number;
+  initialValue: number;
+}
+
+interface GaugeInspectorData {
+  min: number;
+  max: number;
+}
+
+interface LampInspectorData {
+  colorTrue: string;
+  colorFalse: string;
 }
 
 interface StateMachineInspectorData {
@@ -1553,6 +1581,34 @@ const searchResults = useMemo(() => {
       breakpointsX: Array.isArray(raw.breakpointsX) ? raw.breakpointsX : [0, 10],
       breakpointsY: Array.isArray(raw.breakpointsY) ? raw.breakpointsY : [0, 10],
       tableData: JSON.stringify(raw.tableData ?? [[0, 100], [100, 200]], null, 2),
+    };
+  }, [selectedNode]);
+
+  const selectedKnobSliderData = useMemo<KnobSliderInspectorData | null>(() => {
+    if (!selectedNode || (selectedNode.type !== KNOB_BLOCK_TYPE && selectedNode.type !== SLIDER_BLOCK_TYPE)) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      min: typeof raw.min === "number" ? raw.min : 0,
+      max: typeof raw.max === "number" ? raw.max : 100,
+      initialValue: typeof raw.initialValue === "number" ? raw.initialValue : 0,
+    };
+  }, [selectedNode]);
+
+  const selectedGaugeData = useMemo<GaugeInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== GAUGE_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      min: typeof raw.min === "number" ? raw.min : 0,
+      max: typeof raw.max === "number" ? raw.max : 100,
+    };
+  }, [selectedNode]);
+
+  const selectedLampData = useMemo<LampInspectorData | null>(() => {
+    if (!selectedNode || selectedNode.type !== LAMP_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      colorTrue: typeof raw.colorTrue === "string" ? raw.colorTrue : "#22c55e",
+      colorFalse: typeof raw.colorFalse === "string" ? raw.colorFalse : "#ef4444",
     };
   }, [selectedNode]);
 
@@ -2705,6 +2761,93 @@ const searchResults = useMemo(() => {
                 onBlur={(event) => commitLut2DTable(event.target.value)}
                 onChange={(event) => commitLut2DTable(event.target.value)}
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedKnobSliderData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Interactive Source Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Min Value
+              <input
+                type="number"
+                value={selectedKnobSliderData.min}
+                onChange={(e) => patchSelectedNodeData({ min: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Max Value
+              <input
+                type="number"
+                value={selectedKnobSliderData.max}
+                onChange={(e) => patchSelectedNodeData({ max: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Initial Value
+              <input
+                type="number"
+                value={selectedKnobSliderData.initialValue}
+                onChange={(e) => patchSelectedNodeData({ initialValue: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedGaugeData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Gauge Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Min Value
+              <input
+                type="number"
+                value={selectedGaugeData.min}
+                onChange={(e) => patchSelectedNodeData({ min: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Max Value
+              <input
+                type="number"
+                value={selectedGaugeData.max}
+                onChange={(e) => patchSelectedNodeData({ max: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedLampData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Lamp Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Active Color (Hex)
+              <input
+                type="text"
+                value={selectedLampData.colorTrue}
+                onChange={(e) => patchSelectedNodeData({ colorTrue: e.target.value })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 font-mono"
+              />
+            </label>
+            <label className="block text-xs text-slate-600">
+              Inactive Color (Hex)
+              <input
+                type="text"
+                value={selectedLampData.colorFalse}
+                onChange={(e) => patchSelectedNodeData({ colorFalse: e.target.value })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 font-mono"
               />
             </label>
           </div>
