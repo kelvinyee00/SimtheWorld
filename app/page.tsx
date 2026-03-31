@@ -832,6 +832,10 @@ export default function Home() {
   const run = useSimulationRuntimeStore((state) => state.run);
   const pause = useSimulationRuntimeStore((state) => state.pause);
   const reset = useSimulationRuntimeStore((state) => state.reset);
+  const executionMode = useSimulationRuntimeStore((state) => state.executionMode);
+  const setExecutionMode = useSimulationRuntimeStore((state) => state.setExecutionMode);
+  const batchSize = useSimulationRuntimeStore((state) => state.batchSize);
+  const setBatchSize = useSimulationRuntimeStore((state) => state.setBatchSize);
 
   const [stopTimeSecondsInput, setStopTimeSecondsInput] = useState(() =>
     formatMsAsSeconds(runtime.simulationTimeMs)
@@ -3191,6 +3195,35 @@ const searchResults = useMemo(() => {
               >
                 Show Full Trace
               </button>
+            </div>
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <h2 className="text-sm font-semibold text-slate-700">Simulation Settings</h2>
+              <div className="mt-3 space-y-3">
+                <label className="block text-xs text-slate-600">
+                  Execution Mode
+                  <select
+                    value={executionMode}
+                    onChange={(e) => setExecutionMode(e.target.value as any)}
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  >
+                    <option value="fast">Fast (Web Worker + Batch)</option>
+                    <option value="real-time">Real-time (Sync)</option>
+                  </select>
+                </label>
+                {executionMode === "fast" && (
+                  <label className="block text-xs text-slate-600">
+                    Batch Size (ticks per update)
+                    <input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={batchSize}
+                      onChange={(e) => setBatchSize(Math.max(1, Number(e.target.value)))}
+                      className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                  </label>
+                )}
+              </div>
             </div>
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h2 className="text-sm font-semibold text-slate-700">Navigator</h2>
