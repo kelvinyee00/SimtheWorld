@@ -1,3 +1,4 @@
+import { WorkerRequest, WorkerResponse } from "../simulation/worker/types";
 import { create } from "zustand";
 
 import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
@@ -46,10 +47,12 @@ export interface SimulationRuntimeStore {
   metrics: RuntimePerformanceMetrics;
   trace: RuntimeTraceEvent[];
   executionMode: ExecutionMode;
+  batchSize: number;
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
   setExecutionMode: (mode: ExecutionMode) => void;
+  setBatchSize: (batchSize: number) => void;
   run: () => void;
   pause: () => void;
   reset: () => void;
@@ -87,6 +90,7 @@ function appendTrace(
 }
 
 let timerId: ReturnType<typeof setTimeout> | null = null;
+let worker: Worker | null = null;
 
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
   (set, get) => ({
@@ -96,6 +100,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     metrics: DEFAULT_METRICS,
     trace: [],
     executionMode: "fast",
+    batchSize: 10,
 
     setGraph: (graph) => {
       set({ graph });
@@ -127,6 +132,10 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       if (wasRunning) {
         scheduleNextTick();
       }
+    },
+
+    setBatchSize: (batchSize) => {
+      set({ batchSize });
     },
 
     setExecutionMode: (executionMode) => {
@@ -189,7 +198,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     run: () => {
-      const { graph, registry, runtime } = get();
+      const { graph, registry, runtime, executionMode, batchSize } = get();
       if (runtime.status === "running" || runtime.status === "completed") {
         return;
       }
@@ -226,10 +235,15 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
         }),
       });
 
-      scheduleNextTick();
+      if (executionMode === "fast" && typeof Worker !== "undefined") {
+        startWorker(graph, runtime, batchSize);
+      } else {
+        scheduleNextTick();
+      }
     },
 
     pause: () => {
+      stopWorker();
       clearScheduler();
       const runtime = get().runtime;
       const paused: SimulationStatus =
@@ -238,6 +252,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     reset: () => {
+      stopWorker();
       clearScheduler();
       const current = get().runtime;
       set({
@@ -327,4 +342,80 @@ function clearScheduler(): void {
     clearTimeout(timerId);
     timerId = null;
   }
+}
+
+function stopWorker() {
+  if (worker) {
+    worker.terminate();
+    worker = null;
+  }
+}
+
+function startWorker(graph: SimulationGraph, snapshot: SimulationRuntimeSnapshot, batchSize: number) {
+  stopWorker();
+  
+  worker = new Worker(new URL("../simulation/worker/simulation.worker.ts", import.meta.url));
+  
+  worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+    const response = event.data;
+    const store = useSimulationRuntimeStore.getState();
+
+    switch (response.type) {
+      case "STATE_UPDATE":
+        if (response.snapshot) {
+          const { metrics, trace } = store;
+          const durationMs = response.metrics?.batchDurationMs || 0;
+          const steps = response.metrics?.stepsExecuted || 1;
+          
+          const nextSteps = metrics.stepsExecuted + steps;
+          const nextAverage = (metrics.averageStepDurationMs * metrics.stepsExecuted + durationMs) / nextSteps;
+
+          useSimulationRuntimeStore.setState({
+            runtime: response.snapshot,
+            metrics: {
+              stepsExecuted: nextSteps,
+              lastStepDurationMs: durationMs / steps,
+              averageStepDurationMs: nextAverage / steps,
+              peakStepDurationMs: Math.max(metrics.peakStepDurationMs, durationMs / steps),
+              estimatedStepRateHz: durationMs > 0 ? (1000 * steps) / durationMs : 0,
+            },
+            trace: appendTrace(trace, {
+              tick: response.snapshot.tick,
+              timeMs: response.snapshot.timeMs,
+              durationMs,
+              status: response.snapshot.status,
+              note: `batch-${steps}`,
+            }),
+          });
+        }
+        break;
+
+      case "COMPLETED":
+        if (response.snapshot) {
+          useSimulationRuntimeStore.setState({ runtime: response.snapshot });
+        }
+        stopWorker();
+        break;
+
+      case "ERROR":
+        useSimulationRuntimeStore.setState({
+          runtime: {
+            ...store.runtime,
+            status: "paused",
+            error: response.error,
+          },
+        });
+        stopWorker();
+        break;
+    }
+  };
+
+  worker.postMessage({
+    type: "INIT",
+    graph,
+    snapshot,
+    batchSize,
+  } as WorkerRequest);
+  
+  worker.postMessage({ type: "START" } as WorkerRequest);
 }
