@@ -99,7 +99,7 @@
 
 - [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n
 ## P12 Queue (Performance & Advanced Extensions)
-- [ ] P12-1 Batch Evaluation & Worker Threading (engine optimization) [IN PROGRESS]
+- [x] P12-1 Batch Evaluation & Worker Threading (engine optimization)
 - [ ] P12-2 3D Scope & Spectrum Analyzer (advanced visualization)
 - [ ] P12-3 Custom Block Subsystem Library (reusable components)
 - [ ] P12-4 Python Bridge (Pyodide/Emscripten integration)
