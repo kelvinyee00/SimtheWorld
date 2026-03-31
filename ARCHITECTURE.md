@@ -488,3 +488,52 @@ Constraints for P0:
   - `npm run lint`
   - `npm run build`
   - Hierarchical SIL verification.
+
+### 24) Interaction & Dashboards (P11)
+
+#### 24.1 Dashboard Sink Blocks
+- Added **Gauge** and **Lamp** blocks for rich visual feedback.
+- Gauge: Linear visualization of numeric values within [min, max] range.
+- Lamp: Boolean/numeric status indicator with configurable color mappings.
+
+#### 24.2 Interactive Source Blocks
+- Added **Knob** and **Slider** blocks for real-time parameter injection.
+- Direct canvas interaction updates node internal state, which is consumed by the engine in the next tick.
+- Enables "Human-in-the-loop" tuning and manual setpoint control.
+
+#### 24.3 Real-time Wall-clock Sync
+- Introduced **Real-time execution mode** in the simulation scheduler.
+- Dynamically calculates tick delays to align simulation time with real-world time.
+- Prevents simulation "speeding" on low-complexity models while maintaining deterministic logic.
+
+#### 24.4 Live Edge Probing
+- Implemented hover-sensitive **Value Tooltips** on all canvas edges.
+- Tooltips subscribe to live output data from the source block.
+- Provides immediate observability of signal values without adding explicit Display blocks.
+
+### 25) Iteration 12 Roadmap — Performance & Advanced Extensions (P12)
+
+#### 25.1 Batch Evaluation & Worker Threading
+- Offload simulation `step()` loop to a dedicated Web Worker to prevent main-thread jank.
+- Implement batch stepping where multiple ticks are computed before syncing state to UI.
+- Use `SharedArrayBuffer` for high-frequency signal data transfer if environment supports it.
+
+#### 25.2 Advanced Visualization
+- Introduce **3D Scope** for multi-variable state-space trajectory visualization.
+- Add **Spectrum Analyzer** sink for real-time FFT frequency domain analysis.
+- Enhance Scope modal with persistent measurement cursors and data export (CSV/JSON).
+
+#### 25.3 Custom Block Subsystem Library
+- Enable users to save a configured Subsystem as a reusable block in the Library.
+- Implement a persistence layer for user-defined block definitions.
+- Support versioning and metadata for custom library components.
+
+#### 25.4 Python Bridge
+- Integrate **Pyodide** to allow Python-based block logic within the web environment.
+- Map TypeScript `SignalValue` types to Python equivalents.
+- Enable high-level algorithmic modeling using NumPy/SciPy within custom blocks.
+
+#### 25.5 P12 Release Gate
+- Performance benchmarks: Verify 10x throughput improvement via batch mode.
+- Verification: Full test coverage for Python bridge and new visualization sinks.
+- Stability: Regression suite pass (105+ tests).

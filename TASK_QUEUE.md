@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P10 planning targets hierarchical codegen, model navigation ergonomics, and expression-based parameterization while preserving P1-P9 stability.
+- P12 planning targets performance scaling, advanced visualization, and external language bindings while preserving P1-P11 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -88,6 +88,7 @@
 
 
 ## Phase Closeout
+- [x] P11 Interactive Dashboard & Real-time Tuning phase complete.
 - [x] P6 Advanced Control & Discrete Modeling phase complete.
 
 - [x] P7 Logic State Machines & Code Generation phase complete.
@@ -96,4 +97,12 @@
 
 - [x] P9 State-Machine Codegen Parity & Delivery Tooling phase complete.
 
-- [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [x] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [x] P11-4 Live Edge Probing (Value tooltips)\n- [x] P11-5 Final Verification + Deployment
+- [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n
+## P12 Queue (Performance & Advanced Extensions)
+- [ ] P12-1 Batch Evaluation & Worker Threading (engine optimization)
+- [ ] P12-2 3D Scope & Spectrum Analyzer (advanced visualization)
+- [ ] P12-3 Custom Block Subsystem Library (reusable components)
+- [ ] P12-4 Python Bridge (Pyodide/Emscripten integration)
+- [ ] P12-5 Final Verification + Deployment
+
+## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [x] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [x] P11-4 Live Edge Probing (Value tooltips)\n- [x] P11-5 Final Verification + Deployment

@@ -1297,3 +1297,52 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Queue advanced: P11-3 marked `[IN PROGRESS]`.
+
+---
+**Date/Time:** 2026-03-30 08:30 CET
+**Task Executed:** P11-3 Engine Wall-clock Sync completed
+**Files Modified/Created:**
+- `src/store/simulationRuntimeStore.ts`
+- `app/page.tsx`
+- `src/simulation/__tests__/engineWallClock.test.ts` (new)
+**Notes/Bugs:**
+- Implemented real-time execution mode using `performance.now()` for high-precision timing.
+- Added dynamic tick delay calculation in the scheduler loop.
+- Added UI toggle for "Fast" vs "Real-time" execution in the main toolbar.
+- Verified timing accuracy with a new test suite.
+- Validation:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-30 09:15 CET
+**Task Executed:** P11-4 Live Edge Probing completed
+**Files Modified/Created:**
+- `src/canvas/probingEdge.tsx` (new)
+- `app/page.tsx`
+- `src/canvas/edgeDefaults.ts`
+**Notes/Bugs:**
+- Replaced standard edges with `ProbingEdge` custom component.
+- Implemented hover-detection and overlay rendering for live signal values.
+- Formatted tooltips to handle numbers, booleans, and null values gracefully.
+- Maintained O(1) lookups via direct store subscriptions per edge.
+- Validation:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-30 10:45 CET
+**Task Executed:** P11-5 Final Verification + Deployment (P11 PHASE COMPLETE)
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Executed full P11 verification suite on latest integration state.
+- Confirmed all P11 features (Gauge, Lamp, Knob, Slider, Real-time Sync, Probing) are stable.
+- Final validation gates:
+  - `npm run test` ✅ (18 files, 105 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Marked P11 closeout complete in the task queue.
