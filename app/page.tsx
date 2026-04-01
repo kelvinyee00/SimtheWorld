@@ -3203,7 +3203,7 @@ const searchResults = useMemo(() => {
                   Execution Mode
                   <select
                     value={executionMode}
-                    onChange={(e) => setExecutionMode(e.target.value as any)}
+                    onChange={(e) => setExecutionMode(e.target.value as "fast" | "real-time")}
                     className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                   >
                     <option value="fast">Fast (Web Worker + Batch)</option>
