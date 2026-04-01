@@ -1,4 +1,4 @@
-import { SimulationBlockDefinition } from "@/src/simulation/types";
+import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
  * Python Block (P12-4).

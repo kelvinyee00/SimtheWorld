@@ -263,7 +263,8 @@ export function SubsystemEditorModal({
       setEdges(initialGraph.edges);
       setSaveErrors([]);
     }
-  }, [open, initialGraph, setNodes, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialGraph]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -329,6 +330,22 @@ export function SubsystemEditorModal({
     );
   };
 
+  const normalizeIoLabels = () => {
+    setNodes((nds) => {
+      let inCount = 1;
+      let outCount = 1;
+      return nds.map((node) => {
+        if (node.type === INPORT_BLOCK_TYPE) {
+          return { ...node, data: { ...node.data, label: `in${inCount++}` } };
+        }
+        if (node.type === OUTPORT_BLOCK_TYPE) {
+          return { ...node, data: { ...node.data, label: `out${outCount++}` } };
+        }
+        return node;
+      });
+    });
+  };
+
   const handleSaveToLibrary = () => {
     const name = prompt("Enter a name for this reusable subsystem:", "Custom Subsystem");
     if (!name) return;
@@ -340,20 +357,62 @@ export function SubsystemEditorModal({
       id: `lib-${Date.now()}`,
       name,
       description: `Saved from subsystem ${subsystemId}`,
-      graph: { nodes, edges },
+      graph: { 
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.type || "default",
+          data: n.data as Record<string, unknown>
+        })), 
+        edges: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle || undefined,
+          targetHandle: e.targetHandle || undefined
+        }))
+      },
       mask: {
-        inputs: inportNodes.map((n) => (n.data as any).label || "in"),
-        outputs: outportNodes.map((n) => (n.data as any).label || "out"),
+        inputs: inportNodes.map((n) => ((n.data as Record<string, unknown>).label as string) || "in"),
+        outputs: outportNodes.map((n) => ((n.data as Record<string, unknown>).label as string) || "out"),
         parameters: {},
       },
     });
     alert(`Subsystem '${name}' saved to library.`);
   };
 
-  const onLibraryDragStart = (event: React.DragEvent, type: string, data?: any) => {
+  const onLibraryDragStart = (event: React.DragEvent, type: string, data?: Record<string, unknown>) => {
     event.dataTransfer.setData("application/reactflow", JSON.stringify({ type, data }));
     event.dataTransfer.effectAllowed = "move";
   };
+
+  const addInterfaceNode = (type: string) => {
+    if (!reactFlowInstance) return;
+    const center = reactFlowInstance.getViewport();
+    const position = { x: -center.x / center.zoom + 50, y: -center.y / center.zoom + 50 };
+    setNodes((nds) =>
+      nds.concat({
+        id: makeNodeId(type),
+        type,
+        position,
+        data: makeNodeData(type, nds),
+      })
+    );
+  };
+
+  const handleSave = () => {
+    onSave({ nodes, edges });
+    onClose();
+  };
+
+  const interfaceSummary = useMemo(() => {
+    return nodes
+      .filter((n) => n.type === INPORT_BLOCK_TYPE || n.type === OUTPORT_BLOCK_TYPE)
+      .map((n) => {
+        const label = (n.data as Record<string, unknown>).label as string || (n.type === INPORT_BLOCK_TYPE ? "Inport" : "Outport");
+        const connections = edges.filter((e) => e.source === n.id || e.target === n.id).length;
+        return { id: n.id, label, type: n.type, connections };
+      });
+  }, [nodes, edges]);
 
   if (!open) return null;
 
@@ -411,9 +470,9 @@ export function SubsystemEditorModal({
           <ul className="space-y-2">
             {allLibraryBlocks.map((block) => (
               <li
-                key={(block as any).id || block.type}
+                key={String((block as Record<string, unknown>).id || block.type)}
                 draggable
-                onDragStart={(e) => onLibraryDragStart(e, block.type, (block as any).data)}
+                onDragStart={(e) => onLibraryDragStart(e, block.type, (block as Record<string, unknown>).data as Record<string, unknown>)}
                 className="cursor-grab rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-700 hover:border-sky-300 active:cursor-grabbing"
               >
                 {block.label}
@@ -454,7 +513,7 @@ export function SubsystemEditorModal({
                 {interfaceSummary.map((port) => (
                   <li key={port.id} className="rounded border border-slate-100 bg-slate-50 px-2 py-1 text-[11px] text-slate-700">
                     <span className="font-semibold">{port.type}</span> {port.label}
-                    <span className="ml-1 text-slate-500">({port.connectionCount} conn)</span>
+                    <span className="ml-1 text-slate-500">({port.connections} conn)</span>
                   </li>
                 ))}
               </ul>

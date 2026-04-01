@@ -303,7 +303,17 @@ function tracesEqual(params: {
     }
 
     for (let index = 0; index < left.length; index += 1) {
-      if (Math.abs(left[index] - right[index]) > epsilon) {
+      const l = left[index];
+      const r = right[index];
+      if (typeof l === "number" && typeof r === "number") {
+        if (Math.abs(l - r) > epsilon) {
+          return false;
+        }
+      } else if (Array.isArray(l) && Array.isArray(r)) {
+        if (!tracesEqual({ left: l as SignalValue, right: r as SignalValue, epsilon })) {
+          return false;
+        }
+      } else if (l !== r) {
         return false;
       }
     }

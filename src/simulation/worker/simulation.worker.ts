@@ -1,9 +1,10 @@
+import { SimulationGraph, SimulationRuntimeSnapshot } from "../types";
 import { stepSimulation } from "../engine";
 import { DEFAULT_BLOCK_REGISTRY } from "../registry";
 import { WorkerRequest, WorkerResponse } from "./types";
 
-let currentGraph = { nodes: [], edges: [] };
-let currentSnapshot = null;
+let currentGraph: SimulationGraph = { nodes: [], edges: [] };
+let currentSnapshot: SimulationRuntimeSnapshot | null = null;
 let isRunning = false;
 let batchSize = 1;
 
