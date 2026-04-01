@@ -48,6 +48,8 @@ import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock"
 import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 
+import { useSubsystemLibraryStore } from "@/src/store/subsystemLibraryStore";
+
 const NODE_TYPES: NodeTypes = {
   [COUNTER_BLOCK_TYPE]: CustomBlockNode,
   [DISPLAY_BLOCK_TYPE]: CustomBlockNode,
@@ -279,15 +281,35 @@ export function SubsystemEditorModal({
     [setEdges]
   );
 
-  const onLibraryDragStart = (event: React.DragEvent, type: string) => {
-    event.dataTransfer.setData("application/reactflow", type);
-    event.dataTransfer.effectAllowed = "move";
-  };
+  const { subsystems, addSubSystem } = useSubsystemLibraryStore();
+
+  const allLibraryBlocks = useMemo(() => {
+    const userSubsystems = subsystems.map((s) => ({
+      label: s.name,
+      type: SUBSYSTEM_BLOCK_TYPE,
+      data: {
+        graph: s.graph,
+        mask: s.mask,
+      },
+    }));
+    return [...LIBRARY_BLOCKS, ...userSubsystems];
+  }, [subsystems]);
 
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const type = event.dataTransfer.getData("application/reactflow");
-    if (!type || !reactFlowInstance) return;
+    const payload = event.dataTransfer.getData("application/reactflow");
+    if (!payload || !reactFlowInstance) return;
+
+    let type: string;
+    let customData: Record<string, unknown> = {};
+
+    try {
+      const data = JSON.parse(payload);
+      type = data.type;
+      customData = data.data || {};
+    } catch (e) {
+      type = payload;
+    }
 
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
@@ -299,91 +321,38 @@ export function SubsystemEditorModal({
         id: makeNodeId(type),
         type,
         position,
-        data: makeNodeData(type, currentNodes),
+        data: {
+          ...makeNodeData(type, currentNodes),
+          ...customData,
+        },
       })
     );
   };
 
-  const addInterfaceNode = useCallback(
-    (type: typeof INPORT_BLOCK_TYPE | typeof OUTPORT_BLOCK_TYPE) => {
-      setNodes((currentNodes) => {
-        const offset = currentNodes.length;
-        return currentNodes.concat({
-          id: makeNodeId(type),
-          type,
-          position: { x: 120, y: 100 + offset * 28 },
-          data: makeNodeData(type, currentNodes),
-        });
-      });
+  const handleSaveToLibrary = () => {
+    const name = prompt("Enter a name for this reusable subsystem:", "Custom Subsystem");
+    if (!name) return;
 
-      setSaveErrors([]);
-    },
-    [setNodes]
-  );
+    const inportNodes = nodes.filter((n) => n.type === INPORT_BLOCK_TYPE);
+    const outportNodes = nodes.filter((n) => n.type === OUTPORT_BLOCK_TYPE);
 
-  const interfaceSummary = useMemo(() => {
-    return nodes
-      .filter((node) => node.type === INPORT_BLOCK_TYPE || node.type === OUTPORT_BLOCK_TYPE)
-      .slice()
-      .sort((left, right) => left.id.localeCompare(right.id))
-      .map((node) => {
-        const label = getNodeLabel(node);
-        const connectionCount = edges.filter(
-          (edge) => edge.source === node.id || edge.target === node.id
-        ).length;
-
-        return {
-          id: node.id,
-          type: node.type === INPORT_BLOCK_TYPE ? "Inport" : "Outport",
-          label: label || "(empty)",
-          connectionCount,
-        };
-      });
-  }, [edges, nodes]);
-
-  const normalizeIoLabels = useCallback(() => {
-    setNodes((currentNodes) => {
-      let inIndex = 1;
-      let outIndex = 1;
-
-      return currentNodes.map((node) => {
-        if (node.type === INPORT_BLOCK_TYPE) {
-          return {
-            ...node,
-            data: {
-              ...((node.data as Record<string, unknown> | undefined) ?? {}),
-              label: `in${inIndex++}`,
-            },
-          };
-        }
-
-        if (node.type === OUTPORT_BLOCK_TYPE) {
-          return {
-            ...node,
-            data: {
-              ...((node.data as Record<string, unknown> | undefined) ?? {}),
-              label: `out${outIndex++}`,
-            },
-          };
-        }
-
-        return node;
-      });
+    addSubSystem({
+      id: `lib-${Date.now()}`,
+      name,
+      description: `Saved from subsystem ${subsystemId}`,
+      graph: { nodes, edges },
+      mask: {
+        inputs: inportNodes.map((n) => (n.data as any).label || "in"),
+        outputs: outportNodes.map((n) => (n.data as any).label || "out"),
+        parameters: {},
+      },
     });
+    alert(`Subsystem '${name}' saved to library.`);
+  };
 
-    setSaveErrors([]);
-  }, [setNodes]);
-
-  const handleSave = () => {
-    const interfaceIssues = validateSubsystemInterfaceNodes(nodes);
-    if (interfaceIssues.length > 0) {
-      setSaveErrors(interfaceIssues);
-      return;
-    }
-
-    setSaveErrors([]);
-    onSave({ nodes, edges });
-    onClose();
+  const onLibraryDragStart = (event: React.DragEvent, type: string, data?: any) => {
+    event.dataTransfer.setData("application/reactflow", JSON.stringify({ type, data }));
+    event.dataTransfer.effectAllowed = "move";
   };
 
   if (!open) return null;
@@ -396,6 +365,12 @@ export function SubsystemEditorModal({
           <p className="text-xs text-slate-500">Add Inports/Outports to define external interface.</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleSaveToLibrary}
+            className="rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100"
+          >
+            Save to Library
+          </button>
           <button
             onClick={normalizeIoLabels}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -434,11 +409,11 @@ export function SubsystemEditorModal({
             Subsystem Library
           </h3>
           <ul className="space-y-2">
-            {LIBRARY_BLOCKS.map((block) => (
+            {allLibraryBlocks.map((block) => (
               <li
-                key={block.type}
+                key={(block as any).id || block.type}
                 draggable
-                onDragStart={(e) => onLibraryDragStart(e, block.type)}
+                onDragStart={(e) => onLibraryDragStart(e, block.type, (block as any).data)}
                 className="cursor-grab rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-700 hover:border-sky-300 active:cursor-grabbing"
               >
                 {block.label}

@@ -29,6 +29,7 @@ import { GaugeBlock, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock
 import { LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { KnobBlock, KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SliderBlock, SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
+import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3DBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
@@ -73,6 +74,11 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [LAMP_BLOCK_TYPE]: LampBlock,
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
+  // P12: Performance & Advanced Extensions
+  [SCOPE_3D_BLOCK_TYPE]: Scope3DBlock,
+  [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
+  [HEATMAP_BLOCK_TYPE]: HeatmapBlock,
+  [PYTHON_BLOCK_TYPE]: PythonBlock,
 };
 
 /**
@@ -102,4 +108,23 @@ export function getBlockDefinition(
   type: string
 ): SimulationBlockDefinition | undefined {
   return registry[type];
+}
+
+/**
+ * Dynamic block registry (P12-3).
+ */
+let runtimeRegistry: BlockRegistry = { ...DEFAULT_BLOCK_REGISTRY };
+
+/**
+ * Register a new block type dynamically.
+ */
+export function registerBlockType(definition: SimulationBlockDefinition): void {
+  runtimeRegistry = { ...runtimeRegistry, [definition.type]: definition };
+}
+
+/**
+ * Get active runtime registry.
+ */
+export function getRuntimeRegistry(): BlockRegistry {
+  return runtimeRegistry;
 }

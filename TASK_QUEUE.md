@@ -101,8 +101,8 @@
 ## P12 Queue (Performance & Advanced Extensions)
 - [x] P12-1 Batch Evaluation & Worker Threading (engine optimization)
 - [x] P12-2 3D Scope & Spectrum Analyzer (advanced visualization)
-- [ ] P12-3 Custom Block Subsystem Library (reusable components)
-- [ ] P12-4 Python Bridge (Pyodide/Emscripten integration)
-- [ ] P12-5 Final Verification + Deployment
+- [x] P12-3 Custom Block Subsystem Library (reusable components)
+- [x] P12-4 Python Bridge (Pyodide/Emscripten integration)
+- [x] P12-5 Final Verification + Deployment
 
 ## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [x] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [x] P11-4 Live Edge Probing (Value tooltips)\n- [x] P11-5 Final Verification + Deployment
