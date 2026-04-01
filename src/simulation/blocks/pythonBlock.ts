@@ -25,7 +25,7 @@ export const PythonBlock: SimulationBlockDefinition = {
     out4: "any",
   },
   initialize: () => ({ lastResult: null }),
-  step: ({ inputs, params, previousState }) => {
+  step: ({ previousState }) => {
     // Note: Actual Pyodide execution happens in the UI layer/worker 
     // for P12-4 because Pyodide is heavy and async.
     // Here we just represent the deterministic step logic.
@@ -35,7 +35,7 @@ export const PythonBlock: SimulationBlockDefinition = {
     // For this prototype, we'll assume the 'params.script' was 
     // transpiled or we use a sync-bridge.
     
-    const outputs = (previousState as any)?.lastOutputs || {};
+    const outputs = (previousState as Record<string, unknown>)?.lastOutputs as Record<string, SignalValue> || {};
     return { outputs, nextState: previousState };
   },
 };

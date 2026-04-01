@@ -20,9 +20,9 @@ export type SimulationStatus = "idle" | "running" | "paused" | "completed";
  * - Lift this to discriminated unions (number | boolean | vector | struct) and enforce
  *   compatibility at wire-connection time with schema validators.
  */
-export type SignalType = "number" | "boolean" | "vector" | "any";
+export type SignalType = "number" | "boolean" | "vector" | "matrix" | "any";
 
-export type SignalValue = number | boolean | string | number[] | null;
+export type SignalValue = number | boolean | string | number[] | number[][] | null;
 
 /**
  * Node instance metadata owned by the graph layer.

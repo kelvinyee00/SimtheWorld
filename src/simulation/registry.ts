@@ -30,6 +30,9 @@ import { LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { KnobBlock, KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SliderBlock, SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3DBlock";
+import { MatrixProductBlock, MATRIX_PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/matrixProductBlock";
+import { HeatmapBlock, HEATMAP_BLOCK_TYPE } from "@/src/simulation/blocks/heatmapBlock";
+import { PythonBlock, PYTHON_BLOCK_TYPE } from "@/src/simulation/blocks/pythonBlock";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**

@@ -19,7 +19,7 @@ export const Scope3DBlock: SimulationBlockDefinition = {
     const y = typeof inputs.y === "number" ? inputs.y : 0;
     const z = typeof inputs.z === "number" ? inputs.z : 0;
     
-    const buffer = [...((previousState as any)?.buffer || []), { x, y, z }].slice(-1000);
+    const buffer = [...((previousState as { buffer: { x: number; y: number; z: number }[] })?.buffer || []), { x, y, z }].slice(-1000);
     return { outputs: {}, nextState: { buffer } };
   },
 };
