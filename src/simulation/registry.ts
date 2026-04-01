@@ -24,6 +24,8 @@ import { GotoBlock, GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { Lut1DBlock, LUT_1D_BLOCK_TYPE, Lut2DBlock, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
+import { SpectrumAnalyzerBlock, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
+import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
 import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import { GaugeBlock, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
@@ -75,6 +77,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [TRUTH_TABLE_BLOCK_TYPE]: TruthTableBlock,
   [GAUGE_BLOCK_TYPE]: GaugeBlock,
   [LAMP_BLOCK_TYPE]: LampBlock,
+  [SPECTRUM_ANALYZER_BLOCK_TYPE]: SpectrumAnalyzerBlock,
+  [SCOPE_3D_BLOCK_TYPE]: Scope3DBlock,
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
   // P12: Performance & Advanced Extensions

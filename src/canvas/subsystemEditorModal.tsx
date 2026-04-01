@@ -47,6 +47,8 @@ import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBl
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
+import { SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
+import { SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
 
 import { useSubsystemLibraryStore } from "@/src/store/subsystemLibraryStore";
 
@@ -78,6 +80,8 @@ const NODE_TYPES: NodeTypes = {
   [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
   [LAMP_BLOCK_TYPE]: CustomBlockNode,
+  [SPECTRUM_ANALYZER_BLOCK_TYPE]: CustomBlockNode,
+  [SCOPE_3D_BLOCK_TYPE]: CustomBlockNode,
 };
 
 const LIBRARY_BLOCKS = [
@@ -104,6 +108,8 @@ const LIBRARY_BLOCKS = [
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
   { label: "Gauge", type: GAUGE_BLOCK_TYPE },
   { label: "Lamp", type: LAMP_BLOCK_TYPE },
+  { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE },
+  { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE },
   { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
 ] as const;
 
@@ -176,6 +182,10 @@ function makeNodeData(type: string, existingNodes: Node[]): Record<string, unkno
       return { label: "Gauge", min: 0, max: 100 };
     case LAMP_BLOCK_TYPE:
       return { label: "Lamp", colorTrue: "#22c55e", colorFalse: "#ef4444" };
+    case SPECTRUM_ANALYZER_BLOCK_TYPE:
+      return { label: "Spectrum", windowSize: 128 };
+    case SCOPE_3D_BLOCK_TYPE:
+      return { label: "3D Scope", maxPoints: 500 };
     case STATE_MACHINE_BLOCK_TYPE:
       return {
         label: "State Machine",

@@ -54,6 +54,8 @@ import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBl
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
 import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
+import { SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
+import { SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
 import { KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import {
@@ -156,6 +158,8 @@ const NODE_TYPES: NodeTypes = {
   [TRUTH_TABLE_BLOCK_TYPE]: CustomBlockNode,
   [GAUGE_BLOCK_TYPE]: CustomBlockNode,
   [LAMP_BLOCK_TYPE]: CustomBlockNode,
+  [SPECTRUM_ANALYZER_BLOCK_TYPE]: CustomBlockNode,
+  [SCOPE_3D_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -192,6 +196,8 @@ const LIBRARY_BLOCKS = [
   { label: "To File", type: TO_FILE_BLOCK_TYPE },
   { label: "Gauge", type: GAUGE_BLOCK_TYPE },
   { label: "Lamp", type: LAMP_BLOCK_TYPE },
+  { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE },
+  { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE },
   { label: "Display", type: DISPLAY_BLOCK_TYPE },
   { label: "Scope", type: SCOPE_BLOCK_TYPE },
 ] as const;
@@ -322,6 +328,10 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Gauge", min: 0, max: 100 };
     case LAMP_BLOCK_TYPE:
       return { label: "Lamp", colorTrue: "#22c55e", colorFalse: "#ef4444" };
+    case SPECTRUM_ANALYZER_BLOCK_TYPE:
+      return { label: "Spectrum", windowSize: 128 };
+    case SCOPE_3D_BLOCK_TYPE:
+      return { label: "3D Scope", maxPoints: 500 };
     case TRUTH_TABLE_BLOCK_TYPE:
       return {
         label: "Truth Table",
@@ -1658,6 +1668,22 @@ const searchResults = useMemo(() => {
     return stateMachineModelDraft !== selectedStateMachineData.modelJson;
   }, [selectedStateMachineData, stateMachineModelDraft]);
 
+  const selectedSpectrumData = useMemo(() => {
+    if (!selectedNode || selectedNode.type !== SPECTRUM_ANALYZER_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      windowSize: typeof raw.windowSize === "number" ? raw.windowSize : 128,
+    };
+  }, [selectedNode]);
+
+  const selectedScope3dData = useMemo(() => {
+    if (!selectedNode || selectedNode.type !== SCOPE_3D_BLOCK_TYPE) return null;
+    const raw = (selectedNode.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      maxPoints: typeof raw.maxPoints === "number" ? raw.maxPoints : 500,
+    };
+  }, [selectedNode]);
+
   const selectedTruthTableData = useMemo<TruthTableInspectorData | null>(() => {
     if (!selectedNode || selectedNode.type !== TRUTH_TABLE_BLOCK_TYPE) {
       return null;
@@ -2916,6 +2942,40 @@ const searchResults = useMemo(() => {
             {stateMachineDraftError ? (
               <p className="text-xs text-rose-700">{stateMachineDraftError}</p>
             ) : null}
+          </div>
+        ) : null}
+
+        {selectedSpectrumData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Spectrum Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Window Size (Samples)
+              <input
+                type="number"
+                value={selectedSpectrumData.windowSize}
+                onChange={(e) => patchSelectedNodeData({ windowSize: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedScope3dData ? (
+          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              3D Scope Properties
+            </p>
+            <label className="block text-xs text-slate-600">
+              Max Points
+              <input
+                type="number"
+                value={selectedScope3dData.maxPoints}
+                onChange={(e) => patchSelectedNodeData({ maxPoints: Number(e.target.value) })}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700"
+              />
+            </label>
           </div>
         ) : null}
 

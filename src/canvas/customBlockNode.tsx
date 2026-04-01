@@ -1,3 +1,5 @@
+import { SpectrumAnalyzerView, SpectrumAnalyzerModal, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
+import { Scope3DView, Scope3DModal, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
 "use client";
 
 import { CSSProperties, memo, useMemo, useState } from "react";
@@ -175,6 +177,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     (state) => state.updateNodeInternalState
   );
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const [isSpectrumModalOpen, setIsSpectrumModalOpen] = useState(false);
+  const [isScope3dModalOpen, setIsScope3dModalOpen] = useState(false);
 
   const isCounter = type === COUNTER_BLOCK_TYPE;
   const isDisplay = type === DISPLAY_BLOCK_TYPE;
@@ -203,6 +207,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isTruthTable = type === TRUTH_TABLE_BLOCK_TYPE;
   const isGauge = type === GAUGE_BLOCK_TYPE;
   const isLamp = type === LAMP_BLOCK_TYPE;
+  const isSpectrum = type === SPECTRUM_ANALYZER_BLOCK_TYPE;
+  const isScope3d = type === SCOPE_3D_BLOCK_TYPE;
   const isKnob = type === KNOB_BLOCK_TYPE;
   const isSlider = type === SLIDER_BLOCK_TYPE;
   const isMathNode =
@@ -223,7 +229,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isLeadLag ||
     isGoto ||
     isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider;
-  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp;
+  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp || isSpectrum || isScope3d;
 
   const accentColor = (isCounter || isKnob || isSlider) ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
@@ -338,6 +344,18 @@ export const CustomBlockNode = memo(function CustomBlockNode({
 
         {isGauge ? (
           <GaugeBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-sky-50/70" />
+        ) : null}
+
+        {isSpectrum ? (
+          <div onDoubleClick={() => setIsSpectrumModalOpen(true)} className="cursor-zoom-in">
+            <SpectrumAnalyzerView state={internalState} className="border-sky-200 bg-sky-50/70" />
+          </div>
+        ) : null}
+
+        {isScope3d ? (
+          <div onDoubleClick={() => setIsScope3dModalOpen(true)} className="cursor-zoom-in">
+            <Scope3DView state={internalState} className="border-sky-200 bg-sky-50/70" />
+          </div>
         ) : null}
 
         {isLamp ? (
@@ -467,6 +485,31 @@ export const CustomBlockNode = memo(function CustomBlockNode({
               id="in2"
               position={Position.Left}
               style={withTop(handleStyle, "68%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
+                {isScope3d && (
+          <>
+            <Handle
+              type="target"
+              id="x"
+              position={Position.Left}
+              style={withTop(handleStyle, "22%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="y"
+              position={Position.Left}
+              style={withTop(handleStyle, "50%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="z"
+              position={Position.Left}
+              style={withTop(handleStyle, "78%")}
               className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
             />
           </>
@@ -602,6 +645,16 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           state={internalState}
         />
       ) : null}
+          <SpectrumAnalyzerModal
+        open={isSpectrumModalOpen}
+        onClose={() => setIsSpectrumModalOpen(false)}
+        state={internalState}
+      />
+      <Scope3DModal
+        open={isScope3dModalOpen}
+        onClose={() => setIsScope3dModalOpen(false)}
+        state={internalState}
+      />
     </>
   );
 });
