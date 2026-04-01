@@ -1,6 +1,30 @@
 # CHANGELOG.md — Mobile-Reactive Simulink Web Environment
 
 ---
+**Date/Time:** 2026-04-01 14:35 CET
+**Task Executed:** P12 Complete - Performance & Advanced Extensions
+**Files Modified/Created:** `src/simulation/worker/`, `src/simulation/blocks/scope3dBlock.tsx`, `src/simulation/blocks/pythonBridge.ts`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- P12-1: Batch Evaluation & Worker Threading - batched tick processing using Web Workers
+- P12-2: 3D Scope & Spectrum Analyzer - XYZ time-series visualization with Three.js
+- P12-3: Custom Block Subsystem Library - reusable component persistence
+- P12-4: Python Bridge (Pyodide/Emscripten) - external language binding
+- P12-5: Final Verification - 105 tests passing, lint clean (3 warnings), build successful
+- P12 phase complete - P1-P12 scope delivered
+
+---
+**Date/Time:** 2026-03-30 11:35 CET
+**Task Executed:** P11 Complete - Interaction & Dashboards
+**Files Modified/Created:** `src/canvas/probingEdge.tsx`, `src/simulation/blocks/gaugeBlock.tsx`, `src/simulation/blocks/lampBlock.tsx`, `src/simulation/blocks/knobBlock.tsx`, `src/simulation/blocks/sliderBlock.tsx`, `src/store/simulationRuntimeStore.ts`, `app/page.tsx`
+**Notes/Bugs:**
+- P11-1: Dashboard Sink Blocks (Gauge & Lamp) - visual feedback components
+- P11-2: Interactive Source Blocks (Knob & Slider) - real-time user input
+- P11-3: Engine Wall-clock Sync (Real-time mode) - simulation time alignment
+- P11-4: Live Edge Probing (Value tooltips) - hover-sensitive signal value display
+- P11-5: Final Verification - 105 tests passing, lint clean, build successful
+- P11 phase complete
+
+---
 **Date/Time:** 2026-03-28 22:45 CET
 **Task Executed:** P10 Complete - Signal Path Highlighting + Parameter Expressions
 **Files Modified/Created:** `src/canvas/signalPath.ts`, `src/simulation/expressions.ts`, `src/simulation/__tests__/expressions.test.ts`, `app/page.tsx`, `TASK_QUEUE.md`
