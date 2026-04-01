@@ -1,6 +1,6 @@
+"use client";
 import { SpectrumAnalyzerView, SpectrumAnalyzerModal, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
 import { Scope3DView, Scope3DModal, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
-"use client";
 
 import { CSSProperties, memo, useMemo, useState } from "react";
 import { Handle, NodeProps, Position } from "reactflow";

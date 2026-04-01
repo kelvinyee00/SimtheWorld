@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState, useEffect } from "react";
+import { } from "react";
 import {
   BarChart,
   Bar,
@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
+import { SimulationBlockDefinition } from "@/src/simulation/types";
 
 export const SPECTRUM_ANALYZER_BLOCK_TYPE = "spectrum-analyzer" as const;
 
@@ -92,7 +92,7 @@ export const SpectrumAnalyzerBlock: SimulationBlockDefinition = {
   },
 };
 
-export function SpectrumAnalyzerView({ state, className }: { state: any, className?: string }) {
+export function SpectrumAnalyzerView({ state, className }: { state: unknown, className?: string }) {
   const parsed = (state as SpectrumAnalyzerState) || { spectrum: [] };
   
   return (
@@ -115,7 +115,7 @@ export function SpectrumAnalyzerView({ state, className }: { state: any, classNa
   );
 }
 
-export function SpectrumAnalyzerModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: any }) {
+export function SpectrumAnalyzerModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: unknown }) {
   const parsed = (state as SpectrumAnalyzerState) || { spectrum: [] };
 
   if (!open) return null;

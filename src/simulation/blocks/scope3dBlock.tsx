@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useMemo, useState, useEffect, useRef } from "react";
-import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
+import { useEffect, useRef, useState } from "react";
+import { SimulationBlockDefinition } from "@/src/simulation/types";
 
 export const SCOPE_3D_BLOCK_TYPE = "scope-3d" as const;
 
@@ -41,7 +41,7 @@ export const Scope3DBlock: SimulationBlockDefinition = {
   },
 };
 
-export function Scope3DView({ state, className }: { state: any, className?: string }) {
+export function Scope3DView({ state, className }: { state: unknown, className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const parsed = (state as Scope3DState) || { samples: [] };
 
@@ -90,7 +90,7 @@ export function Scope3DView({ state, className }: { state: any, className?: stri
   );
 }
 
-export function Scope3DModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: any }) {
+export function Scope3DModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: unknown }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rotation, setRotation] = useState(0);
   const parsed = (state as Scope3DState) || { samples: [] };

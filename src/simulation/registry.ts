@@ -21,17 +21,16 @@ import {
 } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LeadLagBlock, LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { GotoBlock, GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
+import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { Lut1DBlock, LUT_1D_BLOCK_TYPE, Lut2DBlock, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
-import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { SpectrumAnalyzerBlock, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
 import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
-import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
-import { GaugeBlock, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { KnobBlock, KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SliderBlock, SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
-import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3DBlock";
+import { TruthTableBlock, TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
+import { GaugeBlock, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { MatrixProductBlock, MATRIX_PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/matrixProductBlock";
 import { HeatmapBlock, HEATMAP_BLOCK_TYPE } from "@/src/simulation/blocks/heatmapBlock";
 import { PythonBlock, PYTHON_BLOCK_TYPE } from "@/src/simulation/blocks/pythonBlock";
@@ -82,8 +81,6 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
   // P12: Performance & Advanced Extensions
-  [SCOPE_3D_BLOCK_TYPE]: Scope3DBlock,
-  [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
   [HEATMAP_BLOCK_TYPE]: HeatmapBlock,
   [PYTHON_BLOCK_TYPE]: PythonBlock,
 };

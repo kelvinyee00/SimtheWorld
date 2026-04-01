@@ -1,8 +1,7 @@
 import { 
   SimulationGraph, 
   SimulationRuntimeSnapshot, 
-  BlockRegistry 
-} from "../types";
+  } from "../types";
 
 export type WorkerMessageType = 
   | "INIT" 
