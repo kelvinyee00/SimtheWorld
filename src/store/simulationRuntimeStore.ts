@@ -92,7 +92,7 @@ function appendTrace(
 
 let timerId: ReturnType<typeof setTimeout> | null = null;
 let worker: Worker | null = null;
-let activeWebSockets: Map<string, WebSocket> = new Map();
+const activeWebSockets: Map<string, WebSocket> = new Map();
 
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
   (set, get) => ({
@@ -450,7 +450,7 @@ function startWebSockets() {
   
   graph.nodes.forEach((node) => {
     if (node.type === WEBSOCKET_BLOCK_TYPE) {
-      const { url, mode } = (node.data as any) || {};
+      const { url, mode } = (node.data as { url?: string; mode?: string }) || {};
       if (typeof url === "string" && url.startsWith("ws")) {
         try {
           const ws = new WebSocket(url);
@@ -459,7 +459,7 @@ function startWebSockets() {
               const store = useSimulationRuntimeStore.getState();
               // Only update if still running and this node exists
               if (store.runtime.status === "running") {
-                let val: any = event.data;
+                let val: unknown = event.data;
                 try { val = JSON.parse(event.data); } catch(e) {}
                 store.updateNodeInternalState(node.id, { lastReceived: val });
               }
