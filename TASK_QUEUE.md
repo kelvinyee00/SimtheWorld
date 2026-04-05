@@ -106,3 +106,10 @@
 - [x] P12-5 Final Verification + Deployment
 
 ## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [x] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [x] P11-4 Live Edge Probing (Value tooltips)\n- [x] P11-5 Final Verification + Deployment
+
+## P13 Queue (Advanced Control & External I/O) [PROPOSED]
+- [ ] P13-1 MQTT/WebSocket Bridge (External I/O)
+- [ ] P13-2 Neural Network Blocks (ML integration)
+- [ ] P13-3 Performance Profiling & Memory Optimization
+- [ ] P13-4 Multi-User Collaborative Editing (Real-time sync)
+- [ ] P13-5 Final Verification + Deployment
