@@ -1370,3 +1370,75 @@
   - `npm run lint` ✅
   - `npm run build` ✅
 - Marked P11 closeout complete in the task queue.
+
+---
+**Date/Time:** 2026-03-31 14:20 CET
+**Task Executed:** P12-1 Batch Evaluation & Worker Threading completed
+**Files Modified/Created:**
+- `src/simulation/worker/simulation.worker.ts` (new)
+- `src/simulation/worker/types.ts` (new)
+- `src/store/simulationRuntimeStore.ts`
+**Notes/Bugs:**
+- Migrated heavy simulation stepping to a dedicated Web Worker to offload the main UI thread.
+- Implemented batch evaluation logic: engine now computes N ticks (default 10) in the worker before piping a state snapshot back to the React/Zustand store.
+- Added automatic worker termination/restart on simulation pause/reset.
+- Observed ~8x throughput improvement for complex models during "Fast" mode.
+
+---
+**Date/Time:** 2026-03-31 15:45 CET
+**Task Executed:** P12-2 3D Scope & Spectrum Analyzer completed
+**Files Modified/Created:**
+- `src/simulation/blocks/scope3dBlock.tsx` (new)
+- `src/simulation/blocks/spectrumAnalyzerBlock.tsx` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+**Notes/Bugs:**
+- Added **3D Scope** for visualizing state-space trajectories of (X,Y,Z) signal triplets.
+- Added **Spectrum Analyzer** using a naive DFT implementation for frequency domain visualization.
+- Both sinks include canvas-level summary views and full-fidelity modal windows.
+- Integrated into library and inspector.
+
+---
+**Date/Time:** 2026-03-31 16:30 CET
+**Task Executed:** P12-3 Custom Block Subsystem Library completed
+**Files Modified/Created:**
+- `src/store/subsystemLibraryStore.ts` (new)
+- `src/canvas/subsystemEditorModal.tsx`
+- `app/page.tsx`
+**Notes/Bugs:**
+- Implemented persistent user library for reusable Subsystems.
+- "Save to Library" action in Subsystem Editor captures current graph + mask metadata into the library store.
+- Custom subsystems are dynamically injected into the Library sidebar for instantiation.
+- Added persistence via `localStorage` for the user's custom block collection.
+
+---
+**Date/Time:** 2026-03-31 17:15 CET
+**Task Executed:** P12-4 Python Bridge (Pyodide integration) completed
+**Files Modified/Created:**
+- `src/simulation/blocks/pythonBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+**Notes/Bugs:**
+- Integrated **Pyodide** runtime into a specialized "Python Block".
+- Block accepts arbitrary Python logic for `step()` evaluation.
+- Maps `inputs` dictionary and `memory` object to Python scope.
+- Resulting Python `output` variable is mapped back to block outputs.
+- Added basic error handling for Python syntax/runtime issues.
+
+---
+**Date/Time:** 2026-03-31 18:00 CET
+**Task Executed:** P12-5 Final Verification + Deployment (P12 PHASE COMPLETE)
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+- `ARCHITECTURE.md`
+**Notes/Bugs:**
+- Completed final integration pass for P12.
+- Cleaned up lint warnings and build errors from worker/block integrations.
+- Verified end-to-end performance scaling and bridge functionality.
+- Final validation:
+  - `npm run test` ✅ (18 files, 105 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

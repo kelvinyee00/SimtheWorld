@@ -1,7 +1,7 @@
 # TASK_QUEUE.md — Mobile-Reactive Simulink Web Environment
 
 ## Execution Mode
-- P12 planning targets performance scaling, advanced visualization, and external language bindings while preserving P1-P11 stability.
+- P13 planning targets external I/O connectivity, machine learning primitives, and collaborative workflow enhancements while preserving P1-P12 stability.
 - One sub-agent at a time for this repo (lock prevention).
 - Validate each task before marking complete.
 
@@ -14,7 +14,26 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
+## P13 Queue (External Connectivity & Collaborative Workflow)
+- [ ] P13-1 MQTT/WebSocket Bridge (External I/O Connectivity)
+- [ ] P13-2 Neural Network Blocks (Weights, Biases, Activations)
+- [ ] P13-3 Engine Profiler & Performance Optimization
+- [ ] P13-4 Real-time Collaborative Model Sync (Experimental)
+- [ ] P13-5 Final Verification + Deployment
 
+## P12 Queue (Performance & Advanced Extensions)
+- [x] P12-1 Batch Evaluation & Worker Threading (engine optimization)
+- [x] P12-2 3D Scope & Spectrum Analyzer (advanced visualization)
+- [x] P12-3 Custom Block Subsystem Library (reusable components)
+- [x] P12-4 Python Bridge (Pyodide/Emscripten integration)
+- [x] P12-5 Final Verification + Deployment
+
+## P11 Queue (Interactive Dashboard & Real-time Tuning)
+- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)
+- [x] P11-2 Interactive Source Blocks (Knob & Slider)
+- [x] P11-3 Engine Wall-clock Sync (Real-time mode)
+- [x] P11-4 Live Edge Probing (Value tooltips)
+- [x] P11-5 Final Verification + Deployment
 
 ## P10 Queue (Hierarchical Codegen & Advanced UI)
 - [x] P10-1 Hierarchical C-Code Generation (recursive subsystem lowering)
@@ -86,30 +105,11 @@
 - [x] P5 Kickoff and priorities formalized.
 - [x] P5 Scalability, Debuggability & Modeling phase complete.
 
-
 ## Phase Closeout
-- [x] P11 Interactive Dashboard & Real-time Tuning phase complete.
 - [x] P6 Advanced Control & Discrete Modeling phase complete.
-
 - [x] P7 Logic State Machines & Code Generation phase complete.
-
 - [x] P8 Codegen Fidelity & Verification Hardening phase complete.
-
 - [x] P9 State-Machine Codegen Parity & Delivery Tooling phase complete.
-
-- [x] P10 Hierarchical Codegen & Advanced UI phase complete.\n\n
-## P12 Queue (Performance & Advanced Extensions)
-- [x] P12-1 Batch Evaluation & Worker Threading (engine optimization)
-- [x] P12-2 3D Scope & Spectrum Analyzer (advanced visualization)
-- [x] P12-3 Custom Block Subsystem Library (reusable components)
-- [x] P12-4 Python Bridge (Pyodide/Emscripten integration)
-- [x] P12-5 Final Verification + Deployment
-
-## P11 Queue (Interactive Dashboard & Real-time Tuning)\n- [x] P11-1 Dashboard Sink Blocks (Gauge & Lamp)\n- [x] P11-2 Interactive Source Blocks (Knob & Slider)\n- [x] P11-3 Engine Wall-clock Sync (Real-time mode)\n- [x] P11-4 Live Edge Probing (Value tooltips)\n- [x] P11-5 Final Verification + Deployment
-
-## P13 Queue (Advanced Control & External I/O) [PROPOSED]
-- [ ] P13-1 MQTT/WebSocket Bridge (External I/O)
-- [ ] P13-2 Neural Network Blocks (ML integration)
-- [ ] P13-3 Performance Profiling & Memory Optimization
-- [ ] P13-4 Multi-User Collaborative Editing (Real-time sync)
-- [ ] P13-5 Final Verification + Deployment
+- [x] P10 Hierarchical Codegen & Advanced UI phase complete.
+- [x] P11 Interactive Dashboard & Real-time Tuning phase complete.
+- [x] P12 Performance & Advanced Extensions phase complete.

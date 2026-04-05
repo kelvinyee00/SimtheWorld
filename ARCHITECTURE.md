@@ -537,3 +537,30 @@ Constraints for P0:
 - Performance benchmarks: Verify 10x throughput improvement via batch mode.
 - Verification: Full test coverage for Python bridge and new visualization sinks.
 - Stability: Regression suite pass (105+ tests).
+
+### 26) Iteration 13 Roadmap — External Connectivity & Collaborative Workflow (P13)
+
+#### 26.1 MQTT/WebSocket Bridge
+- Implement an external I/O block that can subscribe/publish to MQTT topics or WebSocket streams.
+- Use cases: hardware-in-the-loop (HIL) simulation, real-time remote monitoring, and external data injection.
+- Security: support configurable broker URLs and basic auth credentials (stored locally).
+
+#### 26.2 Neural Network Blocks
+- Add a dedicated "Machine Learning" block family.
+- Primitives: Weight/Bias layers (Matrix operations) and Activation functions (ReLU, Sigmoid, Tanh).
+- Enable "Intelligent Controller" modeling within the deterministic simulation engine.
+
+#### 26.3 Engine Profiler & Optimization
+- Develop a detailed runtime profiler to identify bottlenecks in complex models.
+- Optimize the Web Worker batching logic and signal propagation O(N) paths.
+- Aim for high-fidelity real-time simulation of 1000+ node graphs.
+
+#### 26.4 Real-time Collaborative Model Sync
+- Research and implement an experimental "Shared Session" mode.
+- Synchronize graph changes and transport controls across multiple clients using a central coordinator (WebSocket-based).
+- Enable remote collaborative design and teaching workflows.
+
+#### 26.5 P13 Release Gate
+- Performance: verify stable execution under external I/O stress.
+- Verification: Full test coverage for new I/O and ML blocks.
+- Stability: Regression suite pass (105+ tests).

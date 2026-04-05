@@ -81,6 +81,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
   // P12: Performance & Advanced Extensions
+  [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
   [HEATMAP_BLOCK_TYPE]: HeatmapBlock,
   [PYTHON_BLOCK_TYPE]: PythonBlock,
 };
