@@ -1,4 +1,5 @@
 import { WorkerRequest, WorkerResponse } from "../simulation/worker/types";
+import { WEBSOCKET_BLOCK_TYPE } from "../simulation/blocks/websocketBlock";
 import { create } from "zustand";
 
 import { createInitialSnapshot, stepSimulation } from "@/src/simulation/engine";
@@ -91,6 +92,7 @@ function appendTrace(
 
 let timerId: ReturnType<typeof setTimeout> | null = null;
 let worker: Worker | null = null;
+let activeWebSockets: Map<string, WebSocket> = new Map();
 
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
   (set, get) => ({
@@ -152,6 +154,19 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       const startedAt = performance.now();
       try {
         const next = stepSimulation({ graph, registry, snapshot: runtime });
+        
+        // P13-1: Handle WebSocket Publish
+        graph.nodes.forEach(node => {
+          if (node.type === WEBSOCKET_BLOCK_TYPE && node.data?.mode === "pub") {
+            const ws = activeWebSockets.get(node.id);
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              const outputs = next.nodeOutputs[node.id];
+              if (outputs && outputs.default !== undefined) {
+                ws.send(JSON.stringify(outputs.default));
+              }
+            }
+          }
+        });
         const durationMs = Math.max(0, performance.now() - startedAt);
         const nextSteps = metrics.stepsExecuted + 1;
         const nextAverage =
@@ -235,6 +250,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
         }),
       });
 
+      startWebSockets();
       if (executionMode === "fast" && typeof Worker !== "undefined") {
         startWorker(graph, runtime, batchSize);
       } else {
@@ -243,6 +259,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     pause: () => {
+      stopWebSockets();
       stopWorker();
       clearScheduler();
       const runtime = get().runtime;
@@ -252,6 +269,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     reset: () => {
+      stopWebSockets();
       stopWorker();
       clearScheduler();
       const current = get().runtime;
@@ -418,4 +436,40 @@ function startWorker(graph: SimulationGraph, snapshot: SimulationRuntimeSnapshot
   } as WorkerRequest);
   
   worker.postMessage({ type: "START" } as WorkerRequest);
+}
+
+function stopWebSockets() {
+  activeWebSockets.forEach((ws) => ws.close());
+  activeWebSockets.clear();
+}
+
+function startWebSockets() {
+  stopWebSockets();
+  const state = useSimulationRuntimeStore.getState();
+  const { graph } = state;
+  
+  graph.nodes.forEach((node) => {
+    if (node.type === WEBSOCKET_BLOCK_TYPE) {
+      const { url, mode } = (node.data as any) || {};
+      if (typeof url === "string" && url.startsWith("ws")) {
+        try {
+          const ws = new WebSocket(url);
+          if (mode !== "pub") {
+            ws.onmessage = (event) => {
+              const store = useSimulationRuntimeStore.getState();
+              // Only update if still running and this node exists
+              if (store.runtime.status === "running") {
+                let val: any = event.data;
+                try { val = JSON.parse(event.data); } catch(e) {}
+                store.updateNodeInternalState(node.id, { lastReceived: val });
+              }
+            };
+          }
+          activeWebSockets.set(node.id, ws);
+        } catch (e) {
+          console.error("Failed to connect WebSocket", node.id, e);
+        }
+      }
+    }
+  });
 }

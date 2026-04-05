@@ -1,3 +1,4 @@
+import { WebSocketBlock, WEBSOCKET_BLOCK_TYPE } from "@/src/simulation/blocks/websocketBlock";
 import { CounterBlock, COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DisplayBlock, DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
@@ -84,6 +85,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
   [HEATMAP_BLOCK_TYPE]: HeatmapBlock,
   [PYTHON_BLOCK_TYPE]: PythonBlock,
+  [WEBSOCKET_BLOCK_TYPE]: WebSocketBlock,
 };
 
 /**
