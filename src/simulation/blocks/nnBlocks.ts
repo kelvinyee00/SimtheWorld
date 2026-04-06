@@ -13,10 +13,20 @@ export const NnDenseBlock: SimulationBlockDefinition = {
   inputPortTypes: { in: "vector", default: "vector" },
   outputPortTypes: { default: "vector" },
   step: ({ params, inputs }) => {
-    const weights = (params.weights as number[][]) || [[1]];
-    const bias = (params.bias as number[]) || [0];
+    const weights = (params.weights as number[][] | null) || null;
+    const bias = (params.bias as number[] | null) || null;
     const u = inputs.in ?? inputs.default ?? null;
+
+    if (u === null) return { outputs: { default: null } };
     if (!Array.isArray(u)) return { outputs: { default: null } };
+
+    // Identity if no weights/bias
+    if (weights === null && bias === null) {
+      return { outputs: { default: u as SignalValue } };
+    }
+
+    const finalWeights = weights || [[1]];
+    const finalBias = bias || [0];
 
     // Filter to only numeric values
     const numericU: number[] = [];
@@ -27,10 +37,10 @@ export const NnDenseBlock: SimulationBlockDefinition = {
     }
     
     const result: number[] = [];
-    for (let i = 0; i < weights.length; i++) {
-      let sum = bias[i] || 0;
+    for (let i = 0; i < finalWeights.length; i++) {
+      let sum = finalBias[i] || 0;
       for (let j = 0; j < numericU.length; j++) {
-        sum += (weights[i][j] || 0) * numericU[j];
+        sum += (finalWeights[i][j] || 0) * numericU[j];
       }
       result.push(sum);
     }
@@ -64,6 +74,8 @@ export const NnActivationBlock: SimulationBlockDefinition = {
   step: ({ params, inputs }) => {
     const fn = params.activation || "relu";
     const u = inputs.in ?? inputs.default ?? null;
+
+    if (u === null) return { outputs: { default: null } };
 
     const apply = (val: unknown): number => {
       if (typeof val !== "number" || !Number.isFinite(val)) return 0;

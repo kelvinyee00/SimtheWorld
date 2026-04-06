@@ -1,4 +1,3 @@
-import { WebSocketBlock, WEBSOCKET_BLOCK_TYPE } from "@/src/simulation/blocks/websocketBlock";
 import { CounterBlock, COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DisplayBlock, DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
@@ -35,20 +34,11 @@ import { GaugeBlock, GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock
 import { MatrixProductBlock, MATRIX_PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/matrixProductBlock";
 import { HeatmapBlock, HEATMAP_BLOCK_TYPE } from "@/src/simulation/blocks/heatmapBlock";
 import { PythonBlock, PYTHON_BLOCK_TYPE } from "@/src/simulation/blocks/pythonBlock";
+import { NnDenseBlock, NN_DENSE_BLOCK_TYPE, NnActivationBlock, NN_ACTIVATION_BLOCK_TYPE } from "@/src/simulation/blocks/nnBlocks";
+import { ProfilerBlock, PROFILER_BLOCK_TYPE } from "@/src/simulation/blocks/profilerBlock";
+import { WebSocketSendBlock, WEBSOCKET_SEND_BLOCK_TYPE, WebSocketReceiveBlock, WEBSOCKET_RECEIVE_BLOCK_TYPE } from "@/src/simulation/blocks/webSocketBlocks";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
-/**
- * Block registry utilities.
- *
- * Purpose:
- * - Centralize block registration and lookup.
- * - Keep construction deterministic and explicit for reproducible runtimes.
- * - Enforce duplicate-type protection during startup wiring.
- */
-
-/**
- * Minimal default registry used by P0 runtime.
- */
 export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [COUNTER_BLOCK_TYPE]: CounterBlock,
   [DISPLAY_BLOCK_TYPE]: DisplayBlock,
@@ -81,57 +71,37 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [SCOPE_3D_BLOCK_TYPE]: Scope3DBlock,
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
-  // P12: Performance & Advanced Extensions
   [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
   [HEATMAP_BLOCK_TYPE]: HeatmapBlock,
   [PYTHON_BLOCK_TYPE]: PythonBlock,
-  [WEBSOCKET_BLOCK_TYPE]: WebSocketBlock,
+  [NN_DENSE_BLOCK_TYPE]: NnDenseBlock,
+  [NN_ACTIVATION_BLOCK_TYPE]: NnActivationBlock,
+  [PROFILER_BLOCK_TYPE]: ProfilerBlock,
+  [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
+  [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
 };
 
-/**
- * Create a safe registry from a list of definitions.
- * Throws on duplicate `type` to prevent accidental override.
- */
-export function createBlockRegistry(
-  definitions: SimulationBlockDefinition[]
-): BlockRegistry {
+export function createBlockRegistry(definitions: SimulationBlockDefinition[]): BlockRegistry {
   const registry: BlockRegistry = {};
-
   for (const definition of definitions) {
     if (registry[definition.type]) {
       throw new Error(`Duplicate block registration for type '${definition.type}'.`);
     }
     registry[definition.type] = definition;
   }
-
   return registry;
 }
 
-/**
- * Retrieve a block definition from a registry.
- */
-export function getBlockDefinition(
-  registry: BlockRegistry,
-  type: string
-): SimulationBlockDefinition | undefined {
+export function getBlockDefinition(registry: BlockRegistry, type: string): SimulationBlockDefinition | undefined {
   return registry[type];
 }
 
-/**
- * Dynamic block registry (P12-3).
- */
 let runtimeRegistry: BlockRegistry = { ...DEFAULT_BLOCK_REGISTRY };
 
-/**
- * Register a new block type dynamically.
- */
 export function registerBlockType(definition: SimulationBlockDefinition): void {
   runtimeRegistry = { ...runtimeRegistry, [definition.type]: definition };
 }
 
-/**
- * Get active runtime registry.
- */
 export function getRuntimeRegistry(): BlockRegistry {
   return runtimeRegistry;
 }
