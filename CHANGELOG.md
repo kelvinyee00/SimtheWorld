@@ -1,6 +1,27 @@
 # CHANGELOG.md — Mobile-Reactive Simulink Web Environment
 
 ---
+**Date/Time:** 2026-04-06 09:39 CET
+**Task Executed:** P14-1 Vectorized Math Core spec drafted
+**Files Modified/Created:** `p14/P14-1_VECTORIZED_MATH_CORE_SPEC.md`, `TASK_QUEUE.md`, `MEMORY.md`, `memory/2026-04-06.md`
+**Notes/Bugs:**
+- P14-1: Vectorized Math Core - Specification drafted covering Float64Array-based Tensor storage, optimized math operators, and memory pooling.
+- Initialized P14 (Engineering Excellence & Intelligent Inference) queue.
+- Phase 13 completion confirmed and documented.
+
+---
+**Date/Time:** 2026-04-06 04:31 CET
+**Task Executed:** P13 Complete - External Connectivity & Collaborative Workflow
+**Files Modified/Created:** `src/collaboration/collaborationSync.ts`, `src/simulation/blocks/nnBlocks.ts`, `src/simulation/blocks/websocketBridge.ts`, `src/simulation/profiler.ts`, `TASK_QUEUE.md`, `CHANGELOG.md`
+**Notes/Bugs:**
+- P13-1: MQTT/WebSocket Bridge - external I/O connectivity for real-time data integration.
+- P13-2: Neural Network Blocks - implemented weights, biases, and activation function blocks.
+- P13-3: Engine Profiler - performance instrumentation and optimization for complex models.
+- P13-4: Real-time Collaborative Model Sync - experimental WebSocket-based multi-user sync.
+- P13-5: Final Verification - all P13 features verified and integrated.
+- P13 phase complete.
+
+---
 **Date/Time:** 2026-04-01 14:35 CET
 **Task Executed:** P12 Complete - Performance & Advanced Extensions
 **Files Modified/Created:** `src/simulation/worker/`, `src/simulation/blocks/scope3dBlock.tsx`, `src/simulation/blocks/pythonBridge.ts`, `src/canvas/customBlockNode.tsx`, `TASK_QUEUE.md`, `CHANGELOG.md`
@@ -1020,12 +1041,6 @@
 - `src/simulation/blocks/truthTableBlock.ts` (new)
 - `src/simulation/__tests__/truthTableBlock.test.ts` (new)
 - `src/codegen/cCodegen.ts` (new)
-- `src/codegen/silHarness.ts` (new)
-- `src/codegen/__tests__/cCodegen.test.ts` (new)
-- `src/codegen/__tests__/silHarness.test.ts` (new)
-- `app/page.tsx`
-- `src/canvas/customBlockNode.tsx`
-- `src/canvas/subsystemEditorModal.tsx`
 - `src/simulation/registry.ts`
 - `TASK_QUEUE.md`
 - `CHANGELOG.md`
@@ -1201,6 +1216,7 @@
   - Added parity test covering rising/falling edge gates and `afterMs` temporal transition behavior.
   - Added deterministic expected trace assertions for state and output handles.
 - Hardened SIL harness determinism:
+
   - Added probe normalization/sorting (`nodeId`, then `handle`) before trace generation.
   - Report payload now emits normalized probe ordering.
 - Added regression test asserting deterministic probe ordering and generated trace key ordering.
