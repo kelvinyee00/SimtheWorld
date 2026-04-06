@@ -120,3 +120,15 @@
 - [x] P10 Hierarchical Codegen & Advanced UI phase complete.
 - [x] P11 Interactive Dashboard & Real-time Tuning phase complete.
 - [x] P12 Performance & Advanced Extensions phase complete.
+- [x] P13 External Connectivity & Collaborative Workflow phase complete.
+
+## P14 Queue (Engineering Excellence & Intelligent Inference)
+- [ ] P14-1 Vectorized Math Core ("Tensor" Update) — Specification complete, implementation pending
+  - [ ] P14-1a Tensor Foundation (TypedArray storage)
+  - [ ] P14-1b Optimized Linear Algebra Operators
+  - [ ] P14-1c Core Block Migration (Sum, Gain, Product)
+  - [ ] P14-1d Benchmarking Suite
+- [ ] P14-2 Headless Engine Driver (CLI)
+- [ ] P14-3 ONNX Runtime Integration
+- [ ] P14-4 CI Validation Framework
+- [ ] P14-5 Final Verification & Deployment

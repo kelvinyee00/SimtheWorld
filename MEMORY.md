@@ -3,11 +3,16 @@
 ## Current Focus
 - **Project: web-simulink**
  - High-fidelity, mobile-reactive block-diagram simulation platform.
- - Phase 13 (Advanced Control & External I/O) in progress.
- - Core features: MQTT/WebSocket Bridge (P13-1), Neural Network Blocks (P13-2), Profiler (P13-3), and Real-time Collaborative Sync (P13-4) implemented and verified as of 2026-04-06.
- - State: Finalizing P13 verification (P13-5) and ready for deployment.
+ - Phase 13 (Advanced Control & External I/O) complete as of 2026-04-06.
+ - Core features: MQTT/WebSocket Bridge (P13-1), Neural Network Blocks (P13-2), Profiler (P13-3), Real-time Collaborative Sync (P13-4), and Final Verification (P13-5) integrated and verified.
+- Phase 14 (Engineering Excellence & Intelligent Inference) initiated as of 2026-04-06. 
+ - Focus: Transitioning to industrial-grade architecture via Headless Execution (P14-2) and a Vectorized Math Core (P14-1).
+ - Goals: Standalone CLI driver, ONNX block integration (P14-3), and CI validation framework (P14-4).
 
 ## Decisions & Lessons
+- **Math Architecture**: Moving from `number[][]` to a dedicated linear algebra library/typed-array wrapper (P14-1) to support high-performance inference.
+- **Project North Star**: Headless, pure Node.js execution to prove architecture portability beyond the DOM.
+
 - **Session Locking**: Ensure sub-agents are spawned in isolated sessions to prevent lock conflicts.
 - **Tooling**: Use `Vitest` for deterministic simulation tests.
 - **Design**: Industrial palette (orange sources, blue sinks). Compact, icon-only blocks for complex models.
