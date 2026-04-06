@@ -1,18 +1,15 @@
 import { SimulationBlockDefinition, SignalValue } from "@/src/simulation/types";
+import { Tensor, scale } from "@/src/core";
 
 /**
- * Gain block (P3-1 math routing primitive).
+ * Gain block (P14-1c Tensor Update).
  *
- * Behavior contract:
- * - Reads one effective numeric input.
- * - Emits `input * gain` on `default` output.
- * - Emits `null` when no finite numeric input is available.
- *
- * Input selection policy (deterministic):
- * 1) Prefer handle `in`.
- * 2) Fallback to `default`.
- * 3) Fallback to first finite numeric value in lexical key order.
+ * Enhanced behavior:
+ * - Handles both scalar numbers and Tensors.
+ * - For Tensor inputs, scales each element by the gain factor.
+ * - Maintains backward compatibility with scalar-only workflows.
  */
+
 export const GAIN_BLOCK_TYPE = "gain" as const;
 
 interface GainParams {
@@ -29,20 +26,30 @@ function parseGainParams(raw: Record<string, unknown>): GainParams {
   };
 }
 
-function readPrimaryInput(inputs: Record<string, SignalValue>): number | null {
+function readPrimaryInput(inputs: Record<string, SignalValue>): SignalValue | null {
   const direct = inputs.in ?? inputs.default;
+  if (direct === null || direct === undefined) {
+    return null;
+  }
+  // Handle scalar numbers
   if (typeof direct === "number" && Number.isFinite(direct)) {
     return direct;
   }
-
+  // Handle Tensors
+  if (direct instanceof Tensor) {
+    return direct;
+  }
+  // Fallback: search for first valid numeric input
   const keys = Object.keys(inputs).sort((a, b) => a.localeCompare(b));
   for (const key of keys) {
     const value = inputs[key];
     if (typeof value === "number" && Number.isFinite(value)) {
       return value;
     }
+    if (value instanceof Tensor) {
+      return value;
+    }
   }
-
   return null;
 }
 
@@ -54,10 +61,38 @@ export const GainBlock: SimulationBlockDefinition = {
     const parsed = parseGainParams(params);
     const input = readPrimaryInput(inputs);
 
-    return {
-      outputs: {
-        default: input === null ? null : input * parsed.gain,
-      },
-    };
+    if (input === null) {
+      return { outputs: { default: null } };
+    }
+
+    // Handle Tensor input
+    if (input instanceof Tensor) {
+      const scaled = scale(input, parsed.gain);
+      return { outputs: { default: scaled } };
+    }
+
+    // Handle scalar input
+    return { outputs: { default: input * parsed.gain } };
+  },
+};
+
+/**
+ * Tensor-enabled Gain block variant.
+ * Explicitly accepts and outputs Tensors.
+ */
+export const TensorGainBlock: SimulationBlockDefinition = {
+  type: "tensorGain" as const,
+  inputPortTypes: { default: "tensor" },
+  outputPortTypes: { default: "tensor" },
+  step: ({ params, inputs }) => {
+    const parsed = parseGainParams(params);
+    const input = inputs.default;
+
+    if (!(input instanceof Tensor)) {
+      return { outputs: { default: null } };
+    }
+
+    const scaled = scale(input, parsed.gain);
+    return { outputs: { default: scaled } };
   },
 };

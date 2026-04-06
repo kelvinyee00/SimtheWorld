@@ -1,9 +1,9 @@
+import { SumBlock, SUM_BLOCK_TYPE, TensorSumBlock } from "@/src/simulation/blocks/sumBlock";
+import { GainBlock, GAIN_BLOCK_TYPE, TensorGainBlock } from "@/src/simulation/blocks/gainBlock";
+import { ProductBlock, PRODUCT_BLOCK_TYPE, TensorProductBlock } from "@/src/simulation/blocks/productBlock";
 import { CounterBlock, COUNTER_BLOCK_TYPE } from "@/src/simulation/blocks/counterBlock";
 import { DisplayBlock, DISPLAY_BLOCK_TYPE } from "@/src/simulation/blocks/displayBlock";
 import { ScopeBlock, SCOPE_BLOCK_TYPE } from "@/src/simulation/blocks/scopeBlock";
-import { GainBlock, GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
-import { SumBlock, SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
-import { ProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
 import { ToFileBlock, TO_FILE_BLOCK_TYPE } from "@/src/simulation/blocks/toFileBlock";
 import { IntegratorBlock, INTEGRATOR_BLOCK_TYPE } from "@/src/simulation/blocks/integratorBlock";
 import { UnitDelayBlock, UNIT_DELAY_BLOCK_TYPE } from "@/src/simulation/blocks/unitDelayBlock";
@@ -15,10 +15,7 @@ import { SubsystemBlock, SUBSYSTEM_BLOCK_TYPE } from "@/src/simulation/blocks/su
 import { MuxBlock, MUX_BLOCK_TYPE } from "@/src/simulation/blocks/muxBlock";
 import { DemuxBlock, DEMUX_BLOCK_TYPE } from "@/src/simulation/blocks/demuxBlock";
 import { PidBlock, PID_BLOCK_TYPE } from "@/src/simulation/blocks/pidBlock";
-import {
-  DiscreteTransferFcnBlock,
-  DISCRETE_TRANSFER_FCN_BLOCK_TYPE,
-} from "@/src/simulation/blocks/discreteTransferFcnBlock";
+import { DiscreteTransferFcnBlock, DISCRETE_TRANSFER_FCN_BLOCK_TYPE } from "@/src/simulation/blocks/discreteTransferFcnBlock";
 import { LeadLagBlock, LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { GotoBlock, GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { StateMachineBlock, STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
@@ -46,6 +43,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [GAIN_BLOCK_TYPE]: GainBlock,
   [SUM_BLOCK_TYPE]: SumBlock,
   [PRODUCT_BLOCK_TYPE]: ProductBlock,
+  ["tensorSum"]: TensorSumBlock,
+  ["tensorGain"]: TensorGainBlock,
+  ["tensorProduct"]: TensorProductBlock,
   [TO_FILE_BLOCK_TYPE]: ToFileBlock,
   [INTEGRATOR_BLOCK_TYPE]: IntegratorBlock,
   [UNIT_DELAY_BLOCK_TYPE]: UnitDelayBlock,

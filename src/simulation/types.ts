@@ -1,11 +1,13 @@
+import { Tensor } from "@/src/core/tensor";
+
 /**
  * Simulation core type system (P0 foundation).
  *
  * Design intent:
  * - Keep the runtime mathematically deterministic by modeling every value update as a pure
- *   tick transition (`tick -> tick + 1`) using immutable snapshots.
+ * tick transition (`tick -> tick + 1`) using immutable snapshots.
  * - Keep graph/block abstractions generic so Iteration-2 can add richer block families,
- *   multi-port routing, and typed signal domains without rewriting scheduler/store contracts.
+ * multi-port routing, and typed signal domains without rewriting scheduler/store contracts.
  */
 
 /**
@@ -18,11 +20,10 @@ export type SimulationStatus = "idle" | "running" | "paused" | "completed";
  *
  * Iteration-2 scalability path:
  * - Lift this to discriminated unions (number | boolean | vector | struct) and enforce
- *   compatibility at wire-connection time with schema validators.
+ * compatibility at wire-connection time with schema validators.
  */
-export type SignalType = "number" | "boolean" | "vector" | "matrix" | "any";
-
-export type SignalValue = number | boolean | string | number[] | number[][] | null;
+export type SignalType = "number" | "boolean" | "vector" | "matrix" | "tensor" | "any";
+export type SignalValue = number | boolean | string | number[] | number[][] | Tensor | null;
 
 /**
  * Node instance metadata owned by the graph layer.
@@ -83,12 +84,10 @@ export interface BlockStepContext {
    *
    * Iteration-2 path:
    * - Optionally split into deterministic state and ephemeral UI state,
-   *   where only deterministic state participates in reproducible runs.
+   * where only deterministic state participates in reproducible runs.
    */
   previousState: unknown;
-  /**
-   * Global block registry for recursive execution (subsystems).
-   */
+  /** Global block registry for recursive execution (subsystems). */
   registry: BlockRegistry;
   /**
    * Shared per-tick global signal bus used by GOTO/FROM style blocks.
@@ -134,7 +133,7 @@ export interface SimulationBlockDefinition {
    *
    * Scheduling implication:
    * - Outgoing edges from these blocks can be treated as feedback edges during topological
-   *   planning, allowing cycle-safe execution for models that include delay/memory operators.
+   * planning, allowing cycle-safe execution for models that include delay/memory operators.
    */
   breaksAlgebraicLoop?: boolean;
   /**
