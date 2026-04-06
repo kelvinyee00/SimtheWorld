@@ -1458,3 +1458,42 @@
   - `npm run test` ✅ (18 files, 105 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-31 19:30 CET
+**Task Executed:** P13-1 MQTT/WebSocket Bridge completed
+**Files Modified/Created:**
+- `src/simulation/blocks/websocketBlock.ts` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+- `src/store/simulationRuntimeStore.ts`
+- `src/simulation/__tests__/websocket.test.ts` (new)
+**Notes/Bugs:**
+- Implemented **WebSocket Bridge** block for external I/O.
+- Supports both **Subscribe** (input) and **Publish** (output) modes.
+- Managed WebSocket lifecycle (open/close) within the `simulationRuntimeStore` to match simulation transport state.
+- Integrated into block library and inspector with configurable Broker URL.
+- Added regression tests for mode-specific output behavior.
+- Validation:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+**Date/Time:** 2026-03-31 20:15 CET
+**Task Executed:** P13-2 Neural Network Blocks completed
+**Files Modified/Created:**
+- `src/simulation/blocks/nnBlocks.ts` (new)
+- `src/simulation/registry.ts`
+- `app/page.tsx`
+- `src/canvas/customBlockNode.tsx`
+**Notes/Bugs:**
+- Implemented **NnDense** layer block performing $y = Wx + b$ matrix operations on vector signals.
+- Implemented **NnActivation** block supporting ReLU, Sigmoid, and Tanh functions.
+- Enabled multi-layer "Intelligent Controller" modeling within the deterministic engine.
+- Cleaned up TypeScript 'any' and unused variable lint warnings.
+- Validation:
+  - `npm run test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
