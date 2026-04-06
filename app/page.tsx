@@ -80,6 +80,7 @@ import {
 } from "@/src/simulation/validation";
 import { parseNumericExpression } from "@/src/simulation/expressions";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
+import { useCollaborationSync } from "@/src/collaboration/collaborationSync";
 
 /**
  * P0-5 baseline starter graph.
@@ -832,6 +833,10 @@ export default function Home() {
   const modelFileInputRef = useRef<HTMLInputElement | null>(null);
   const hasInitializedModelPersistenceRef = useRef(false);
 
+  // P13-4: Collaboration state
+  const [collabEnabled, setCollabEnabled] = useState(false);
+  const [collabUrl, setCollabUrl] = useState("ws://localhost:8080");
+
   const runtime = useSimulationRuntimeStore((state) => state.runtime);
   const metrics = useSimulationRuntimeStore((state) => state.metrics);
   const trace = useSimulationRuntimeStore((state) => state.trace);
@@ -839,6 +844,39 @@ export default function Home() {
   const registry = useSimulationRuntimeStore((state) => state.registry);
   const setGraph = useSimulationRuntimeStore((state) => state.setGraph);
   const setTiming = useSimulationRuntimeStore((state) => state.setTiming);
+
+  const {
+    isConnected: collabConnected,
+    error: collabError,
+    onNodesChangeSync,
+    onEdgesChangeSync,
+    onConnectSync,
+    onTimingUpdateSync,
+  } = useCollaborationSync({
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    setTiming,
+    enabled: collabEnabled,
+    url: collabUrl,
+  });
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes);
+      onNodesChangeSync(changes);
+    },
+    [onNodesChange, onNodesChangeSync]
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      onEdgesChange(changes);
+      onEdgesChangeSync(changes);
+    },
+    [onEdgesChange, onEdgesChangeSync]
+  );
   const run = useSimulationRuntimeStore((state) => state.run);
   const pause = useSimulationRuntimeStore((state) => state.pause);
   const reset = useSimulationRuntimeStore((state) => state.reset);
@@ -942,12 +980,14 @@ const searchResults = useMemo(() => {
       const nextMs = Math.round(parsedSeconds * MS_PER_SECOND);
       if (field === "stop") {
         setTiming({ simulationTimeMs: nextMs });
+        onTimingUpdateSync({ simulationTimeMs: nextMs });
         return;
       }
 
       setTiming({ stepTimeMs: nextMs });
+      onTimingUpdateSync({ stepTimeMs: nextMs });
     },
-    [runtime.simulationTimeMs, runtime.stepTimeMs, setTiming]
+    [onTimingUpdateSync, runtime.simulationTimeMs, runtime.stepTimeMs, setTiming]
   );
 
   const onTimingInputKeyDown = useCallback(
@@ -1012,8 +1052,9 @@ const searchResults = useMemo(() => {
 
       setModelActionMessage(null);
       setEdges((currentEdges) => addEdge(candidate, currentEdges));
+      onConnectSync(candidate);
     },
-    [edges, nodes, registry, setEdges]
+    [edges, nodes, registry, setEdges, onConnectSync]
   );
 
   /**
@@ -3360,8 +3401,8 @@ const searchResults = useMemo(() => {
               edges={styledEdges}
               edgeTypes={EDGE_TYPES}
               onInit={setReactFlowInstance}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
+              onNodesChange={handleNodesChange}
+              onEdgesChange={handleEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
               onNodeDoubleClick={(_, node) => { if(node.type === SUBSYSTEM_BLOCK_TYPE) setEditingSubsystemId(node.id); }}
@@ -3396,6 +3437,31 @@ const searchResults = useMemo(() => {
               <Panel position="top-left">
                 <div className="rounded-md bg-white/90 px-2 py-1 text-xs text-slate-600 shadow-sm">
                   Drag blocks from Library. Select nodes/edges, then use Delete or Backspace.
+                </div>
+              </Panel>
+              <Panel position="top-right">
+                <div className="flex flex-col gap-2 rounded-md bg-white/90 p-2 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold text-slate-700">Collaboration (P13-4)</span>
+                    <div className={`h-2 w-2 rounded-full ${collabConnected ? "bg-emerald-500" : "bg-slate-300"}`} />
+                  </div>
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      value={collabUrl}
+                      onChange={(e) => setCollabUrl(e.target.value)}
+                      placeholder="ws://..."
+                      className="w-32 rounded border border-slate-200 px-1 py-0.5 text-[10px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCollabEnabled(!collabEnabled)}
+                      className={`rounded px-2 py-0.5 text-[10px] font-medium text-white ${collabEnabled ? "bg-rose-500" : "bg-indigo-500"}`}
+                    >
+                      {collabEnabled ? "Disconnect" : "Connect"}
+                    </button>
+                  </div>
+                  {collabError && <span className="text-[10px] text-rose-500">{collabError}</span>}
                 </div>
               </Panel>
             </ReactFlow>
