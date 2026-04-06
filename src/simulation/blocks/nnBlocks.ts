@@ -1,4 +1,4 @@
-import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
+import { SimulationBlockDefinition } from "@/src/simulation/types";
 
 /**
  * Dense (Linear) Layer block (P13-2).
@@ -77,7 +77,7 @@ export const NnActivationBlock: SimulationBlockDefinition = {
 
     if (u === null) return { outputs: { default: null } };
 
-    const apply = (val: unknown): number => {
+    const apply = (val: number | boolean | string | number[] | null): number => {
       if (typeof val !== "number" || !Number.isFinite(val)) return 0;
       if (fn === "sigmoid") return sigmoid(val);
       if (fn === "tanh") return tanh(val);

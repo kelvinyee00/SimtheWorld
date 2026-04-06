@@ -156,7 +156,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
         const next = stepSimulation({ graph, registry, snapshot: runtime });
         
         // P13-1: Handle WebSocket Publish
-        graph.nodes.forEach(node => {
+        graph.nodes.forEach((node) => {
           if (node.type === WEBSOCKET_BLOCK_TYPE && node.data?.mode === "pub") {
             const ws = activeWebSockets.get(node.id);
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -460,7 +460,7 @@ function startWebSockets() {
               // Only update if still running and this node exists
               if (store.runtime.status === "running") {
                 let val: unknown = event.data;
-                try { val = JSON.parse(event.data); } catch(e) {}
+                try { val = JSON.parse(event.data); } catch { /* ignore parse error */ }
                 store.updateNodeInternalState(node.id, { lastReceived: val });
               }
             };
