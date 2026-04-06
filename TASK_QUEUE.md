@@ -15,9 +15,9 @@
 6. Return summary, files changed, validation, and risks."
 
 ## P13 Queue (External Connectivity & Collaborative Workflow)
-- [ ] P13-1 MQTT/WebSocket Bridge (External I/O Connectivity)
-- [ ] P13-2 Neural Network Blocks (Weights, Biases, Activations)
-- [ ] P13-3 Engine Profiler & Performance Optimization
+- [x] P13-1 MQTT/WebSocket Bridge (External I/O Connectivity)
+- [x] P13-2 Neural Network Blocks (Weights, Biases, Activations)
+- [x] P13-3 Engine Profiler & Performance Optimization
 - [ ] P13-4 Real-time Collaborative Model Sync (Experimental)
 - [ ] P13-5 Final Verification + Deployment
 
