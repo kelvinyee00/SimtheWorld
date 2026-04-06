@@ -16,6 +16,10 @@
 
 ## P14 Queue (Engineering Excellence & Intelligent Inference)
 - [x] P14-1 Vectorized Math Core ("Tensor" Update)
+- [x] P14-1a Tensor Foundation (TypedArray storage) — 25 unit tests passing
+- [x] P14-1b Optimized Linear Algebra Operators — 22 unit tests passing
+- [ ] P14-1c Core Block Migration (Sum, Gain, Product to use Tensor)
+- [ ] P14-1d Benchmarking Suite (ops/sec vs native)
 - [ ] P14-2 Headless Engine Driver (CLI)
 - [ ] P14-3 ONNX Runtime Integration
 - [ ] P14-4 CI Validation Framework

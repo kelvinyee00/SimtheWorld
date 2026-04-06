@@ -140,19 +140,40 @@ export class Tensor {
   }
 
   static fromArray(
-    data: number[] | number[][] | Float64Array,
+    data: number[] | number[][] | number[][][] | Float64Array,
     shape?: readonly number[]
   ): Tensor {
     if (data instanceof Float64Array) {
       return new Tensor(data, shape ?? [data.length]);
     }
-    // Handle nested arrays
-    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-      const flatData = (data as number[][]).flat();
-      const inferredShape = shape ?? [data.length, flatData.length / data.length];
-      return new Tensor(new Float64Array(flatData), inferredShape);
+    // Handle nested arrays (1D, 2D, 3D, etc.)
+    if (Array.isArray(data)) {
+      // Flatten completely using Infinity depth
+      const flatData = data.flat(Infinity);
+      if (shape) {
+        // Use provided shape, but validate
+        const computedSize = shape.reduce((a, b) => a * b, 1);
+        if (computedSize !== flatData.length) {
+          throw new Error(
+            `Shape size mismatch: shape [${shape.join(", ")}] has ${computedSize} elements, but data has ${flatData.length}`
+          );
+        }
+        return new Tensor(new Float64Array(flatData as number[]), shape);
+      }
+      // Infer shape based on nesting
+      const inferredShape: number[] = [];
+      let current: unknown = data;
+      while (Array.isArray(current)) {
+        inferredShape.push(current.length);
+        current = current[0];
+      }
+      // Handle edge case: single element arrays
+      if (inferredShape.length === 0) {
+        inferredShape.push(flatData.length);
+      }
+      return new Tensor(new Float64Array(flatData as number[]), inferredShape);
     }
-    return new Tensor(new Float64Array(data as number[]), shape ?? [data.length]);
+    throw new Error("Invalid data type for Tensor.fromArray");
   }
 
   static eye(n: number): Tensor {
@@ -205,7 +226,7 @@ export class Tensor {
       }
       return result;
     }
-    const convert = (indices: number[]): any => {
+    const convert = (indices: number[]): number[] | number[][] => {
       const dim = indices.length;
       if (dim === this.ndim - 1) {
         const row: number[] = [];
@@ -214,11 +235,11 @@ export class Tensor {
         }
         return row;
       }
-      const arr: any[] = [];
+      const arr: (number[] | number[][])[] = [];
       for (let i = 0; i < this.shape[dim]; i++) {
         arr.push(convert([...indices, i]));
       }
-      return arr;
+      return arr as number[][];
     };
     return convert([]);
   }
