@@ -88,7 +88,6 @@ export function useCollaborationSync({
       if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
-        setIsConnected(false);
       }
       return;
     }
@@ -136,7 +135,6 @@ export function useCollaborationSync({
           }
         }
 
-
         // Reset the flag in the next microtask to allow local changes again
         setTimeout(() => {
           isRemoteUpdateRef.current = false;
@@ -148,10 +146,12 @@ export function useCollaborationSync({
 
     socket.onerror = () => {
       setError("WebSocket connection error.");
+      setIsConnected(false);
     };
 
     socket.onclose = () => {
       setIsConnected(false);
+      socketRef.current = null;
     };
 
     return () => {
@@ -159,14 +159,12 @@ export function useCollaborationSync({
     };
   }, [enabled, url, nodes, edges, setNodes, setEdges, setTiming, broadcast, senderId]);
 
-
   const onNodesChangeSync = useCallback(
     (changes: NodeChange[]) => {
       broadcast({ type: "NODE_CHANGES", payload: changes });
     },
     [broadcast]
   );
-
 
   const onEdgesChangeSync = useCallback(
     (changes: EdgeChange[]) => {
@@ -198,4 +196,3 @@ export function useCollaborationSync({
     onTimingUpdateSync,
   };
 }
-
