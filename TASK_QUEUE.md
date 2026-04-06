@@ -14,6 +14,13 @@
 5. Do NOT commit.
 6. Return summary, files changed, validation, and risks."
 
+## P14 Queue (Engineering Excellence & Intelligent Inference)
+- [ ] P14-1 Vectorized Math Core ("Tensor" Update)
+- [ ] P14-2 Headless Engine Driver (CLI)
+- [ ] P14-3 ONNX Runtime Integration
+- [ ] P14-4 CI Validation Framework
+- [ ] P14-5 Documentation & Benchmarking
+
 ## P13 Queue (External Connectivity & Collaborative Workflow)
 - [x] P13-1 MQTT/WebSocket Bridge (External I/O Connectivity)
 - [x] P13-2 Neural Network Blocks (Weights, Biases, Activations)
