@@ -136,3 +136,10 @@
 - [x] P14-3 ONNX Runtime Integration
 - [x] P14-4 CI Validation Framework
 - [x] P14-5 Final Verification & Deployment
+
+## P15 Queue (Cloud Deployment & Mobile UX v2)
+- [ ] P15-1 Server-side Simulation Persistence
+- [ ] P15-2 Real-time Dashboard Sync (Socket.io)
+- [ ] P15-3 PWA Support & Offline Execution
+- [ ] P15-4 Native Bridge for Sensors (Camera/GPS)
+- [ ] P15-5 Final Verification & Public Alpha Kickoff
