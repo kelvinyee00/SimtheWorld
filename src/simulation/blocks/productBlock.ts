@@ -45,7 +45,7 @@ export const ProductBlock: SimulationBlockDefinition = {
     const tensorValues = collectTensorInputs(inputs);
 
     // Handle scalar multiplication
-    let scalarProduct = numericValues.reduce((acc, current) => acc * current, 1);
+    const scalarProduct = numericValues.reduce((acc, current) => acc * current, 1);
 
     // Handle tensor multiplication (element-wise)
     let resultTensor: Tensor | null = null;

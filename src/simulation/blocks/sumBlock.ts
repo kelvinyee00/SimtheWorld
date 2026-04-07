@@ -45,7 +45,7 @@ export const SumBlock: SimulationBlockDefinition = {
     const tensorValues = collectTensorInputs(inputs);
 
     // Sum scalar values
-    let scalarSum = numericValues.reduce((acc, current) => acc + current, 0);
+    const scalarSum = numericValues.reduce((acc, current) => acc + current, 0);
 
     // Sum tensor values (sum of all elements from each tensor)
     let tensorSumTotal = 0;
