@@ -1544,3 +1544,14 @@
 - ONNX Runtime integration initialized.
 - Technical spike for `onnxruntime-web` completed: confirmed model loading and inference paths.
 - Added placeholders for future Intelligent Inference blocks.
+
+---
+**Date/Time:** 2026-04-07 07:18 CET
+**Task Executed:** P14-4 CI Validation Framework Formalized
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Integrated P14-2 CLI into local validation scripts.
+- Formalized regression testing against generated artifacts.
+- Verified test coverage: 57 core tests + 105 project tests.
