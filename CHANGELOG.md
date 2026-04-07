@@ -1519,3 +1519,17 @@
   - `npm run test` ✅ (57 tests passing for core math)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+**Date/Time:** 2026-04-07 07:05 CET
+**Task Executed:** P14-2 Headless Engine Driver (CLI) Completed
+**Files Modified/Created:**
+- `src/cli/engine-driver.ts` (new)
+- `src/cli/run.ts` (new)
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- Implemented headless simulation driver for CI and automated validation.
+- CLI supports model loading, tick-based execution, and final state export.
+- Integrated with core engine `step` logic and default block registry.
+- Verified CLI execution with local models.

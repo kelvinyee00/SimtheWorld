@@ -20,7 +20,7 @@
 - [x] P14-1b Optimized Linear Algebra Operators — 22 unit tests passing
 - [x] P14-1c Core Block Migration (Sum, Gain, Product to use Tensor) — 10 block migration tests passing
 - [x] P14-1d Benchmarking Suite (ops/sec vs native)
-- [ ] P14-2 Headless Engine Driver (CLI)
+- [x] P14-2 Headless Engine Driver (CLI)
 - [ ] P14-3 ONNX Runtime Integration
 - [ ] P14-4 CI Validation Framework
 - [ ] P14-5 Documentation & Benchmarking
@@ -132,7 +132,7 @@
   - [ ] P14-1b Optimized Linear Algebra Operators
   - [ ] P14-1c Core Block Migration (Sum, Gain, Product)
   - [x] P14-1d Benchmarking Suite
-- [ ] P14-2 Headless Engine Driver (CLI)
+- [x] P14-2 Headless Engine Driver (CLI)
 - [ ] P14-3 ONNX Runtime Integration
 - [ ] P14-4 CI Validation Framework
 - [ ] P14-5 Final Verification & Deployment
