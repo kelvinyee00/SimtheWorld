@@ -21,7 +21,7 @@
 - [x] P14-1c Core Block Migration (Sum, Gain, Product to use Tensor) — 10 block migration tests passing
 - [x] P14-1d Benchmarking Suite (ops/sec vs native)
 - [x] P14-2 Headless Engine Driver (CLI)
-- [ ] P14-3 ONNX Runtime Integration
+- [x] P14-3 ONNX Runtime Integration
 - [ ] P14-4 CI Validation Framework
 - [ ] P14-5 Documentation & Benchmarking
 
@@ -133,6 +133,6 @@
   - [ ] P14-1c Core Block Migration (Sum, Gain, Product)
   - [x] P14-1d Benchmarking Suite
 - [x] P14-2 Headless Engine Driver (CLI)
-- [ ] P14-3 ONNX Runtime Integration
+- [x] P14-3 ONNX Runtime Integration
 - [ ] P14-4 CI Validation Framework
 - [ ] P14-5 Final Verification & Deployment

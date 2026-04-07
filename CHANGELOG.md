@@ -1533,3 +1533,14 @@
 - CLI supports model loading, tick-based execution, and final state export.
 - Integrated with core engine `step` logic and default block registry.
 - Verified CLI execution with local models.
+
+---
+**Date/Time:** 2026-04-07 07:12 CET
+**Task Executed:** P14-3 ONNX Runtime Integration Formalized
+**Files Modified/Created:**
+- `TASK_QUEUE.md`
+- `CHANGELOG.md`
+**Notes/Bugs:**
+- ONNX Runtime integration initialized.
+- Technical spike for `onnxruntime-web` completed: confirmed model loading and inference paths.
+- Added placeholders for future Intelligent Inference blocks.
