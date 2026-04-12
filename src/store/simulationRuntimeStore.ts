@@ -14,6 +14,7 @@ import {
   SimulationRuntimeSnapshot,
   SimulationStatus,
 } from "@/src/simulation/types";
+import { getSocket } from "@/src/utils/socket";
 
 /**
  * P11-3: Execution modes
@@ -42,6 +43,7 @@ export interface RuntimeTraceEvent {
 }
 
 export interface SimulationRuntimeStore {
+  modelId: string | null;
   graph: SimulationGraph;
   registry: BlockRegistry;
   runtime: SimulationRuntimeSnapshot;
@@ -49,6 +51,7 @@ export interface SimulationRuntimeStore {
   trace: RuntimeTraceEvent[];
   executionMode: ExecutionMode;
   batchSize: number;
+  setModelId: (modelId: string | null) => void;
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
@@ -94,8 +97,13 @@ let timerId: ReturnType<typeof setTimeout> | null = null;
 let worker: Worker | null = null;
 const activeWebSockets: Map<string, WebSocket> = new Map();
 
+// P15-2b: Broadcast frequency control
+let lastEmitTime = 0;
+const EMIT_INTERVAL_MS = 200; // Emit at most every 200ms
+
 export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
   (set, get) => ({
+    modelId: null,
     graph: EMPTY_GRAPH,
     registry: DEFAULT_BLOCK_REGISTRY,
     runtime: DEFAULT_RUNTIME,
@@ -103,6 +111,18 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     trace: [],
     executionMode: "fast",
     batchSize: 10,
+
+    setModelId: (modelId) => {
+      const socket = getSocket();
+      const previousId = get().modelId;
+      if (previousId) {
+        socket.emit("leave-room", previousId);
+      }
+      set({ modelId });
+      if (modelId) {
+        socket.emit("join-room", modelId);
+      }
+    },
 
     setGraph: (graph) => {
       set({ graph });
@@ -150,11 +170,20 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     stepOnce: () => {
-      const { graph, registry, runtime, metrics, trace } = get();
+      const { graph, registry, runtime, metrics, trace, modelId } = get();
       const startedAt = performance.now();
       try {
         const next = stepSimulation({ graph, registry, snapshot: runtime });
         
+        // P15-2b: Broadcast state via Socket.io
+        if (modelId && next.status === "running") {
+          const now = Date.now();
+          if (now - lastEmitTime >= EMIT_INTERVAL_MS) {
+            getSocket().emit("simulation-snapshot", { modelId, snapshot: next });
+            lastEmitTime = now;
+          }
+        }
+
         // P13-1: Handle WebSocket Publish
         graph.nodes.forEach((node) => {
           if (node.type === WEBSOCKET_BLOCK_TYPE && node.data?.mode === "pub") {
@@ -381,12 +410,21 @@ function startWorker(graph: SimulationGraph, snapshot: SimulationRuntimeSnapshot
     switch (response.type) {
       case "STATE_UPDATE":
         if (response.snapshot) {
-          const { metrics, trace } = store;
+          const { metrics, trace, modelId } = store;
           const durationMs = response.metrics?.batchDurationMs || 0;
           const steps = response.metrics?.stepsExecuted || 1;
           
           const nextSteps = metrics.stepsExecuted + steps;
           const nextAverage = (metrics.averageStepDurationMs * metrics.stepsExecuted + durationMs) / nextSteps;
+
+          // P15-2b: Broadcast state via Socket.io from worker updates
+          if (modelId) {
+            const now = Date.now();
+            if (now - lastEmitTime >= EMIT_INTERVAL_MS) {
+              getSocket().emit("simulation-snapshot", { modelId, snapshot: response.snapshot });
+              lastEmitTime = now;
+            }
+          }
 
           useSimulationRuntimeStore.setState({
             runtime: response.snapshot,
