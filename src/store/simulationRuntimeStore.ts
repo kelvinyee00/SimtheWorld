@@ -51,12 +51,14 @@ export interface SimulationRuntimeStore {
   trace: RuntimeTraceEvent[];
   executionMode: ExecutionMode;
   batchSize: number;
+  isFollowerMode: boolean;
   setModelId: (modelId: string | null) => void;
   setGraph: (graph: SimulationGraph) => void;
   setRegistry: (registry: BlockRegistry) => void;
   setTiming: (params: { simulationTimeMs?: number; stepTimeMs?: number }) => void;
   setExecutionMode: (mode: ExecutionMode) => void;
   setBatchSize: (batchSize: number) => void;
+  setFollowerMode: (isFollower: boolean) => void;
   run: () => void;
   pause: () => void;
   reset: () => void;
@@ -111,6 +113,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     trace: [],
     executionMode: "fast",
     batchSize: 10,
+    isFollowerMode: false,
 
     setModelId: (modelId) => {
       const socket = getSocket();
@@ -126,6 +129,16 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
           if (command === "pause") get().pause();
           if (command === "reset") get().reset();
         });
+
+        // P15-2d: Listen for sync updates
+        socket.on("simulation-update", (data: { modelId: string; snapshot: SimulationRuntimeSnapshot }) => {
+          const state = get();
+          // Only apply if we are in follower mode AND it's for the current model
+          if (state.isFollowerMode && data.modelId === state.modelId) {
+            set({ runtime: data.snapshot });
+          }
+        });
+
         socket.emit("join-room", modelId);
       }
     },
@@ -175,8 +188,14 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       if (wasRunning) scheduleNextTick();
     },
 
+    setFollowerMode: (isFollowerMode) => {
+      set({ isFollowerMode });
+    },
+
     stepOnce: () => {
-      const { graph, registry, runtime, metrics, trace, modelId } = get();
+      const { graph, registry, runtime, metrics, trace, modelId, isFollowerMode } = get();
+      if (isFollowerMode) return; // Follower doesn't execute locally
+
       const startedAt = performance.now();
       try {
         const next = stepSimulation({ graph, registry, snapshot: runtime });
@@ -248,7 +267,9 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
     },
 
     run: () => {
-      const { graph, registry, runtime, executionMode, batchSize } = get();
+      const { graph, registry, runtime, executionMode, batchSize, isFollowerMode } = get();
+      if (isFollowerMode) return; // Follower doesn't start locally
+
       if (runtime.status === "running" || runtime.status === "completed") {
         return;
       }
@@ -350,7 +371,7 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
 
 function scheduleNextTick(): void {
   const state = useSimulationRuntimeStore.getState();
-  if (state.runtime.status !== "running") {
+  if (state.runtime.status !== "running" || state.isFollowerMode) {
     return;
   }
 
@@ -362,7 +383,7 @@ function scheduleNextTick(): void {
 
   const tickLoop = () => {
     const current = useSimulationRuntimeStore.getState();
-    if (current.runtime.status !== "running") {
+    if (current.runtime.status !== "running" || current.isFollowerMode) {
       clearScheduler();
       return;
     }
