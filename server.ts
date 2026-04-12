@@ -36,6 +36,21 @@ app.prepare().then(() => {
       socket.to(data.modelId).emit("simulation-update", data.snapshot);
     });
 
+    socket.on("simulation-run", (modelId: string) => {
+      console.log(`Simulation run command received for room ${modelId}`);
+      socket.to(modelId).emit("simulation-command", "run");
+    });
+
+    socket.on("simulation-pause", (modelId: string) => {
+      console.log(`Simulation pause command received for room ${modelId}`);
+      socket.to(modelId).emit("simulation-command", "pause");
+    });
+
+    socket.on("simulation-reset", (modelId: string) => {
+      console.log(`Simulation reset command received for room ${modelId}`);
+      socket.to(modelId).emit("simulation-command", "reset");
+    });
+
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
     });

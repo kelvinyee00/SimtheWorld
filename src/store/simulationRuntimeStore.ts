@@ -120,6 +120,12 @@ export const useSimulationRuntimeStore = create<SimulationRuntimeStore>(
       }
       set({ modelId });
       if (modelId) {
+        socket.on("simulation-command", (command: string) => {
+          console.log(`Remote command received: ${command}`);
+          if (command === "run") get().run();
+          if (command === "pause") get().pause();
+          if (command === "reset") get().reset();
+        });
         socket.emit("join-room", modelId);
       }
     },
