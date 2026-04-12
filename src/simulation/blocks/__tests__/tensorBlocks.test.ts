@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SumBlock, TensorSumBlock, SUM_BLOCK_TYPE } from "@/src/simulation/blocks/sumBlock";
-import { GainBlock, TensorGainBlock, GAIN_BLOCK_TYPE } from "@/src/simulation/blocks/gainBlock";
-import { ProductBlock, TensorProductBlock, PRODUCT_BLOCK_TYPE } from "@/src/simulation/blocks/productBlock";
+import { SumBlock, TensorSumBlock } from "@/src/simulation/blocks/sumBlock";
+import { GainBlock, TensorGainBlock } from "@/src/simulation/blocks/gainBlock";
+import { ProductBlock, TensorProductBlock } from "@/src/simulation/blocks/productBlock";
+import { MatrixProductBlock } from "@/src/simulation/blocks/matrixProductBlock";
 import { Tensor } from "@/src/core";
 import { BlockStepContext } from "@/src/simulation/types";
 
-describe("P14-1c: Core Block Migration (Sum, Gain, Product)", () => {
+describe("P14-1c: Core Block Migration (Sum, Gain, Product, MatrixProduct)", () => {
   describe("SumBlock (Tensor-Enhanced)", () => {
     it("should sum scalar values (backward compatible)", () => {
       const ctx: BlockStepContext = {
@@ -188,6 +189,51 @@ describe("P14-1c: Core Block Migration (Sum, Gain, Product)", () => {
       const output = result.outputs.default as Tensor;
       expect(output.get(0)).toBe(8);
       expect(output.get(1)).toBe(15);
+    });
+  });
+
+  describe("MatrixProductBlock (Tensor-Enhanced)", () => {
+    it("should perform matrix multiplication using Tensors", () => {
+      const a = Tensor.fromArray([[1, 2], [3, 4]], [2, 2]);
+      const b = Tensor.fromArray([[5, 6], [7, 8]], [2, 2]);
+      const ctx: BlockStepContext = {
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 1,
+        nodeId: "test",
+        params: {},
+        inputs: { a, b },
+        previousState: null,
+        registry: {},
+        globalSignals: {},
+      };
+      // @ts-ignore
+      const result = MatrixProductBlock.step(ctx);
+      const output = result.outputs.default as Tensor;
+      expect(output.get(0, 0)).toBe(19);
+      expect(output.get(0, 1)).toBe(22);
+      expect(output.get(1, 0)).toBe(43);
+      expect(output.get(1, 1)).toBe(50);
+    });
+
+    it("should scale Tensor by scalar in MatrixProductBlock", () => {
+      const b = Tensor.fromArray([1, 2, 3]);
+      const ctx: BlockStepContext = {
+        tick: 0,
+        timeMs: 0,
+        stepTimeMs: 1,
+        nodeId: "test",
+        params: {},
+        inputs: { a: 10, b },
+        previousState: null,
+        registry: {},
+        globalSignals: {},
+      };
+      // @ts-ignore
+      const result = MatrixProductBlock.step(ctx);
+      const output = result.outputs.default as Tensor;
+      expect(output.get(0)).toBe(10);
+      expect(output.get(2)).toBe(30);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { SimulationBlockDefinition } from "@/src/simulation/types";
+import { SimulationBlockDefinition, SignalValue } from "@/src/simulation/types";
 
 /**
  * Dense (Linear) Layer block (P13-2).

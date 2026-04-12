@@ -1,0 +1,18 @@
+{
+  "alert_type": "watchdog_stall",
+  "timestamp": "2026-04-12T01:32:00+02:00",
+  "days_since_last_activity": 5,
+  "last_task": "P14-1 Vectorized Math Core spec drafted (2026-04-06)",
+  "pending_implementation": [
+    "P14-1a Tensor Foundation (TypedArray storage)",
+    "P14-1b Optimized Linear Algebra Operators",
+    "P14-1c Core Block Migration (Sum, Gain, Product)"
+  ],
+  "directive": "Resume P14-1 implementation with gpt-5.3-codex. Push to origin master upon completion.",
+  "retry_count": 2,
+  "max_retries_before_escalation": 3,
+  "escalation_target": "kelvin",
+  "generated_by": "Son of Anton Watchdog",
+  "message_to_matrix": "🚨 Matrix — HIGH-PRIORITY STEER\n\nNo activity for 5 days.\n\nRESUME: P14-1a, P14-1b, P14-1c\n\nACTION: Switch to gpt-5.3-codex and execute.\n\n— Son of Anton (Night Shift)",
+  "signal_file_updated": "~/.openclaw/workspace-matrix/.matrix-signal"
+}

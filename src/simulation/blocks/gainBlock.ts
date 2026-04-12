@@ -72,7 +72,7 @@ export const GainBlock: SimulationBlockDefinition = {
     }
 
     // Handle scalar input
-    return { outputs: { default: input * parsed.gain } };
+    if (typeof input === "number") { return { outputs: { default: input * parsed.gain } }; } return { outputs: { default: null } };
   },
 };
 

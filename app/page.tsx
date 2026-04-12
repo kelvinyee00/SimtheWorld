@@ -78,12 +78,20 @@ import {
   serializeModelV3,
 } from "@/src/persistence/modelPersistence";
 import {
+  saveModelToSupabase,
+  loadModelFromSupabase,
+  listUserModels,
+  type SupabaseModelMetadata,
+} from "@/src/persistence/supabasePersistence";
+import {
   validateConnectionCandidate,
 } from "@/src/simulation/validation";
 import { parseNumericExpression } from "@/src/simulation/expressions";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 import { useCollaborationSync } from "@/src/collaboration/collaborationSync";
+import { createClient } from "@/src/utils/supabase/client";
 
+import { User } from "@supabase/supabase-js";
 /**
  * P0-5 baseline starter graph.
  *
@@ -812,6 +820,11 @@ function triggerTextDownload(params: {
 }
 
 export default function Home() {
+  const [cloudModels, setCloudModels] = useState<SupabaseModelMetadata[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isCloudPanelOpen, setIsCloudPanelOpen] = useState(false);
+  const [currentCloudModelId, setCurrentCloudModelId] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -863,6 +876,31 @@ export default function Home() {
     enabled: collabEnabled,
     url: collabUrl,
   });
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -1054,7 +1092,7 @@ const searchResults = useMemo(() => {
 
       setModelActionMessage(null);
       setEdges((currentEdges) => addEdge(candidate, currentEdges));
-      onConnectSync(candidate);
+      onConnectSync(connection);
     },
     [edges, nodes, registry, setEdges, onConnectSync]
   );
@@ -2291,6 +2329,87 @@ const searchResults = useMemo(() => {
     [setEdges, setNodes, setTiming]
   );
 
+  const refreshCloudModels = useCallback(async () => {
+    try {
+      const models = await listUserModels();
+      setCloudModels(models);
+    } catch (err) {
+      console.error("Failed to list cloud models:", err);
+      setModelActionMessage("Failed to refresh cloud models.");
+    }
+  }, []);
+
+  const saveToCloud = useCallback(async () => {
+    try {
+      const serialized = serializeModelV3({
+        nodes: nodes.map((node) => ({
+          id: node.id,
+          type: node.type ?? "default",
+          position: node.position,
+          data: (node.data as Record<string, unknown> | undefined) ?? {},
+        })),
+        edges: edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle ?? undefined,
+          targetHandle: edge.targetHandle ?? undefined,
+          type: edge.type ?? "straight",
+        })),
+        timing: {
+          simulationTimeMs: runtime.simulationTimeMs,
+          stepTimeMs: runtime.stepTimeMs,
+        },
+      });
+
+      const modelObj = parseModelDocument(serialized);
+      const modelId = await saveModelToSupabase(modelObj, currentCloudModelId || undefined);
+      
+      setCurrentCloudModelId(modelId);
+      setModelActionMessage("Model saved to cloud successfully.");
+      refreshCloudModels();
+    } catch (err: unknown) {
+      console.error("Cloud save failed:", err);
+      setModelActionMessage(`Cloud save failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [nodes, edges, runtime.simulationTimeMs, runtime.stepTimeMs, currentCloudModelId, refreshCloudModels]);
+
+  const loadFromCloud = useCallback(async (modelId: string) => {
+    try {
+      const persisted = await loadModelFromSupabase(modelId);
+      setNodes(
+        persisted.nodes.map((node) => ({
+          id: node.id,
+          type: node.type,
+          position: node.position,
+          data: node.data,
+        }))
+      );
+      setEdges(
+        persisted.edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          type: edge.type ?? "straight",
+        }))
+      );
+      setTiming({
+        simulationTimeMs: persisted.timing.simulationTimeMs,
+        stepTimeMs: persisted.timing.stepTimeMs,
+      });
+      setCurrentCloudModelId(modelId);
+      setModelActionMessage("Loaded model from cloud.");
+      setIsCloudPanelOpen(false);
+    } catch (err: unknown) {
+      console.error("Cloud load failed:", err);
+      setModelActionMessage(`Cloud load failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [setNodes, setEdges, setTiming]);
+  useEffect(() => {
+    refreshCloudModels();
+  }, [refreshCloudModels]);
   const renderInspectorCore = (params: { mobile: boolean }): React.ReactNode => {
     const { mobile } = params;
 
@@ -3228,6 +3347,31 @@ const searchResults = useMemo(() => {
               >
                 Delete
               </button>
+              <div className="ml-2 border-l border-slate-200 pl-4">
+                {authLoading ? (
+                  <div className="h-8 w-8 animate-pulse rounded-full bg-slate-100" />
+                ) : user ? (
+                  <div className="flex items-center gap-3">
+                    <div className="text-right hidden md:block">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Operator</p>
+                      <p className="text-xs font-semibold text-slate-600 max-w-[120px] truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleSignOut}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => window.location.href = "/login"}
+                    className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900"
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -3300,6 +3444,33 @@ const searchResults = useMemo(() => {
               </button>
             </div>
             <div className="mt-6 border-t border-slate-100 pt-6">
+              <h2 className="text-sm font-semibold text-slate-700">Cloud Persistence</h2>
+              <div className="mt-3 space-y-2">
+                <button
+                  type="button"
+                  onClick={!user ? () => window.location.href="/login" : saveToCloud}
+                  className="w-full rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+                >
+                  {!user ? "Cloud Save (Sign In Required)" : currentCloudModelId ? "Cloud Update" : "Cloud Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={!user ? () => window.location.href="/login" : () => {
+                    refreshCloudModels();
+                    setIsCloudPanelOpen(true);
+                  }}
+                  className="w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100"
+                >
+                  Open Cloud Models
+                </button>
+                {currentCloudModelId && (
+                  <p className="text-[10px] text-slate-400 text-center italic">
+                    Syncing to: {currentCloudModelId.slice(0, 8)}...
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 border-t border-slate-100 pt-6">
               <h2 className="text-sm font-semibold text-slate-700">Simulation Settings</h2>
               <div className="mt-3 space-y-3">
                 <label className="block text-xs text-slate-600">
@@ -3331,8 +3502,7 @@ const searchResults = useMemo(() => {
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h2 className="text-sm font-semibold text-slate-700">Navigator</h2>
               <div className="mt-3">
-                <input
-                  type="text"
+                  <input type="text"
                   placeholder="Search blocks..."
                   value={blockSearchTerm}
                   onChange={(e) => setBlockSearchTerm(e.target.value)}
@@ -3694,6 +3864,62 @@ const searchResults = useMemo(() => {
           />
         ) : null}
       </div>
+        {isCloudPanelOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="flex flex-col w-full max-w-md max-h-[70vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">Cloud Models</h2>
+                  <p className="text-xs text-slate-500">Your saved models in the cloud.</p>
+                </div>
+                <button
+                  onClick={() => setIsCloudPanelOpen(false)}
+                  className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </header>
+              <main className="flex-1 overflow-y-auto p-4 bg-white">
+                <div className="space-y-2">
+                  {cloudModels.length === 0 ? (
+                    <p className="text-center text-sm text-slate-400 py-8 italic">
+                      No cloud models found. Save your first model to see it here.
+                    </p>
+                  ) : (
+                    cloudModels.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between rounded-lg border border-slate-200 p-3 hover:border-sky-300 hover:bg-sky-50 group transition-colors"
+                      >
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="text-sm font-semibold text-slate-700 truncate">{m.name}</h3>
+                          <p className="text-[10px] text-slate-400">
+                            Last updated: {new Date(m.updated_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => loadFromCloud(m.id)}
+                          className="rounded bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-200"
+                        >
+                          Load
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </main>
+              <footer className="border-t border-slate-200 px-6 py-3 bg-slate-50 flex justify-end">
+                <button
+                  onClick={() => setIsCloudPanelOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+                >
+                  Close
+                </button>
+              </footer>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

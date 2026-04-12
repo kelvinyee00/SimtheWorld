@@ -1,11 +1,14 @@
 import { SignalValue, SimulationBlockDefinition } from "@/src/simulation/types";
+import { Tensor, matmul, isTensor, scale } from "@/src/core";
 
 /**
- * Matrix Product block (P12-2 extension).
+ * Matrix Product block (P14-1c Tensor Update).
  * 
  * Contract:
  * - Performs matrix multiplication (A * B).
- * - Supports broadcasting scalar * matrix.
+ * - Supports Tensor multiplication via optimized core.
+ * - Supports broadcasting scalar * matrix/tensor.
+ * - Maintains backward compatibility for nested arrays.
  */
 export const MATRIX_PRODUCT_BLOCK_TYPE = "matrixProduct" as const;
 
@@ -32,6 +35,25 @@ export const MatrixProductBlock: SimulationBlockDefinition = {
 
     if (a === null || b === null) return { outputs: { default: null } };
 
+    // --- Tensor Handling (P14-1c) ---
+    if (isTensor(a) && isTensor(b)) {
+      try {
+        return { outputs: { default: matmul(a, b) } };
+      } catch (e) {
+        return { outputs: { default: null } };
+      }
+    }
+
+    if (typeof a === "number" && isTensor(b)) {
+      return { outputs: { default: scale(b, a) } };
+    }
+
+    if (isTensor(a) && typeof b === "number") {
+      return { outputs: { default: scale(a, b) } };
+    }
+
+    // --- Legacy Array Handling ---
+    
     // Scalar * Any (Broadcast)
     if (typeof a === "number") {
       if (typeof b === "number") return { outputs: { default: a * b } };
@@ -39,7 +61,7 @@ export const MatrixProductBlock: SimulationBlockDefinition = {
       if (isMatrix(b)) return { outputs: { default: b.map(row => row.map(v => a * v)) } };
     }
 
-    // Matrix Multiplication (Naive)
+    // Matrix Multiplication (Naive Legacy)
     if (isMatrix(a) && isMatrix(b)) {
       const rowsA = a.length;
       const colsA = a[0].length;

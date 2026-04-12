@@ -5,7 +5,7 @@
  * for use by simulation blocks and ONNX integration.
  */
 
-export { Tensor, isTensor, TensorShape, TensorStrides } from "./tensor";
+export { Tensor, isTensor, type TensorShape, type TensorStrides } from "./tensor";
 export {
   add,
   sub,

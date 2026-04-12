@@ -64,12 +64,45 @@ describe("Tensor", () => {
     });
 
     it("should support broadcasting (scalar + vector)", () => {
-      const scalar = Tensor.fromArray([2], "float32");
+      const scalar = Tensor.fromArray(2, "float32");
       const vector = Tensor.fromArray([1, 2, 3, 4]);
       
-      // Manually test broadcasting by reshaping scalar
-      const result = vector.scale(2);
-      expect(result.toArray()).toEqual([2, 4, 6, 8]);
+      const result = vector.add(scalar);
+      expect(result.toArray()).toEqual([3, 4, 5, 6]);
+    });
+
+    it("should support broadcasting (row vector + matrix)", () => {
+      const matrix = Tensor.fromArray([
+        [1, 2, 3],
+        [4, 5, 6],
+      ]);
+      const row = Tensor.fromArray([[10, 20, 30]]);
+      
+      const result = matrix.add(row);
+      expect(result.toArray()).toEqual([
+        [11, 22, 33],
+        [14, 25, 36],
+      ]);
+    });
+
+    it("should support broadcasting (column vector + matrix)", () => {
+      const matrix = Tensor.fromArray([
+        [1, 2, 3],
+        [4, 5, 6],
+      ]);
+      const col = Tensor.fromArray([[10], [20]]);
+      
+      const result = matrix.add(col);
+      expect(result.toArray()).toEqual([
+        [11, 12, 13],
+        [24, 25, 26],
+      ]);
+    });
+
+    it("should fail on incompatible shapes", () => {
+      const a = Tensor.fromArray([1, 2, 3]);
+      const b = Tensor.fromArray([1, 2]);
+      expect(() => a.add(b)).toThrow("Incompatible broadcast shapes");
     });
   });
 
