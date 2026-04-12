@@ -91,6 +91,6 @@ export const NnActivationBlock: SimulationBlockDefinition = {
       }
       return { outputs: { default: result as SignalValue } };
     }
-    return { outputs: { default: [apply(u)] as SignalValue } };
+    return { outputs: { default: [apply(u as any)] as SignalValue } };
   },
 };
