@@ -1,3 +1,6 @@
+import { OrientationBlock, ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
+import { GpsBlock, GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
+import { AccelerometerBlock, ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
 import { SumBlock, SUM_BLOCK_TYPE, TensorSumBlock } from "@/src/simulation/blocks/sumBlock";
 import { GainBlock, GAIN_BLOCK_TYPE, TensorGainBlock } from "@/src/simulation/blocks/gainBlock";
 import { ProductBlock, PRODUCT_BLOCK_TYPE, TensorProductBlock } from "@/src/simulation/blocks/productBlock";
@@ -37,6 +40,9 @@ import { WebSocketSendBlock, WEBSOCKET_SEND_BLOCK_TYPE, WebSocketReceiveBlock, W
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
+  [GPS_BLOCK_TYPE]: GpsBlock,
+  [ACCELEROMETER_BLOCK_TYPE]: AccelerometerBlock,
+  [ORIENTATION_BLOCK_TYPE]: OrientationBlock,
   [COUNTER_BLOCK_TYPE]: CounterBlock,
   [DISPLAY_BLOCK_TYPE]: DisplayBlock,
   [SCOPE_BLOCK_TYPE]: ScopeBlock,

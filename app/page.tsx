@@ -51,6 +51,9 @@ import {
 import { LEAD_LAG_BLOCK_TYPE } from "@/src/simulation/blocks/leadLagBlock";
 import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
+import { GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
+import { ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
+import { ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
 import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock";
@@ -154,6 +157,9 @@ const NODE_TYPES: NodeTypes = {
   [COMPARE_BLOCK_TYPE]: CustomBlockNode,
   [SWITCH_BLOCK_TYPE]: CustomBlockNode,
   [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
+  [GPS_BLOCK_TYPE]: CustomBlockNode,
+  [ACCELEROMETER_BLOCK_TYPE]: CustomBlockNode,
+  [ORIENTATION_BLOCK_TYPE]: CustomBlockNode,
   [INPORT_BLOCK_TYPE]: CustomBlockNode,
   [OUTPORT_BLOCK_TYPE]: CustomBlockNode,
   [SUBSYSTEM_BLOCK_TYPE]: CustomBlockNode,
@@ -183,35 +189,38 @@ const NODE_TYPES: NodeTypes = {
  * - Any future library entries should keep this list as the single insertion point.
  */
 const LIBRARY_BLOCKS = [
-  { label: "Counter", type: COUNTER_BLOCK_TYPE },
-  { label: "Gain", type: GAIN_BLOCK_TYPE },
-  { label: "Sum", type: SUM_BLOCK_TYPE },
-  { label: "Product", type: PRODUCT_BLOCK_TYPE },
-  { label: "Mux", type: MUX_BLOCK_TYPE },
-  { label: "Demux", type: DEMUX_BLOCK_TYPE },
-  { label: "PID", type: PID_BLOCK_TYPE },
-  { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE },
-  { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE },
-  { label: "GOTO", type: GOTO_BLOCK_TYPE },
-  { label: "FROM", type: FROM_BLOCK_TYPE },
-  { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE },
-  { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE },
-  { label: "State Machine", type: STATE_MACHINE_BLOCK_TYPE },
-  { label: "Truth Table", type: TRUTH_TABLE_BLOCK_TYPE },
-  { label: "Inport", type: INPORT_BLOCK_TYPE },
-  { label: "Outport", type: OUTPORT_BLOCK_TYPE },
-  { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE },
-  { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE },
-  { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE },
-  { label: "Compare", type: COMPARE_BLOCK_TYPE },
-  { label: "Switch", type: SWITCH_BLOCK_TYPE },
-  { label: "To File", type: TO_FILE_BLOCK_TYPE },
-  { label: "Gauge", type: GAUGE_BLOCK_TYPE },
-  { label: "Lamp", type: LAMP_BLOCK_TYPE },
-  { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE },
-  { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE },
-  { label: "Display", type: DISPLAY_BLOCK_TYPE },
-  { label: "Scope", type: SCOPE_BLOCK_TYPE },
+  { label: "GPS", type: GPS_BLOCK_TYPE, category: "Sensors" },
+  { label: "Accelerometer", type: ACCELEROMETER_BLOCK_TYPE, category: "Sensors" },
+  { label: "Orientation", type: ORIENTATION_BLOCK_TYPE, category: "Sensors" },
+  { label: "Counter", type: COUNTER_BLOCK_TYPE, category: "General" },
+  { label: "Gain", type: GAIN_BLOCK_TYPE, category: "General" },
+  { label: "Sum", type: SUM_BLOCK_TYPE, category: "General" },
+  { label: "Product", type: PRODUCT_BLOCK_TYPE, category: "General" },
+  { label: "Mux", type: MUX_BLOCK_TYPE, category: "General" },
+  { label: "Demux", type: DEMUX_BLOCK_TYPE, category: "General" },
+  { label: "PID", type: PID_BLOCK_TYPE, category: "General" },
+  { label: "Discrete Transfer Fcn", type: DISCRETE_TRANSFER_FCN_BLOCK_TYPE, category: "General" },
+  { label: "Lead/Lag", type: LEAD_LAG_BLOCK_TYPE, category: "General" },
+  { label: "GOTO", type: GOTO_BLOCK_TYPE, category: "General" },
+  { label: "FROM", type: FROM_BLOCK_TYPE, category: "General" },
+  { label: "LUT 1D", type: LUT_1D_BLOCK_TYPE, category: "General" },
+  { label: "LUT 2D", type: LUT_2D_BLOCK_TYPE, category: "General" },
+  { label: "State Machine", type: STATE_MACHINE_BLOCK_TYPE, category: "General" },
+  { label: "Truth Table", type: TRUTH_TABLE_BLOCK_TYPE, category: "General" },
+  { label: "Inport", type: INPORT_BLOCK_TYPE, category: "General" },
+  { label: "Outport", type: OUTPORT_BLOCK_TYPE, category: "General" },
+  { label: "Subsystem", type: SUBSYSTEM_BLOCK_TYPE, category: "General" },
+  { label: "Integrator", type: INTEGRATOR_BLOCK_TYPE, category: "General" },
+  { label: "Unit Delay", type: UNIT_DELAY_BLOCK_TYPE, category: "General" },
+  { label: "Compare", type: COMPARE_BLOCK_TYPE, category: "General" },
+  { label: "Switch", type: SWITCH_BLOCK_TYPE, category: "General" },
+  { label: "To File", type: TO_FILE_BLOCK_TYPE, category: "General" },
+  { label: "Gauge", type: GAUGE_BLOCK_TYPE, category: "General" },
+  { label: "Lamp", type: LAMP_BLOCK_TYPE, category: "General" },
+  { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE, category: "General" },
+  { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE, category: "General" },
+  { label: "Display", type: DISPLAY_BLOCK_TYPE, category: "General" },
+  { label: "Scope", type: SCOPE_BLOCK_TYPE, category: "General" },
 ] as const;
 
 /**
@@ -376,6 +385,12 @@ function makeNodeData(type: string): Record<string, unknown> {
       };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
+    case GPS_BLOCK_TYPE:
+      return { label: "GPS" };
+    case ACCELEROMETER_BLOCK_TYPE:
+      return { label: "Accelerometer" };
+    case ORIENTATION_BLOCK_TYPE:
+      return { label: "Orientation" };
     case SCOPE_BLOCK_TYPE:
       return { label: "Scope", maxPoints: 240 };
     default:
@@ -1212,7 +1227,7 @@ const searchResults = useMemo(() => {
    * HTML5 drag source initializer for library items.
    */
   const onLibraryDragStart = useCallback(
-    (event: React.DragEvent<HTMLLIElement>, type: string) => {
+    (event: React.DragEvent<HTMLElement>, type: string) => {
       event.dataTransfer.setData("application/reactflow", type);
       event.dataTransfer.effectAllowed = "move";
     },
@@ -3381,22 +3396,38 @@ const searchResults = useMemo(() => {
         <main className="relative flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:flex-row">
           <aside className="order-2 rounded-xl border border-slate-200 bg-white p-4 lg:order-1 lg:w-72">
             <h2 className="text-sm font-semibold text-slate-700">Library</h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              {LIBRARY_BLOCKS.map((block) => (
-                <li
-                  key={block.type}
-                  draggable
-                  onDragStart={(event) => onLibraryDragStart(event, block.type)}
-                  className={`cursor-grab rounded-md border px-3 py-2 active:cursor-grabbing ${
-                    block.type === COUNTER_BLOCK_TYPE
-                      ? "border-orange-300 bg-orange-50 text-orange-700"
-                      : "border-sky-300 bg-sky-50 text-sky-700"
-                  }`}
-                >
-                  {block.label}
-                </li>
+            <div className="mt-3 text-sm text-slate-600">
+              {Object.entries(
+                LIBRARY_BLOCKS.reduce((acc, block) => {
+                  const cat = (block as { category?: string }).category || "General";
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(block);
+                  return acc;
+                }, {} as Record<string, (typeof LIBRARY_BLOCKS[number])[]>)
+              ).map(([category, blocks]) => (
+                <div key={category} className="mb-4">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 border-b pb-1">{category}</h3>
+                  <div className="space-y-2">
+                    {blocks.map((block) => (
+                      <div
+                        key={block.type}
+                        draggable
+                        onDragStart={(event) => onLibraryDragStart(event, block.type)}
+                        className={`cursor-grab rounded-md border px-3 py-2 active:cursor-grabbing ${
+                          block.category === "Sensors"
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                            : block.type === COUNTER_BLOCK_TYPE
+                            ? "border-orange-300 bg-orange-50 text-orange-700"
+                            : "border-sky-300 bg-sky-50 text-sky-700"
+                        }`}
+                      >
+                        {block.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
             <p className="mt-3 text-xs text-slate-500">
               Drag a block onto the canvas to create a node.
             </p>
