@@ -91,6 +91,7 @@ import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 import { useCollaborationSync } from "@/src/collaboration/collaborationSync";
 import { createClient } from "@/src/utils/supabase/client";
 
+import { OfflineIndicator } from "@/src/components/offline/OfflineIndicator";
 import { User } from "@supabase/supabase-js";
 /**
  * P0-5 baseline starter graph.
@@ -3258,6 +3259,7 @@ const searchResults = useMemo(() => {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
+      <OfflineIndicator />
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col">
         <header className="border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
           <div className="flex items-center justify-between gap-3">
@@ -3923,3 +3925,4 @@ const searchResults = useMemo(() => {
     </div>
   );
 }
+// MARKER: OFFLINE_INDICATOR_INJECTED
