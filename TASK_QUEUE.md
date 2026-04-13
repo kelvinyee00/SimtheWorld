@@ -128,7 +128,7 @@
 
 ## P14 Queue (Engineering Excellence & Intelligent Inference)
 - [x] P14-1 Vectorized Math Core ("Tensor" Update) — Specification complete, implementation pending
-  - [ ] P14-1a Tensor Foundation (TypedArray storage)
+  - [x] P14-1a Tensor Foundation (TypedArray storage)
   - [ ] P14-1b Optimized Linear Algebra Operators
   - [ ] P14-1c Core Block Migration (Sum, Gain, Product)
   - [x] P14-1d Benchmarking Suite
