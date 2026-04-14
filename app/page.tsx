@@ -53,6 +53,7 @@ import { GOTO_BLOCK_TYPE } from "@/src/simulation/blocks/gotoBlock";
 import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
 import { ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
+import { BLE_BLOCK_TYPE } from "@/src/simulation/blocks/bleBlock";
 import { ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
@@ -159,6 +160,7 @@ const NODE_TYPES: NodeTypes = {
   [TO_FILE_BLOCK_TYPE]: CustomBlockNode,
   [GPS_BLOCK_TYPE]: CustomBlockNode,
   [ACCELEROMETER_BLOCK_TYPE]: CustomBlockNode,
+  [BLE_BLOCK_TYPE]: CustomBlockNode,
   [ORIENTATION_BLOCK_TYPE]: CustomBlockNode,
   [INPORT_BLOCK_TYPE]: CustomBlockNode,
   [OUTPORT_BLOCK_TYPE]: CustomBlockNode,
@@ -191,6 +193,7 @@ const NODE_TYPES: NodeTypes = {
 const LIBRARY_BLOCKS = [
   { label: "GPS", type: GPS_BLOCK_TYPE, category: "Sensors" },
   { label: "Accelerometer", type: ACCELEROMETER_BLOCK_TYPE, category: "Sensors" },
+  { label: "BLE Device", type: BLE_BLOCK_TYPE, category: "Sensors" },
   { label: "Orientation", type: ORIENTATION_BLOCK_TYPE, category: "Sensors" },
   { label: "Counter", type: COUNTER_BLOCK_TYPE, category: "General" },
   { label: "Gain", type: GAIN_BLOCK_TYPE, category: "General" },
@@ -385,6 +388,8 @@ function makeNodeData(type: string): Record<string, unknown> {
       };
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
+    case BLE_BLOCK_TYPE:
+      return { label: "BLE Device", parsingMode: "raw" };
     case GPS_BLOCK_TYPE:
       return { label: "GPS" };
     case ACCELEROMETER_BLOCK_TYPE:

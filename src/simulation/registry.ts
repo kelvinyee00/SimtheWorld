@@ -36,6 +36,7 @@ import { HeatmapBlock, HEATMAP_BLOCK_TYPE } from "@/src/simulation/blocks/heatma
 import { PythonBlock, PYTHON_BLOCK_TYPE } from "@/src/simulation/blocks/pythonBlock";
 import { NnDenseBlock, NN_DENSE_BLOCK_TYPE, NnActivationBlock, NN_ACTIVATION_BLOCK_TYPE } from "@/src/simulation/blocks/nnBlocks";
 import { ProfilerBlock, PROFILER_BLOCK_TYPE } from "@/src/simulation/blocks/profilerBlock";
+import { BLEBlock, BLE_BLOCK_TYPE } from "@/src/simulation/blocks/bleBlock";
 import { WebSocketSendBlock, WEBSOCKET_SEND_BLOCK_TYPE, WebSocketReceiveBlock, WEBSOCKET_RECEIVE_BLOCK_TYPE } from "@/src/simulation/blocks/webSocketBlocks";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
@@ -83,6 +84,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [NN_DENSE_BLOCK_TYPE]: NnDenseBlock,
   [NN_ACTIVATION_BLOCK_TYPE]: NnActivationBlock,
   [PROFILER_BLOCK_TYPE]: ProfilerBlock,
+  [BLE_BLOCK_TYPE]: BLEBlock,
   [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
   [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
 };
