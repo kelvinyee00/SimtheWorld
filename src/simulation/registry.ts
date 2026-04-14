@@ -1,3 +1,4 @@
+import { RLSEstimatorBlock, RLS_ESTIMATOR_BLOCK_TYPE } from "@/src/simulation/blocks/rlsEstimatorBlock";
 import { OrientationBlock, ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
 import { GpsBlock, GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
 import { AccelerometerBlock, ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
@@ -90,6 +91,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [BATTERY_LEVEL_BLOCK_TYPE]: BatteryLevelBlock,
   [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
   [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
+  [RLS_ESTIMATOR_BLOCK_TYPE]: RLSEstimatorBlock,
 };
 
 export function createBlockRegistry(definitions: SimulationBlockDefinition[]): BlockRegistry {
