@@ -54,6 +54,7 @@ import { FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
 import { ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
 import { BLE_BLOCK_TYPE } from "@/src/simulation/blocks/bleBlock";
+import { HEART_RATE_BLOCK_TYPE, BATTERY_LEVEL_BLOCK_TYPE } from "@/src/simulation/blocks/specializedBleBlocks";
 import { ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
 import { LUT_1D_BLOCK_TYPE, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { STATE_MACHINE_BLOCK_TYPE } from "@/src/simulation/blocks/stateMachineBlock";
@@ -161,6 +162,8 @@ const NODE_TYPES: NodeTypes = {
   [GPS_BLOCK_TYPE]: CustomBlockNode,
   [ACCELEROMETER_BLOCK_TYPE]: CustomBlockNode,
   [BLE_BLOCK_TYPE]: CustomBlockNode,
+  [HEART_RATE_BLOCK_TYPE]: CustomBlockNode,
+  [BATTERY_LEVEL_BLOCK_TYPE]: CustomBlockNode,
   [ORIENTATION_BLOCK_TYPE]: CustomBlockNode,
   [INPORT_BLOCK_TYPE]: CustomBlockNode,
   [OUTPORT_BLOCK_TYPE]: CustomBlockNode,
@@ -194,6 +197,8 @@ const LIBRARY_BLOCKS = [
   { label: "GPS", type: GPS_BLOCK_TYPE, category: "Sensors" },
   { label: "Accelerometer", type: ACCELEROMETER_BLOCK_TYPE, category: "Sensors" },
   { label: "BLE Device", type: BLE_BLOCK_TYPE, category: "Sensors" },
+  { label: "Heart Rate", type: HEART_RATE_BLOCK_TYPE, category: "Sensors" },
+  { label: "Battery Level", type: BATTERY_LEVEL_BLOCK_TYPE, category: "Sensors" },
   { label: "Orientation", type: ORIENTATION_BLOCK_TYPE, category: "Sensors" },
   { label: "Counter", type: COUNTER_BLOCK_TYPE, category: "General" },
   { label: "Gain", type: GAIN_BLOCK_TYPE, category: "General" },
@@ -389,6 +394,10 @@ function makeNodeData(type: string): Record<string, unknown> {
     case DISPLAY_BLOCK_TYPE:
       return { label: "Display" };
     case BLE_BLOCK_TYPE:
+    case HEART_RATE_BLOCK_TYPE:
+      return { label: "Heart Rate" };
+    case BATTERY_LEVEL_BLOCK_TYPE:
+      return { label: "Battery Level" };
       return { label: "BLE Device", parsingMode: "raw" };
     case GPS_BLOCK_TYPE:
       return { label: "GPS" };

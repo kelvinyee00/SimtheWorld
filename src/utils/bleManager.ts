@@ -1,4 +1,3 @@
-
 export type BLEConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 export interface BLEDeviceState {
@@ -81,9 +80,11 @@ export class BLEManager {
       
       const characteristic = await service.getCharacteristic(characteristicUUID);
 
-      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
-        const value = event.target.value;
-        this.updateValue(deviceId, value);
+      characteristic.addEventListener('characteristicvaluechanged', (event: Event) => {
+        const char = event.target as BluetoothRemoteGATTCharacteristic;
+        if (char.value) {
+          this.updateValue(deviceId, char.value);
+        }
       });
 
       await characteristic.startNotifications();

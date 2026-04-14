@@ -1,4 +1,4 @@
-import { SimulationBlockDefinition, BlockStepContext, BlockStepResult } from "@/src/simulation/types";
+import { SimulationBlockDefinition, BlockStepContext, BlockStepResult, SignalValue } from "@/src/simulation/types";
 import { BLEManager } from "@/src/utils/bleManager";
 
 export const BLE_BLOCK_TYPE = "ble_device";
@@ -11,7 +11,7 @@ export interface BLEBlockParams {
 }
 
 export interface BLEBlockState {
-  lastTickValue: any;
+  lastTickValue: SignalValue;
   connected: boolean;
   initialized: boolean;
 }
@@ -55,7 +55,7 @@ export const BLEBlock: SimulationBlockDefinition = {
             case "json":
               try {
                 const decoder = new TextDecoder();
-                state.lastTickValue = JSON.parse(decoder.decode(buffer));
+                state.lastTickValue = JSON.parse(decoder.decode(buffer)) as SignalValue;
               } catch (e) {
                 // Keep last value on parse error
               }
@@ -66,6 +66,8 @@ export const BLEBlock: SimulationBlockDefinition = {
               break;
           }
         }
+      } else {
+        state.connected = false;
       }
     }
 

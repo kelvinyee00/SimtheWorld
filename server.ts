@@ -2,7 +2,9 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { Server } from "socket.io";
+import express from "express";
 import { SimulationRuntimeSnapshot } from "./src/simulation/types";
+import apiRouter from "./src/persistence/api";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -11,11 +13,18 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const httpServer = createServer((req, res) => {
+  const server = express();
+  
+  // API routes
+  server.use('/api/v1', apiRouter);
+
+  // Next.js request handling
+  server.all('*', (req, res) => {
     const parsedUrl = parse(req.url!, true);
     handle(req, res, parsedUrl);
   });
 
+  const httpServer = createServer(server);
   const io = new Server(httpServer);
 
   io.on("connection", (socket) => {

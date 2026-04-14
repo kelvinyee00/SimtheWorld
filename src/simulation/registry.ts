@@ -37,6 +37,7 @@ import { PythonBlock, PYTHON_BLOCK_TYPE } from "@/src/simulation/blocks/pythonBl
 import { NnDenseBlock, NN_DENSE_BLOCK_TYPE, NnActivationBlock, NN_ACTIVATION_BLOCK_TYPE } from "@/src/simulation/blocks/nnBlocks";
 import { ProfilerBlock, PROFILER_BLOCK_TYPE } from "@/src/simulation/blocks/profilerBlock";
 import { BLEBlock, BLE_BLOCK_TYPE } from "@/src/simulation/blocks/bleBlock";
+import { HeartRateBlock, HEART_RATE_BLOCK_TYPE, BatteryLevelBlock, BATTERY_LEVEL_BLOCK_TYPE } from "@/src/simulation/blocks/specializedBleBlocks";
 import { WebSocketSendBlock, WEBSOCKET_SEND_BLOCK_TYPE, WebSocketReceiveBlock, WEBSOCKET_RECEIVE_BLOCK_TYPE } from "@/src/simulation/blocks/webSocketBlocks";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
@@ -85,6 +86,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [NN_ACTIVATION_BLOCK_TYPE]: NnActivationBlock,
   [PROFILER_BLOCK_TYPE]: ProfilerBlock,
   [BLE_BLOCK_TYPE]: BLEBlock,
+  [HEART_RATE_BLOCK_TYPE]: HeartRateBlock,
+  [BATTERY_LEVEL_BLOCK_TYPE]: BatteryLevelBlock,
   [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
   [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
 };
