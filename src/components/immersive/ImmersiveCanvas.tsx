@@ -1,22 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import { WebXRStatusOverlay } from './WebXRStatusOverlay';
 
 interface ImmersiveCanvasProps {
   onInitialize?: (scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer) => void;
   onUpdate?: (scene: THREE.Scene, camera: THREE.PerspectiveCamera, clock: THREE.Clock) => void;
+  simulationTime?: number;
 }
 
-export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, onUpdate }) => {
+export interface ImmersiveCanvasHandle {
+  enterAR: () => void;
+  enterVR: () => void;
+}
+
+export const ImmersiveCanvas = forwardRef<ImmersiveCanvasHandle, ImmersiveCanvasProps>(({ 
+  onInitialize, 
+  onUpdate,
+  simulationTime = 0
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const clockRef = useRef<THREE.Clock>(new THREE.Clock());
-  const [isXRSupported, setIsXRSupported] = useState(false);
+  
+  const [isInXR, setIsInXR] = useState(false);
+  const [xrMode, setXrMode] = useState<'vr' | 'ar' | null>(null);
+  const vrButtonRef = useRef<HTMLElement | null>(null);
+  const arButtonRef = useRef<HTMLElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    enterAR: () => {
+      if (arButtonRef.current) arButtonRef.current.click();
+    },
+    enterVR: () => {
+      if (vrButtonRef.current) vrButtonRef.current.click();
+    }
+  }));
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const currentContainer = containerRef.current;
+    if (!currentContainer) return;
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
@@ -26,7 +52,7 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
     // --- Camera Setup ---
     const camera = new THREE.PerspectiveCamera(
       75,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
+      currentContainer.clientWidth / currentContainer.clientHeight,
       0.1,
       1000
     );
@@ -36,26 +62,56 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
 
     // --- Renderer Setup ---
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setSize(currentContainer.clientWidth, currentContainer.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     
     // Enable WebXR
     renderer.xr.enabled = true;
     
-    containerRef.current.appendChild(renderer.domElement);
+    currentContainer.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // --- WebXR Support Check & Button ---
+    // XR Session Event Listeners
+    const onSessionStart = () => {
+      setIsInXR(true);
+    };
+    const onSessionEnd = () => {
+      setIsInXR(false);
+      setXrMode(null);
+    };
+
+    renderer.xr.addEventListener('sessionstart', onSessionStart);
+    renderer.xr.addEventListener('sessionend', onSessionEnd);
+
+    // --- WebXR Support Check & Buttons ---
     if ('xr' in navigator) {
-      (navigator as any).xr.isSessionSupported('immersive-vr').then((supported: boolean) => {
-        setIsXRSupported(supported);
-        if (supported && containerRef.current) {
-          const vrButton = VRButton.createButton(renderer);
+      const xr = (navigator as any).xr;
+      
+      // VR Support
+      xr.isSessionSupported('immersive-vr').then((supported: boolean) => {
+        if (supported && containerRef.current && rendererRef.current) {
+          const vrButton = VRButton.createButton(rendererRef.current);
           vrButton.style.position = 'absolute';
           vrButton.style.bottom = '20px';
-          vrButton.style.left = '50%';
+          vrButton.style.left = 'calc(50% - 100px)';
           vrButton.style.transform = 'translateX(-50%)';
+          vrButton.addEventListener('click', () => setXrMode('vr'));
           containerRef.current.appendChild(vrButton);
+          vrButtonRef.current = vrButton;
+        }
+      });
+
+      // AR Support
+      xr.isSessionSupported('immersive-ar').then((supported: boolean) => {
+        if (supported && containerRef.current && rendererRef.current) {
+          const arButton = ARButton.createButton(rendererRef.current);
+          arButton.style.position = 'absolute';
+          arButton.style.bottom = '20px';
+          arButton.style.left = 'calc(50% + 100px)';
+          arButton.style.transform = 'translateX(-50%)';
+          arButton.addEventListener('click', () => setXrMode('ar'));
+          containerRef.current.appendChild(arButton);
+          arButtonRef.current = arButton;
         }
       });
     }
@@ -104,17 +160,26 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      renderer.setAnimationLoop(null);
-      if (containerRef.current) {
-        if (renderer.domElement && containerRef.current.contains(renderer.domElement)) {
-           containerRef.current.removeChild(renderer.domElement);
+      
+      if (rendererRef.current) {
+        rendererRef.current.setAnimationLoop(null);
+        rendererRef.current.xr.removeEventListener('sessionstart', onSessionStart);
+        rendererRef.current.xr.removeEventListener('sessionend', onSessionEnd);
+        
+        if (currentContainer && rendererRef.current.domElement && currentContainer.contains(rendererRef.current.domElement)) {
+          currentContainer.removeChild(rendererRef.current.domElement);
         }
-        const buttons = containerRef.current.querySelectorAll('button');
+        rendererRef.current.dispose();
+      }
+
+      if (currentContainer) {
+        const buttons = currentContainer.querySelectorAll('button');
         buttons.forEach(b => b.remove());
       }
-      // Dispose resources
-      renderer.dispose();
-      scene.clear();
+      
+      if (sceneRef.current) {
+        sceneRef.current.clear();
+      }
     };
   }, [onInitialize, onUpdate]);
 
@@ -122,6 +187,14 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
     <div 
       ref={containerRef} 
       className="w-full h-full relative overflow-hidden"
-    />
+    >
+      <WebXRStatusOverlay 
+        isVisible={isInXR} 
+        simulationTime={simulationTime} 
+        status={xrMode === 'ar' ? 'Augmented Reality' : 'Virtual Reality'}
+      />
+    </div>
   );
-};
+});
+
+ImmersiveCanvas.displayName = 'ImmersiveCanvas';

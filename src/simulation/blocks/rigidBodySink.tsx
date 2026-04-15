@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { RigidBodySinkState } from "./rigidBodySinkBlock";
-import { ImmersiveCanvas } from "@/src/components/immersive/ImmersiveCanvas";
+import { ImmersiveCanvas, ImmersiveCanvasHandle } from "@/src/components/immersive/ImmersiveCanvas";
 
 export function RigidBodySinkView({ state, className }: { state: unknown, className?: string }) {
   const parsed = (state as RigidBodySinkState) || { position: [0, 0, 0], rotation: [0, 0, 0, 1] };
@@ -28,9 +28,19 @@ export function RigidBodySinkView({ state, className }: { state: unknown, classN
   );
 }
 
-export function RigidBodySinkModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: unknown }) {
-  const parsed = (state as RigidBodySinkState) || { position: [0, 0, 0], rotation: [0, 0, 0, 1] };
+export function RigidBodySinkModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: RigidBodySinkState }) {
+  const parsed = state || { position: [0, 0, 0], rotation: [0, 0, 0, 1] };
   const meshRef = useRef<THREE.Group | null>(null);
+  const canvasRef = useRef<ImmersiveCanvasHandle>(null);
+  const [arSupported, setArSupported] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'xr' in navigator) {
+      (navigator as any).xr.isSessionSupported('immersive-ar').then((supported: boolean) => {
+        setArSupported(supported);
+      });
+    }
+  }, []);
 
   const handleInitialize = (scene: THREE.Scene) => {
     const group = new THREE.Group();
@@ -90,17 +100,41 @@ export function RigidBodySinkModal({ open, onClose, state }: { open: boolean, on
             <h2 className="text-xl font-bold text-slate-800">Rigid Body Visualizer</h2>
             <p className="text-xs text-slate-500">Quaternion-based 3D transform tracking</p>
           </div>
-          <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600">✕</button>
+          <div className="flex items-center gap-4">
+            {arSupported && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase tracking-wider">
+                AR Ready
+              </span>
+            )}
+            <button onClick={onClose} aria-label="Close modal" className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600">✕</button>
+          </div>
         </header>
         <main className="flex-1 bg-slate-900 relative overflow-hidden">
           <ImmersiveCanvas 
+            ref={canvasRef}
             onInitialize={handleInitialize} 
             onUpdate={handleUpdate} 
           />
         </main>
         <footer className="border-t border-slate-200 px-8 py-4 bg-white flex justify-between items-center text-xs text-slate-500">
-           <span>Position: [{parsed.position.map(v => v.toFixed(2)).join(", ")}]</span>
-           <span>Quaternion: [{parsed.rotation.map(v => v.toFixed(2)).join(", ")}]</span>
+           <div className="flex gap-6">
+             <span>Position: [{parsed.position.map(v => v.toFixed(2)).join(", ")}]</span>
+             <span>Quaternion: [{parsed.rotation.map(v => v.toFixed(2)).join(", ")}]</span>
+           </div>
+           <div className="flex gap-2">
+             {arSupported && (
+               <button 
+                 onClick={() => canvasRef.current?.enterAR()}
+                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+               >
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                 </svg>
+                 Enter AR
+               </button>
+             )}
+           </div>
         </footer>
       </div>
     </div>

@@ -143,3 +143,21 @@
 - [ ] P15-3 PWA Support & Offline Execution
 - [ ] P15-4 Native Bridge for Sensors (Camera/GPS)
 - [ ] P15-5 Final Verification & Public Alpha Kickoff
+
+## P16 Queue (System Identification & Physics-Based Modeling)
+- [x] P16-1 Plant Model Library (DC Motor, Thermal, Mechanical templates)
+- [x] P16-2 System Identification Blocks
+- [x] P16-2a RLS Estimator Block (Recursive Least Squares)
+- [x] P16-2b Online Frequency Response Estimation Sink
+- [x] P16-2c System Identification Validation Suite
+- [x] P16-3 Immersive 3D Visualization
+- [x] P16-3a Three.js Immersive Canvas Integration
+- [x] P16-3b 3D Rigid Body Sink (Position/Orientation mapping)
+- [ ] P16-4 Final Verification & Deployment
+
+## 🚨 WATCHDOG RECOVERY FLAG (2026-04-15 22:32 CET)
+**Status:** ⚠️ RECOVERY MODE
+**Issue:** Matrix sessions experiencing repeated 503 Service Unavailable errors from Google Gemini API.
+**Action Required:** Switch all sub-agent spawns to OpenAI Codex (gpt-5.3-codex) immediately.
+**Current Task:** P16-3b complete. Proceed to P16-4 (Final Verification).
+**Working Changes:** Uncommitted files exist — git status shows 4 modified/new files.
