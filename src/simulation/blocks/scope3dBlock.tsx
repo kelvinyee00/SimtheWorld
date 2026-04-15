@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import * as THREE from "three";
 import { SimulationBlockDefinition } from "@/src/simulation/types";
+import { ImmersiveCanvas } from "@/src/components/immersive/ImmersiveCanvas";
 
 export const SCOPE_3D_BLOCK_TYPE = "scope-3d" as const;
 
@@ -91,53 +93,40 @@ export function Scope3DView({ state, className }: { state: unknown, className?: 
 }
 
 export function Scope3DModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: unknown }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [rotation, setRotation] = useState(0);
   const parsed = (state as Scope3DState) || { samples: [] };
+  const lineRef = useRef<THREE.Line | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const interval = setInterval(() => setRotation(r => r + 0.02), 50);
-    return () => clearInterval(interval);
-  }, [open]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !open) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (parsed.samples.length < 2) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const scale = 50;
-
-    const project = (p: Point3D) => {
-      // Rotation around Z axis
-      const rx = p.x * Math.cos(rotation) - p.y * Math.sin(rotation);
-      const ry = p.x * Math.sin(rotation) + p.y * Math.cos(rotation);
-      
-      return {
-        px: centerX + (rx - ry) * scale,
-        py: centerY + (rx + ry) * 0.5 * scale - p.z * scale,
-      };
-    };
-
-    ctx.beginPath();
-    ctx.strokeStyle = "#0284c7";
-    ctx.lineWidth = 2;
-
-    const first = project(parsed.samples[0]);
-    ctx.moveTo(first.px, first.py);
-
-    parsed.samples.forEach((p) => {
-      const { px, py } = project(p);
-      ctx.lineTo(px, py);
+  // Memoize positions calculation
+  const positions = useMemo(() => {
+    const arr = new Float32Array(parsed.samples.length * 3);
+    parsed.samples.forEach((p, i) => {
+      arr[i * 3] = p.x;
+      arr[i * 3 + 1] = p.y;
+      arr[i * 3 + 2] = p.z;
     });
-    ctx.stroke();
-  }, [open, parsed.samples, rotation]);
+    return arr;
+  }, [parsed.samples]);
+
+  const handleInitialize = (scene: THREE.Scene) => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 2 });
+    const line = new THREE.Line(geometry, material);
+    scene.add(line);
+    lineRef.current = line;
+  };
+
+  const handleUpdate = (scene: THREE.Scene, camera: THREE.PerspectiveCamera, clock: THREE.Clock) => {
+    if (lineRef.current) {
+      // Update geometry if positions changed
+      lineRef.current.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      lineRef.current.geometry.attributes.position.needsUpdate = true;
+      
+      // Auto-rotation
+      const time = clock.getElapsedTime();
+      scene.rotation.y = time * 0.2;
+    }
+  };
 
   if (!open) return null;
 
@@ -146,13 +135,16 @@ export function Scope3DModal({ open, onClose, state }: { open: boolean, onClose:
       <div className="flex h-[600px] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <header className="flex items-center justify-between border-b border-slate-200 px-8 py-5 bg-slate-50">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">3D Trajectory Viewer</h2>
-            <p className="text-xs text-slate-500">Auto-rotating projection of (X, Y, Z) signal triplet</p>
+            <h2 className="text-xl font-bold text-slate-800">Immersive 3D Viewer</h2>
+            <p className="text-xs text-slate-500">Real-time WebGL visualization with WebXR support</p>
           </div>
           <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600">✕</button>
         </header>
-        <main className="flex-1 bg-slate-50 relative overflow-hidden">
-          <canvas ref={canvasRef} width={800} height={500} className="w-full h-full" />
+        <main className="flex-1 bg-black relative overflow-hidden">
+          <ImmersiveCanvas 
+            onInitialize={handleInitialize} 
+            onUpdate={handleUpdate} 
+          />
         </main>
         <footer className="border-t border-slate-200 px-8 py-4 bg-white flex justify-between items-center text-xs text-slate-500">
            <span>Samples: {parsed.samples.length}</span>
