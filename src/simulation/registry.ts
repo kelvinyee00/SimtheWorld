@@ -40,6 +40,7 @@ import { ProfilerBlock, PROFILER_BLOCK_TYPE } from "@/src/simulation/blocks/prof
 import { BLEBlock, BLE_BLOCK_TYPE } from "@/src/simulation/blocks/bleBlock";
 import { HeartRateBlock, HEART_RATE_BLOCK_TYPE, BatteryLevelBlock, BATTERY_LEVEL_BLOCK_TYPE } from "@/src/simulation/blocks/specializedBleBlocks";
 import { WebSocketSendBlock, WEBSOCKET_SEND_BLOCK_TYPE, WebSocketReceiveBlock, WEBSOCKET_RECEIVE_BLOCK_TYPE } from "@/src/simulation/blocks/webSocketBlocks";
+import { FrequencyResponseSinkBlock } from "@/src/simulation/blocks/frequencyResponseSink";
 import { BlockRegistry, SimulationBlockDefinition } from "@/src/simulation/types";
 
 export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
@@ -92,13 +93,14 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
   [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
   [RLS_ESTIMATOR_BLOCK_TYPE]: RLSEstimatorBlock,
+  ["frequencyResponseSink"]: FrequencyResponseSinkBlock,
 };
 
 export function createBlockRegistry(definitions: SimulationBlockDefinition[]): BlockRegistry {
   const registry: BlockRegistry = {};
   for (const definition of definitions) {
     if (registry[definition.type]) {
-      throw new Error(`Duplicate block registration for type '${definition.type}'.`);
+      throw new Error(`Duplicate block registration for type '%s'.`);
     }
     registry[definition.type] = definition;
   }
