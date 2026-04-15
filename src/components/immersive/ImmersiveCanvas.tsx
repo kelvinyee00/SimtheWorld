@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 
 interface ImmersiveCanvasProps {
   onInitialize?: (scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer) => void;
@@ -12,6 +13,7 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const clockRef = useRef<THREE.Clock>(new THREE.Clock());
+  const [isXRSupported, setIsXRSupported] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -42,6 +44,21 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
     
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    // --- WebXR Support Check & Button ---
+    if ('xr' in navigator) {
+      (navigator as any).xr.isSessionSupported('immersive-vr').then((supported: boolean) => {
+        setIsXRSupported(supported);
+        if (supported && containerRef.current) {
+          const vrButton = VRButton.createButton(renderer);
+          vrButton.style.position = 'absolute';
+          vrButton.style.bottom = '20px';
+          vrButton.style.left = '50%';
+          vrButton.style.transform = 'translateX(-50%)';
+          containerRef.current.appendChild(vrButton);
+        }
+      });
+    }
 
     // --- Basic Lighting ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -88,8 +105,12 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
     return () => {
       window.removeEventListener('resize', handleResize);
       renderer.setAnimationLoop(null);
-      if (containerRef.current && renderer.domElement) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (containerRef.current) {
+        if (renderer.domElement && containerRef.current.contains(renderer.domElement)) {
+           containerRef.current.removeChild(renderer.domElement);
+        }
+        const buttons = containerRef.current.querySelectorAll('button');
+        buttons.forEach(b => b.remove());
       }
       // Dispose resources
       renderer.dispose();
@@ -100,7 +121,7 @@ export const ImmersiveCanvas: React.FC<ImmersiveCanvasProps> = ({ onInitialize, 
   return (
     <div 
       ref={containerRef} 
-      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }} 
+      className="w-full h-full relative overflow-hidden"
     />
   );
 };

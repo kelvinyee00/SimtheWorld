@@ -27,6 +27,8 @@ import { FromBlock, FROM_BLOCK_TYPE } from "@/src/simulation/blocks/fromBlock";
 import { Lut1DBlock, LUT_1D_BLOCK_TYPE, Lut2DBlock, LUT_2D_BLOCK_TYPE } from "@/src/simulation/blocks/lutBlock";
 import { SpectrumAnalyzerBlock, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
 import { Scope3DBlock, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
+import { RigidBody3DBlock, RIGID_BODY_3D_BLOCK_TYPE } from "@/src/simulation/blocks/rigidBody3dBlock";
+import { RigidBodySinkBlock, RIGID_BODY_SINK_BLOCK_TYPE } from "@/src/simulation/blocks/rigidBodySinkBlock";
 import { LampBlock, LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { KnobBlock, KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SliderBlock, SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
@@ -79,6 +81,8 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [LAMP_BLOCK_TYPE]: LampBlock,
   [SPECTRUM_ANALYZER_BLOCK_TYPE]: SpectrumAnalyzerBlock,
   [SCOPE_3D_BLOCK_TYPE]: Scope3DBlock,
+  [RIGID_BODY_3D_BLOCK_TYPE]: RigidBody3DBlock,
+  [RIGID_BODY_SINK_BLOCK_TYPE]: RigidBodySinkBlock,
   [KNOB_BLOCK_TYPE]: KnobBlock,
   [SLIDER_BLOCK_TYPE]: SliderBlock,
   [MATRIX_PRODUCT_BLOCK_TYPE]: MatrixProductBlock,
