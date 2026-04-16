@@ -62,7 +62,8 @@ import { TRUTH_TABLE_BLOCK_TYPE } from "@/src/simulation/blocks/truthTableBlock"
 import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
-import { SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
+import { SCOPE_3D_BLOCK_TYPE, Scope3DView, Scope3DModal } from "@/src/simulation/blocks/scope3dBlock";
+import { RIGID_BODY_SINK_BLOCK_TYPE, RigidBodyView, RigidBodyModal } from "@/src/simulation/blocks/rigidBodySinkBlock";
 import { KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import {
@@ -183,6 +184,7 @@ const NODE_TYPES: NodeTypes = {
   [LAMP_BLOCK_TYPE]: CustomBlockNode,
   [SPECTRUM_ANALYZER_BLOCK_TYPE]: CustomBlockNode,
   [SCOPE_3D_BLOCK_TYPE]: CustomBlockNode,
+  [RIGID_BODY_SINK_BLOCK_TYPE]: CustomBlockNode,
 };
 
 /**
@@ -227,6 +229,7 @@ const LIBRARY_BLOCKS = [
   { label: "Lamp", type: LAMP_BLOCK_TYPE, category: "General" },
   { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE, category: "General" },
   { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE, category: "General" },
+  { label: "Rigid Body Sink", type: RIGID_BODY_SINK_BLOCK_TYPE, category: "General" },
   { label: "Display", type: DISPLAY_BLOCK_TYPE, category: "General" },
   { label: "Scope", type: SCOPE_BLOCK_TYPE, category: "General" },
 ] as const;
@@ -361,6 +364,7 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Spectrum", windowSize: 128 };
     case SCOPE_3D_BLOCK_TYPE:
       return { label: "3D Scope", maxPoints: 500 };
+  case RIGID_BODY_SINK_BLOCK_TYPE: return { label: "Rigid Body Sink" };
     case TRUTH_TABLE_BLOCK_TYPE:
       return {
         label: "Truth Table",
@@ -859,6 +863,8 @@ export default function Home() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingSubsystemId, setEditingSubsystemId] = useState<string | null>(null);
+  const [activeScope3DId, setActiveScope3DId] = useState<string | null>(null);
+  const [activeRigidBodyId, setActiveRigidBodyId] = useState<string | null>(null);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
   const [isTracePanelOpen, setIsTracePanelOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -3624,7 +3630,11 @@ const searchResults = useMemo(() => {
               onEdgesChange={handleEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
-              onNodeDoubleClick={(_, node) => { if(node.type === SUBSYSTEM_BLOCK_TYPE) setEditingSubsystemId(node.id); }}
+              onNodeDoubleClick={(_, node) => { 
+                if (node.type === SUBSYSTEM_BLOCK_TYPE) setEditingSubsystemId(node.id);
+                if (node.type === SCOPE_3D_BLOCK_TYPE) setActiveScope3DId(node.id);
+                if (node.type === RIGID_BODY_SINK_BLOCK_TYPE) setActiveRigidBodyId(node.id);
+              }}
               onDragOver={onCanvasDragOver}
               onDrop={onCanvasDrop}
               defaultEdgeOptions={{
