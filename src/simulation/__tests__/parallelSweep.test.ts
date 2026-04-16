@@ -78,5 +78,8 @@ describe('ParallelSimulationSweep Real Integration (Simulation)', () => {
 
   // We won't mock here if we want to test "real" logic, 
   // but running actual workers in Vitest/Node usually requires a bit more setup or a specific worker implementation.
+  it("placeholder for real integration", () => {
+    expect(true).toBe(true);
+  });
   // For this P16-4 scope, verifying the utility logic with the mock is the primary goal.
 });

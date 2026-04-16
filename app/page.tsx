@@ -63,7 +63,8 @@ import { GAUGE_BLOCK_TYPE } from "@/src/simulation/blocks/gaugeBlock";
 import { LAMP_BLOCK_TYPE } from "@/src/simulation/blocks/lampBlock";
 import { SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
 import { SCOPE_3D_BLOCK_TYPE, Scope3DView, Scope3DModal } from "@/src/simulation/blocks/scope3dBlock";
-import { RIGID_BODY_SINK_BLOCK_TYPE, RigidBodyView, RigidBodyModal } from "@/src/simulation/blocks/rigidBodySinkBlock";
+import { RIGID_BODY_SINK_BLOCK_TYPE } from "@/src/simulation/blocks/rigidBodySinkBlock";
+import { RigidBodySinkView, RigidBodySinkModal } from "@/src/simulation/blocks/rigidBodySink";
 import { KNOB_BLOCK_TYPE } from "@/src/simulation/blocks/knobBlock";
 import { SLIDER_BLOCK_TYPE } from "@/src/simulation/blocks/sliderBlock";
 import {
