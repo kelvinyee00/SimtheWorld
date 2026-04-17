@@ -1581,3 +1581,14 @@
 - Implemented client-side API service for server persistence.
 - Added comprehensive unit tests for server-side persistence (121 tests passing total).
 - Verification: npm run test ✅, npm run lint ✅, npm run build ✅.
+
+---
+**Date/Time:** 2026-04-17 12:15 CEST
+**Task Executed:** P17-1 & P17-2 System Hardening and UI Alignment
+**Files Modified/Created:** src/persistence/index.ts, src/persistence/api.ts, src/persistence/serverApi.ts, src/persistence/sqlite.ts, src/canvas/customBlockNode.tsx, app/page.tsx
+**Notes/Bugs:**
+- Finalized P17 workstream:
+  - Validated Hybrid Persistence Model (Local/Cloud/Server).
+  - Fixed duplicate "Rigid Body Sink" entries in Library UI.
+  - Aligned fetchModel implementation with Vitest test expectations.
+  - Verified 100% test pass (240/240 tests) and production build stability.
