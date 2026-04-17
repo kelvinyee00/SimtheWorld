@@ -1571,3 +1571,13 @@
 - Updated documentation and performance metrics.
 - All phase P14 milestones delivered.
 - Project synchronized to master.
+
+---
+**Date/Time:** 2026-04-17 09:20 CEST
+**Task Executed:** P15-1 Server-side Simulation Persistence Verified
+**Files Modified/Created:** src/persistence/sqlite.ts, src/persistence/api.ts, src/persistence/serverApi.ts, src/persistence/index.ts, src/persistence/__tests__/serverPersistence.test.ts
+**Notes/Bugs:**
+- P15-1: Server-side Simulation Persistence - Hardened SQLite schema with versioning and finalized CRUD API.
+- Implemented client-side API service for server persistence.
+- Added comprehensive unit tests for server-side persistence (121 tests passing total).
+- Verification: npm run test ✅, npm run lint ✅, npm run build ✅.

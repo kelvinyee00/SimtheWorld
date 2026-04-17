@@ -231,6 +231,7 @@ const LIBRARY_BLOCKS = [
   { label: "Spectrum Analyzer", type: SPECTRUM_ANALYZER_BLOCK_TYPE, category: "General" },
   { label: "3D Scope", type: SCOPE_3D_BLOCK_TYPE, category: "General" },
   { label: "Rigid Body Sink", type: RIGID_BODY_SINK_BLOCK_TYPE, category: "General" },
+  { label: "Rigid Body Sink", type: RIGID_BODY_SINK_BLOCK_TYPE, category: "General" },
   { label: "Display", type: DISPLAY_BLOCK_TYPE, category: "General" },
   { label: "Scope", type: SCOPE_BLOCK_TYPE, category: "General" },
 ] as const;
@@ -365,6 +366,8 @@ function makeNodeData(type: string): Record<string, unknown> {
       return { label: "Spectrum", windowSize: 128 };
     case SCOPE_3D_BLOCK_TYPE:
       return { label: "3D Scope", maxPoints: 500 };
+    case RIGID_BODY_SINK_BLOCK_TYPE:
+      return { label: "Rigid Body Sink" };
   case RIGID_BODY_SINK_BLOCK_TYPE: return { label: "Rigid Body Sink" };
     case TRUTH_TABLE_BLOCK_TYPE:
       return {

@@ -1,6 +1,8 @@
 "use client";
 import { SpectrumAnalyzerView, SpectrumAnalyzerModal, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
 import { Scope3DView, Scope3DModal, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
+import { RigidBodySinkView, RigidBodySinkModal } from "@/src/simulation/blocks/rigidBodySink";
+import { RIGID_BODY_SINK_BLOCK_TYPE } from "@/src/simulation/blocks/rigidBodySinkBlock";
 
 import { CSSProperties, memo, useMemo, useState } from "react";
 import { Handle, NodeProps, Position } from "reactflow";
@@ -179,6 +181,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [isSpectrumModalOpen, setIsSpectrumModalOpen] = useState(false);
   const [isScope3dModalOpen, setIsScope3dModalOpen] = useState(false);
+  const [isRigidBodyModalOpen, setIsRigidBodyModalOpen] = useState(false);
 
   const isCounter = type === COUNTER_BLOCK_TYPE;
   const isDisplay = type === DISPLAY_BLOCK_TYPE;
@@ -209,6 +212,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isLamp = type === LAMP_BLOCK_TYPE;
   const isSpectrum = type === SPECTRUM_ANALYZER_BLOCK_TYPE;
   const isScope3d = type === SCOPE_3D_BLOCK_TYPE;
+  const isRigidBodySink = type === RIGID_BODY_SINK_BLOCK_TYPE;
   const isKnob = type === KNOB_BLOCK_TYPE;
   const isSlider = type === SLIDER_BLOCK_TYPE;
   const isMathNode =
@@ -228,8 +232,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDiscreteTransfer ||
     isLeadLag ||
     isGoto ||
-    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider;
-  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp || isSpectrum || isScope3d;
+    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider || isRigidBodySink;
+  const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp || isSpectrum || isScope3d || isRigidBodySink;
 
   const accentColor = (isCounter || isKnob || isSlider) ? SOURCE_ORANGE : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
@@ -352,6 +356,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
+        {isRigidBodySink ? (
+          <div onDoubleClick={() => setIsRigidBodyModalOpen(true)} className="cursor-zoom-in">
+            <RigidBodySinkView state={internalState} className="border-indigo-200 bg-indigo-50/70" />
+          </div>
+        ) : null}
         {isScope3d ? (
           <div onDoubleClick={() => setIsScope3dModalOpen(true)} className="cursor-zoom-in">
             <Scope3DView state={internalState} className="border-sky-200 bg-sky-50/70" />
@@ -483,6 +492,24 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             <Handle
               type="target"
               id="in2"
+              position={Position.Left}
+              style={withTop(handleStyle, "68%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+          </>
+        )}
+        {isRigidBodySink && (
+          <>
+            <Handle
+              type="target"
+              id="pos"
+              position={Position.Left}
+              style={withTop(handleStyle, "33%")}
+              className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
+            />
+            <Handle
+              type="target"
+              id="rot"
               position={Position.Left}
               style={withTop(handleStyle, "68%")}
               className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
@@ -654,6 +681,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
         open={isScope3dModalOpen}
         onClose={() => setIsScope3dModalOpen(false)}
         state={internalState}
+      />
+      <RigidBodySinkModal
+        open={isRigidBodyModalOpen}
+        onClose={() => setIsRigidBodyModalOpen(false)}
+        state={internalState as any}
       />
     </>
   );

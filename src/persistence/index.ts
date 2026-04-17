@@ -1,13 +1,15 @@
 import { PersistedModelV3, parseModelDocument, saveModelToLocalStorage, loadModelFromLocalStorage } from "./modelPersistence";
 import { saveModelToSupabase, loadModelFromSupabase, listUserModels, type SupabaseModelMetadata } from "./supabasePersistence";
+import { saveServerModel, fetchServerModel, listServerModels, deleteServerModel } from "./serverApi";
 
 /**
  * Unified persistence interface for web-simulink models.
- * Handles LocalStorage (anonymous) and Supabase (cloud) storage.
+ * Handles LocalStorage (anonymous), Supabase (cloud auth), and Server (SQLite/Express).
  */
 
 export interface ModelSaveOptions {
   cloud?: boolean;
+  target?: 'local' | 'cloud' | 'server';
   modelId?: string;
   modelName?: string;
   description?: string;
@@ -23,22 +25,27 @@ export async function transitionLocalToCloud(): Promise<{ success: boolean; mode
     return { success: false, error: "No local model found to transition." };
   }
 
-  return persistModel(localModel, { cloud: true, modelName: localModel.metadata.modelName });
+  return persistModel(localModel, { target: 'cloud', modelName: localModel.metadata.modelName });
 }
 
 /**
- * Persist a model to either cloud or local storage.
- * If cloud is requested but fails (e.g. not logged in), it does NOT fallback to local automatically
- * to ensure user intent for cloud storage is respected or explicitly handled.
+ * Persist a model to the specified target.
+ * Defaults to 'local' if no target is specified.
  */
 export async function persistModel(
   model: PersistedModelV3,
   options: ModelSaveOptions = {}
 ): Promise<{ success: boolean; modelId?: string; error?: string }> {
   try {
-    if (options.cloud) {
+    const target = options.target || (options.cloud ? 'cloud' : (options.modelId ? 'cloud' : 'local'));
+
+    if (target === 'cloud') {
       const modelId = await saveModelToSupabase(model, options.modelId);
       return { success: true, modelId };
+    } else if (target === 'server') {
+      const id = options.modelId || crypto.randomUUID();
+      await saveServerModel(id, options.modelName || 'Untitled Model', model);
+      return { success: true, modelId: id };
     } else {
       const raw = JSON.stringify(model);
       saveModelToLocalStorage(raw);
@@ -51,18 +58,21 @@ export async function persistModel(
 }
 
 /**
- * Load a model from cloud or local storage.
+ * Load a model from a specific target or fallback chain.
  */
 export async function fetchModel(
-  modelId?: string
+  modelId?: string,
+  target: 'local' | 'cloud' | 'server' = 'local'
 ): Promise<PersistedModelV3 | null> {
-  if (modelId) {
-    try {
+  try {
+    if (target === 'cloud' && modelId) {
       return await loadModelFromSupabase(modelId);
-    } catch (err) {
-      console.error("Failed to load model from cloud:", err);
-      return null;
+    } else if (target === 'server' && modelId) {
+      return await fetchServerModel(modelId);
     }
+  } catch (err) {
+    console.error(`Failed to load model from ${target}:`, err);
+    return null;
   }
 
   return loadModelFromLocalStorage();
@@ -75,6 +85,10 @@ export {
   loadModelFromSupabase,
   listUserModels,
   parseModelDocument,
+  saveServerModel,
+  fetchServerModel,
+  listServerModels,
+  deleteServerModel,
   type SupabaseModelMetadata,
   type PersistedModelV3
 };

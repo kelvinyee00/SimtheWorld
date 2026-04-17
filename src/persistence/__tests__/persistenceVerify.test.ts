@@ -82,7 +82,7 @@ describe("Persistence Verification", () => {
     it("should load from cloud if modelId is provided", async () => {
       vi.mocked(supabasePersistence.loadModelFromSupabase).mockResolvedValue(mockModel);
       
-      const result = await fetchModel("cloud-id-123");
+      const result = await fetchModel("cloud-id-123", "cloud");
       
       expect(result).toEqual(mockModel);
       expect(supabasePersistence.loadModelFromSupabase).toHaveBeenCalledWith("cloud-id-123");
@@ -92,7 +92,7 @@ describe("Persistence Verification", () => {
     it("should return null and log error if cloud load fails", async () => {
       vi.mocked(supabasePersistence.loadModelFromSupabase).mockRejectedValue(new Error("Cloud load error"));
       
-      const result = await fetchModel("cloud-id-123");
+      const result = await fetchModel("cloud-id-123", "cloud");
       
       expect(result).toBeNull();
     });
