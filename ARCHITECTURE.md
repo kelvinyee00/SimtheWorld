@@ -610,3 +610,27 @@ Constraints for P0:
 - Availability: 99.9% uptime for cloud persistence layer.
 - UX: Mobile-first interaction audit (touch targets, gesture support).
 - Connectivity: Zero-latency dashboard sync over local network.
+
+---
+
+## 30) Iteration 17: Edge Persistence & Industrial Hardening (P17)
+
+### 30.1 Hybrid Persistence Model
+- **SQLite Edge Storage:** Introduction of a local-server persistence layer for environments where Supabase/Cloud might be restricted or latency is a concern.
+- **Unified API Interface:** A single entry point for `local`, `cloud`, and `server` targets, allowing seamless model migration and retrieval.
+
+### 30.2 UI/UX Refinement for Advanced Sinks
+- **RigidBodySink Enhancement:** Multi-input handles for separate Position and Rotation signals.
+- **Visual Feedback:** 3D rendering integration within the standard block layout.
+
+---
+
+## 31) Iteration 18: System Optimization & Advanced Analytics (P18)
+
+### 31.1 WASM-accelerated Simulation Engine
+- **AssemblyScript/Rust Integration:** Transition core math and scheduling loops to WebAssembly for near-native performance.
+- **SIMD Utilization:** Leverage SIMD instructions for vectorized signal operations.
+
+### 31.2 Advanced Control & Analytics
+- **Sensitivity Analysis:** Automated parameter perturbation to identify critical system sensitivities.
+- **MPC Foundation:** Basic Model Predictive Control blocks supporting quadratic programming (QP) solvers in-browser.

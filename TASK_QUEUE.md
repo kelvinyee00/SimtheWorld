@@ -160,3 +160,8 @@
 **Issue:** Matrix sessions experienced repeated 503 Service Unavailable errors from Google Gemini API.
 **Resolution:** Completed P16-4 Verification & Deployment. All validation passing.
 **Final P16 Commit:** `2de39eb`
+
+## P18 Queue (System Optimization & Advanced Analytics)
+- [ ] P18-1: WASM-accelerated Simulation Engine
+- [ ] P18-2: Signal Sensitivity Analysis Toolbox
+- [ ] P18-3: Model Predictive Control (MPC) Foundation
