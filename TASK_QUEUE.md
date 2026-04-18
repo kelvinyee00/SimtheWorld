@@ -138,7 +138,7 @@
 - [x] P14-5 Final Verification & Deployment
 
 ## P15 Queue (Cloud Deployment & Mobile UX v2)
-- [ ] P15-1 Server-side Simulation Persistence
+- [x] P15-1 Server-side Simulation Persistence
 - [ ] P15-2 Real-time Dashboard Sync (Socket.io)
 - [ ] P15-3 PWA Support & Offline Execution
 - [ ] P15-4 Native Bridge for Sensors (Camera/GPS)
@@ -154,6 +154,19 @@
 - [x] P16-3a Three.js Immersive Canvas Integration
 - [x] P16-3b 3D Rigid Body Sink (Position/Orientation mapping)
 - [x] P16-4 Final Verification & Deployment
+
+## 🚨 WATCHDOG ALERT (ACTIVE 2026-04-18 13:58 CET)
+**Status:** 🔴 BLOCKED — API QUOTA EXHAUSTED
+**Issue:** Matrix subagent sessions "matrix-p15-recovery-run" and "p15-4-sensors-complete-retry" hit Gemini 429 RESOURCE_EXHAUSTED errors 4 hours ago. No progress since.
+**Rate Limit:** `generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count` exceeded (2M tokens/min limit)
+**Action Required:** 
+1. Switch to Codex (gpt-5.3-codex) for ALL subagent spawns
+2. Kickoff P15 workstream (currently all unstarted)
+3. Do NOT use Gemini until quota resets
+
+**Last Healthy State:** P18 COMPLETE (April 17, 18:30 CEST)
+
+---
 
 ## 🚨 WATCHDOG RECOVERY FLAG (RESOLVED 2026-04-15 23:45 CET)
 **Status:** ✅ HEALTHY

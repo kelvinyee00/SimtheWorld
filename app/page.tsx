@@ -78,11 +78,14 @@ import {
   saveSimulationRunRecord,
 } from "@/src/persistence/simulationRunStore";
 import {
+  saveModelToLocalStorage,
   loadModelFromLocalStorage,
   parseModelDocument,
-  saveModelToLocalStorage,
-  serializeModelV3,
-} from "@/src/persistence/modelPersistence";
+  type PersistedModelV3,
+  saveServerModel,
+  fetchServerModel,
+  listServerModels,
+} from "@/src/persistence/index";
 import {
   saveModelToSupabase,
   loadModelFromSupabase,
@@ -96,6 +99,7 @@ import { parseNumericExpression } from "@/src/simulation/expressions";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 import { useCollaborationSync } from "@/src/collaboration/collaborationSync";
 import { createClient } from "@/src/utils/supabase/client";
+import { SweepManager } from "@/src/components/SweepManager";
 
 import { OfflineIndicator } from "@/src/components/offline/OfflineIndicator";
 import { User } from "@supabase/supabase-js";
@@ -473,10 +477,14 @@ function triggerTextDownload(params: { fileName: string; extension: "json" | "cs
 
 export default function Home() {
   const [cloudModels, setCloudModels] = useState<SupabaseModelMetadata[]>([]);
+  const [serverModels, setServerModels] = useState<Array<{ id: string; name: string; version: number; updated_at: string }>>([]);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isCloudPanelOpen, setIsCloudPanelOpen] = useState(false);
+  const [isSweepModalOpen, setIsSweepModalOpen] = useState(false);
   const [currentCloudModelId, setCurrentCloudModelId] = useState<string | null>(null);
+  const [currentServerModelId, setCurrentServerModelId] = useState<string | null>(null);
+  const [isServerPanelOpen, setIsServerPanelOpen] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -731,7 +739,9 @@ export default function Home() {
 
   useEffect(() => {
     if (!hasInitializedModelPersistenceRef.current) return;
-    saveModelToLocalStorage(serializeModelV3({
+    saveModelToLocalStorage(JSON.stringify({
+      schemaVersion: 3,
+      metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Autosave' },
       nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
       edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
       timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
@@ -757,16 +767,54 @@ export default function Home() {
   const refreshCloudModels = useCallback(async () => {
     try { setCloudModels(await listUserModels()); } catch { setModelActionMessage("Cloud refresh failed."); }
   }, []);
-  useEffect(() => { refreshCloudModels(); }, [refreshCloudModels]);
+  
+  const refreshServerModels = useCallback(async () => {
+    try { setServerModels(await listServerModels()); } catch { setModelActionMessage("Edge Server refresh failed."); }
+  }, []);
 
-  const saveToCloud = useCallback(async () => {
+  useEffect(() => { refreshCloudModels(); refreshServerModels(); }, [refreshCloudModels, refreshServerModels]);
+
+  const saveToServer = useCallback(async () => {
     try {
-      const serialized = serializeModelV3({
+      const model: PersistedModelV3 = {
+        schemaVersion: 3,
+        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Edge Model' },
         nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
         edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
         timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
-      });
-      const id = await saveModelToSupabase(parseModelDocument(serialized), currentCloudModelId || undefined);
+      };
+      const id = currentServerModelId || crypto.randomUUID();
+      await saveServerModel(id, 'Edge Model', model);
+      setCurrentServerModelId(id);
+      setModelId(id);
+      setModelActionMessage("Edge Server save success.");
+      refreshServerModels();
+    } catch (e: any) { setModelActionMessage(`Edge Server save failed: ${e.message}`); }
+  }, [nodes, edges, runtime, currentServerModelId, refreshServerModels, setModelId]);
+
+  const loadFromServer = useCallback(async (id: string) => {
+    try {
+      const p = await fetchServerModel(id);
+      setNodes(p.nodes.map(n => ({ ...n, type: n.type as any })));
+      setEdges(p.edges.map(e => ({ ...e, type: e.type ?? "straight" })));
+      setTiming(p.timing);
+      setCurrentServerModelId(id);
+      setModelId(id);
+      setIsServerPanelOpen(false);
+      setModelActionMessage("Edge Server model loaded.");
+    } catch (e: any) { setModelActionMessage(`Edge Server load failed: ${e.message}`); }
+  }, [setNodes, setEdges, setTiming, setModelId]);
+
+  const saveToCloud = useCallback(async () => {
+    try {
+      const model: PersistedModelV3 = {
+        schemaVersion: 3,
+        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Cloud Model' },
+        nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
+        edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
+        timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
+      };
+      const id = await saveModelToSupabase(model, currentCloudModelId || undefined);
       setCurrentCloudModelId(id);
       setModelId(id);
       setModelActionMessage("Cloud save success.");
@@ -789,7 +837,9 @@ export default function Home() {
 
   const exportModelDocument = useCallback(() => {
     try {
-      const s = serializeModelV3({
+      const s = JSON.stringify({
+        schemaVersion: 3,
+        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Exported Model' },
         nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
         edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
         timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
@@ -862,6 +912,7 @@ export default function Home() {
                 <input type="number" step="0.001" value={stepTimeInputValue} onFocus={() => setIsEditingStepTime(true)} onChange={e => setStepTimeSecondsInput(e.target.value)} onBlur={e => { commitTimingValue("step", e.target.value); setIsEditingStepTime(false); }} onKeyDown={e => onTimingInputKeyDown(e, "step")} className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700" />
                 <span className="text-slate-500">s</span>
               </label>
+              <button onClick={() => { refreshServerModels(); setIsServerPanelOpen(true); }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edge Server</button>
               <button onClick={user ? saveToCloud : () => window.location.href="/login"} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">Save</button>
               <button onClick={() => { refreshCloudModels(); setIsCloudPanelOpen(true); }} className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700">Cloud</button>
               <button onClick={() => sendCommand("run")} className="rounded-lg border border-emerald-300 bg-emerald-100 px-3 py-2 text-sm font-bold text-emerald-800">RUN</button>
@@ -970,6 +1021,33 @@ export default function Home() {
                     ))}
                   </tbody>
                 </table>
+              </main>
+            </div>
+          </div>
+        )}
+
+        
+        {isServerPanelOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <header className="flex items-center justify-between border-b px-6 py-4 bg-slate-50 font-bold">
+                Edge Server Models
+                <div className="flex gap-2">
+                  <button onClick={saveToServer} className="bg-emerald-600 text-white px-3 py-1 rounded text-xs">Save Current</button>
+                  <button onClick={() => setIsServerPanelOpen(false)}>✕</button>
+                </div>
+              </header>
+              <main className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                {serverModels.map(m => (
+                  <div key={m.id} className="flex justify-between p-3 border rounded-lg hover:bg-indigo-50">
+                    <div className="flex flex-col truncate pr-4">
+                      <span className="font-bold">{m.name}</span>
+                      <span className="text-[10px] text-slate-400">ID: {m.id.slice(0, 8)}... | Updated: {new Date(m.updated_at).toLocaleString()}</span>
+                    </div>
+                    <button onClick={() => loadFromServer(m.id)} className="bg-indigo-600 text-white px-3 py-1 rounded text-xs self-center">Load</button>
+                  </div>
+                ))}
+                {serverModels.length === 0 && <p className="text-center text-slate-500 text-xs py-8 italic">No models found on server.</p>}
               </main>
             </div>
           </div>

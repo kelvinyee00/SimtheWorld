@@ -26,6 +26,21 @@ export async function getDb() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS simulation_runs (
+      id TEXT PRIMARY KEY,
+      model_id TEXT NOT NULL,
+      model_name TEXT NOT NULL,
+      model_snapshot TEXT NOT NULL, 
+      status TEXT NOT NULL,
+      tick_count INTEGER NOT NULL,
+      final_time_ms REAL NOT NULL,
+      results TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(model_id) REFERENCES models(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_runs_model_id ON simulation_runs(model_id);
+
     CREATE TRIGGER IF NOT EXISTS update_models_updated_at 
     AFTER UPDATE ON models
     BEGIN

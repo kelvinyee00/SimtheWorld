@@ -1602,3 +1602,12 @@
 - P18-2: Signal Sensitivity Analysis Toolbox - Implemented Monte-Carlo sweep logic with parallel Web Workers.
 - P18-3: Model Predictive Control (MPC) Foundation - Added Linear-Quadratic Regulator (LQR) and MPC solver blocks.
 - Verified 100% test pass (240/240 tests) in main development environment.
+
+---
+**Date/Time:** 2026-04-18 19:15 CEST
+**Task Executed:** P15-1 Server-side Simulation Persistence Verified (Recovery)
+**Files Modified/Created:** TASK_QUEUE.md, CHANGELOG.md
+**Notes/Bugs:**
+- Verified P15-1 implementation: SQLite schema, CRUD API, and client-side integration.
+- Run validation: npm run test (240/240 passing), npm run lint (warnings only), npm run build (successful).
+- Recovered from API quota exhaustion stall; marked P15-1 complete in TASK_QUEUE.md.
