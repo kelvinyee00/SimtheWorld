@@ -1,6 +1,7 @@
 "use client";
 import { SpectrumAnalyzerView, SpectrumAnalyzerModal, SPECTRUM_ANALYZER_BLOCK_TYPE } from "@/src/simulation/blocks/spectrumAnalyzerBlock";
-import { Scope3DView, Scope3DModal, SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
+import { Scope3DView, Scope3DModal } from "@/src/simulation/blocks/scope3dView";
+import { SCOPE_3D_BLOCK_TYPE } from "@/src/simulation/blocks/scope3dBlock";
 import { RigidBodySinkView, RigidBodySinkModal } from "@/src/simulation/blocks/rigidBodySink";
 import { RIGID_BODY_SINK_BLOCK_TYPE } from "@/src/simulation/blocks/rigidBodySinkBlock";
 

@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { RigidBodySinkState } from "./rigidBodySinkBlock";
 import { ImmersiveCanvas, ImmersiveCanvasHandle } from "@/src/components/immersive/ImmersiveCanvas";
+import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 export function RigidBodySinkView({ state, className }: { state: unknown, className?: string }) {
   const parsed = (state as RigidBodySinkState) || { position: [0, 0, 0], rotation: [0, 0, 0, 1] };
@@ -33,6 +34,7 @@ export function RigidBodySinkModal({ open, onClose, state }: { open: boolean, on
   const meshRef = useRef<THREE.Group | null>(null);
   const canvasRef = useRef<ImmersiveCanvasHandle>(null);
   const [arSupported, setArSupported] = useState(false);
+  const timeMs = useSimulationRuntimeStore(s => s.runtime.timeMs);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'xr' in navigator) {
@@ -114,6 +116,7 @@ export function RigidBodySinkModal({ open, onClose, state }: { open: boolean, on
             ref={canvasRef}
             onInitialize={handleInitialize} 
             onUpdate={handleUpdate} 
+            simulationTime={timeMs / 1000}
           />
         </main>
         <footer className="border-t border-slate-200 px-8 py-4 bg-white flex justify-between items-center text-xs text-slate-500">

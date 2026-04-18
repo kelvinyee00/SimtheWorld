@@ -1,4 +1,3 @@
-"use client";
 
 import { SimulationBlockDefinition } from "@/src/simulation/types";
 

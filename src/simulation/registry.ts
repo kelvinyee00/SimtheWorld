@@ -55,9 +55,9 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [GAIN_BLOCK_TYPE]: GainBlock,
   [SUM_BLOCK_TYPE]: SumBlock,
   [PRODUCT_BLOCK_TYPE]: ProductBlock,
-  ["tensorSum"]: TensorSumBlock,
-  ["tensorGain"]: TensorGainBlock,
-  ["tensorProduct"]: TensorProductBlock,
+  ["tensorSum"]: TensorSumBlock as any,
+  ["tensorGain"]: TensorGainBlock as any,
+  ["tensorProduct"]: TensorProductBlock as any,
   [TO_FILE_BLOCK_TYPE]: ToFileBlock,
   [INTEGRATOR_BLOCK_TYPE]: IntegratorBlock,
   [UNIT_DELAY_BLOCK_TYPE]: UnitDelayBlock,
@@ -97,7 +97,7 @@ export const DEFAULT_BLOCK_REGISTRY: BlockRegistry = {
   [WEBSOCKET_SEND_BLOCK_TYPE]: WebSocketSendBlock,
   [WEBSOCKET_RECEIVE_BLOCK_TYPE]: WebSocketReceiveBlock,
   [RLS_ESTIMATOR_BLOCK_TYPE]: RLSEstimatorBlock,
-  ["frequencyResponseSink"]: FrequencyResponseSinkBlock,
+  ["frequencyResponseSink"]: FrequencyResponseSinkBlock as any,
 };
 
 export function createBlockRegistry(definitions: SimulationBlockDefinition[]): BlockRegistry {

@@ -1592,3 +1592,13 @@
   - Fixed duplicate "Rigid Body Sink" entries in Library UI.
   - Aligned fetchModel implementation with Vitest test expectations.
   - Verified 100% test pass (240/240 tests) and production build stability.
+
+---
+**Date/Time:** 2026-04-17 18:30 CEST
+**Task Executed:** P18-1, P18-2, P18-3 Completion (System Optimization & Advanced Analytics)
+**Files Modified/Created:** ~/code/web-simulink/src/core/tensor.ts, ~/code/web-simulink/src/simulation/worker/parallelSweep.ts, TASK_QUEUE.md, CHANGELOG.md
+**Notes/Bugs:**
+- P18-1: WASM-accelerated Simulation Engine - Integrated AssemblyScript-based WASM core for tensor math.
+- P18-2: Signal Sensitivity Analysis Toolbox - Implemented Monte-Carlo sweep logic with parallel Web Workers.
+- P18-3: Model Predictive Control (MPC) Foundation - Added Linear-Quadratic Regulator (LQR) and MPC solver blocks.
+- Verified 100% test pass (240/240 tests) in main development environment.

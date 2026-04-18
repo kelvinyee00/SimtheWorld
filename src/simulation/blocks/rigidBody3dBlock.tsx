@@ -4,6 +4,7 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { SimulationBlockDefinition } from "@/src/simulation/types";
 import { ImmersiveCanvas } from "@/src/components/immersive/ImmersiveCanvas";
+import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
 export const RIGID_BODY_3D_BLOCK_TYPE = "rigid-body-3d" as const;
 
@@ -68,6 +69,7 @@ export function RigidBody3DView({ state, className }: { state: unknown, classNam
 export function RigidBody3DModal({ open, onClose, state }: { open: boolean, onClose: () => void, state: unknown }) {
   const parsed = (state as RigidBody3DState) || { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } };
   const meshRef = useRef<THREE.Mesh | null>(null);
+  const timeMs = useSimulationRuntimeStore(s => s.runtime.timeMs);
 
   const handleInitialize = (scene: THREE.Scene) => {
     // Add a simple box representing the rigid body
@@ -113,6 +115,7 @@ export function RigidBody3DModal({ open, onClose, state }: { open: boolean, onCl
           <ImmersiveCanvas 
             onInitialize={handleInitialize} 
             onUpdate={handleUpdate} 
+            simulationTime={timeMs / 1000}
           />
         </main>
         <footer className="border-t border-slate-200 px-8 py-4 bg-white flex justify-between items-center text-xs text-slate-500">

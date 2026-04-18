@@ -162,6 +162,6 @@
 **Final P16 Commit:** `2de39eb`
 
 ## P18 Queue (System Optimization & Advanced Analytics)
-- [ ] P18-1: WASM-accelerated Simulation Engine
-- [ ] P18-2: Signal Sensitivity Analysis Toolbox
-- [ ] P18-3: Model Predictive Control (MPC) Foundation
+- [x] P18-1: WASM-accelerated Simulation Engine
+- [x] P18-2: Signal Sensitivity Analysis Toolbox
+- [x] P18-3: Model Predictive Control (MPC) Foundation
