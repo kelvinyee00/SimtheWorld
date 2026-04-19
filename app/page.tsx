@@ -78,20 +78,13 @@ import {
   saveSimulationRunRecord,
 } from "@/src/persistence/simulationRunStore";
 import {
-  saveModelToLocalStorage,
-  loadModelFromLocalStorage,
+  persistModel,
+  fetchModel,
+  listModels,
   parseModelDocument,
   type PersistedModelV3,
-  saveServerModel,
-  fetchServerModel,
-  listServerModels,
-} from "@/src/persistence/index";
-import {
-  saveModelToSupabase,
-  loadModelFromSupabase,
-  listUserModels,
   type SupabaseModelMetadata,
-} from "@/src/persistence/supabasePersistence";
+} from "@/src/persistence/index";
 import {
   validateConnectionCandidate,
 } from "@/src/simulation/validation";
@@ -725,28 +718,34 @@ export default function Home() {
     lastPersistedCompletionRef.current = sig;
     persist().catch(() => setToFileActionMessage("Persistence failed."));
   }, [nodes, runtime.nodeInternalState, runtime.status, runtime.tick, runtime.timeMs]);
+  const getCurrentModel = useCallback((): PersistedModelV3 => ({
+    schemaVersion: 3,
+    metadata: { app: "web-simulink", savedAtMs: Date.now(), modelName: "Model" },
+    nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
+    edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
+    timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
+  }), [nodes, edges, runtime]);
 
   useEffect(() => {
-    const persisted = loadModelFromLocalStorage();
-    if (persisted) {
-      setNodes(persisted.nodes.map(n => ({ ...n, type: n.type as any })));
-      setEdges(persisted.edges.map(e => ({ ...e, type: e.type ?? "straight" })));
-      setTiming(persisted.timing);
-      setModelActionMessage("Restored local snapshot.");
-    }
-    hasInitializedModelPersistenceRef.current = true;
+    const restoreLocal = async () => {
+      const persisted = await fetchModel(undefined, "local");
+      if (persisted) {
+        setNodes(persisted.nodes.map(n => ({ ...n, type: n.type as any })));
+        setEdges(persisted.edges.map(e => ({ ...e, type: e.type ?? "straight" })));
+        setTiming(persisted.timing);
+        setModelActionMessage("Restored local snapshot.");
+      }
+      hasInitializedModelPersistenceRef.current = true;
+    };
+    restoreLocal();
   }, [setEdges, setNodes, setTiming]);
 
   useEffect(() => {
     if (!hasInitializedModelPersistenceRef.current) return;
-    saveModelToLocalStorage(JSON.stringify({
-      schemaVersion: 3,
-      metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Autosave' },
-      nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
-      edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
-      timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
-    }));
-  }, [edges, nodes, runtime.simulationTimeMs, runtime.stepTimeMs]);
+    const model = getCurrentModel();
+    model.metadata.modelName = "Autosave";
+    persistModel(model, { target: "local" });
+  }, [edges, nodes, runtime.simulationTimeMs, runtime.stepTimeMs, getCurrentModel]);
 
   const selectedNode = useMemo(() => nodes.find(n => n.id === selectedNodeId) ?? null, [nodes, selectedNodeId]);
 
@@ -765,36 +764,34 @@ export default function Home() {
   const hasSelection = useMemo(() => Boolean(selectedNodeId) || nodes.some(n => n.selected) || edges.some(e => e.selected), [nodes, edges, selectedNodeId]);
 
   const refreshCloudModels = useCallback(async () => {
-    try { setCloudModels(await listUserModels()); } catch { setModelActionMessage("Cloud refresh failed."); }
+    try { setCloudModels(await listModels("cloud")); } catch { setModelActionMessage("Cloud refresh failed."); }
   }, []);
   
   const refreshServerModels = useCallback(async () => {
-    try { setServerModels(await listServerModels()); } catch { setModelActionMessage("Edge Server refresh failed."); }
+    try { setServerModels(await listModels("server")); } catch { setModelActionMessage("Edge Server refresh failed."); }
   }, []);
 
   useEffect(() => { refreshCloudModels(); refreshServerModels(); }, [refreshCloudModels, refreshServerModels]);
 
+
   const saveToServer = useCallback(async () => {
-    try {
-      const model: PersistedModelV3 = {
-        schemaVersion: 3,
-        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Edge Model' },
-        nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
-        edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
-        timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
-      };
-      const id = currentServerModelId || crypto.randomUUID();
-      await saveServerModel(id, 'Edge Model', model);
+    const model = getCurrentModel();
+    model.metadata.modelName = "Edge Model";
+    const id = currentServerModelId || crypto.randomUUID();
+    const result = await persistModel(model, { target: "server", modelId: id, modelName: "Edge Model" });
+    if (result.success) {
       setCurrentServerModelId(id);
       setModelId(id);
       setModelActionMessage("Edge Server save success.");
       refreshServerModels();
-    } catch (e: any) { setModelActionMessage(`Edge Server save failed: ${e.message}`); }
-  }, [nodes, edges, runtime, currentServerModelId, refreshServerModels, setModelId]);
+    } else {
+      setModelActionMessage(`Edge Server save failed: ${result.error}`);
+    }
+  }, [getCurrentModel, currentServerModelId, refreshServerModels, setModelId]);
 
   const loadFromServer = useCallback(async (id: string) => {
-    try {
-      const p = await fetchServerModel(id);
+    const p = await fetchModel(id, "server");
+    if (p) {
       setNodes(p.nodes.map(n => ({ ...n, type: n.type as any })));
       setEdges(p.edges.map(e => ({ ...e, type: e.type ?? "straight" })));
       setTiming(p.timing);
@@ -802,29 +799,30 @@ export default function Home() {
       setModelId(id);
       setIsServerPanelOpen(false);
       setModelActionMessage("Edge Server model loaded.");
-    } catch (e: any) { setModelActionMessage(`Edge Server load failed: ${e.message}`); }
+    } else {
+      setModelActionMessage("Edge Server load failed.");
+    }
   }, [setNodes, setEdges, setTiming, setModelId]);
 
   const saveToCloud = useCallback(async () => {
-    try {
-      const model: PersistedModelV3 = {
-        schemaVersion: 3,
-        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Cloud Model' },
-        nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
-        edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
-        timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
-      };
-      const id = await saveModelToSupabase(model, currentCloudModelId || undefined);
-      setCurrentCloudModelId(id);
-      setModelId(id);
+    const model = getCurrentModel();
+    model.metadata.modelName = "Cloud Model";
+    const result = await persistModel(model, { target: "cloud", modelId: currentCloudModelId || undefined });
+    if (result.success) {
+      if (result.modelId) {
+        setCurrentCloudModelId(result.modelId);
+        setModelId(result.modelId);
+      }
       setModelActionMessage("Cloud save success.");
       refreshCloudModels();
-    } catch (e: any) { setModelActionMessage(`Cloud save failed: ${e.message}`); }
-  }, [nodes, edges, runtime, currentCloudModelId, refreshCloudModels, setModelId]);
+    } else {
+      setModelActionMessage(`Cloud save failed: ${result.error}`);
+    }
+  }, [getCurrentModel, currentCloudModelId, refreshCloudModels, setModelId]);
 
   const loadFromCloud = useCallback(async (id: string) => {
-    try {
-      const p = await loadModelFromSupabase(id);
+    const p = await fetchModel(id, "cloud");
+    if (p) {
       setNodes(p.nodes.map(n => ({ ...n, type: n.type as any })));
       setEdges(p.edges.map(e => ({ ...e, type: e.type ?? "straight" })));
       setTiming(p.timing);
@@ -832,22 +830,20 @@ export default function Home() {
       setModelId(id);
       setIsCloudPanelOpen(false);
       setModelActionMessage("Cloud model loaded.");
-    } catch (e: any) { setModelActionMessage(`Cloud load failed: ${e.message}`); }
+    } else {
+      setModelActionMessage("Cloud load failed.");
+    }
   }, [setNodes, setEdges, setTiming, setModelId]);
 
   const exportModelDocument = useCallback(() => {
     try {
-      const s = JSON.stringify({
-        schemaVersion: 3,
-        metadata: { app: 'web-simulink', savedAtMs: Date.now(), modelName: 'Exported Model' },
-        nodes: nodes.map(n => ({ id: n.id, type: n.type ?? "default", position: n.position, data: n.data as any })),
-        edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined, type: e.type ?? "straight" })),
-        timing: { simulationTimeMs: runtime.simulationTimeMs, stepTimeMs: runtime.stepTimeMs }
-      });
+      const model = getCurrentModel();
+      model.metadata.modelName = "Exported Model";
+      const s = JSON.stringify(model, null, 2);
       triggerTextDownload({ fileName: `web-simulink-model-${Date.now()}`, extension: "json", mimeType: "application/json", content: s });
       setModelActionMessage("Model exported.");
     } catch { setModelActionMessage("Export failed."); }
-  }, [edges, nodes, runtime]);
+  }, [getCurrentModel]);
 
   const importModelDocument = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -859,10 +855,11 @@ export default function Home() {
       setTiming(p.timing);
       setSelectedNodeId(null);
       setModelActionMessage("Import success.");
-    } catch { setModelActionMessage("Import failed."); }
+    } catch {
+      setModelActionMessage("Import failed.");
+    }
     finally { e.target.value = ""; }
   }, [setEdges, setNodes, setTiming]);
-
   const renderInspectorCore = useCallback(({ mobile }: { mobile: boolean }) => {
     if (!selectedNode) return <p className="text-slate-500 text-xs italic p-4">Select a node to inspect properties.</p>;
     const data = selectedNode.data as any;

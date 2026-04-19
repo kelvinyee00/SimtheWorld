@@ -1,129 +1,106 @@
-import express from 'express';
-import cors from 'cors';
-import { getDb } from './sqlite';
-import { v4 as uuidv4 } from 'uuid';
-import { parseModelDocument } from './modelPersistence';
-
-const router = express.Router();
-
-// Middleware is usually handled in server.ts, but keeping cors/json here for modularity if needed
-router.use(cors());
-router.use(express.json({ limit: '50mb' }));
+import { PersistedModelV3, parseModelDocument, saveModelToLocalStorage, loadModelFromLocalStorage } from "./modelPersistence";
+import { saveModelToSupabase, loadModelFromSupabase, listUserModels, type SupabaseModelMetadata } from "./supabasePersistence";
+import { saveServerModel, fetchServerModel, listServerModels, deleteServerModel } from "./serverApi";
 
 /**
- * High-density technical comment: 
- * CRUD endpoints for simulation models. 
- * Uses Zod validation via parseModelDocument to ensure data integrity.
- * SQLite handles persistence with automatic timestamp management.
+ * Unified persistence interface for web-simulink models.
+ * Handles LocalStorage (anonymous), Supabase (cloud auth), and Server (SQLite/Express).
  */
 
-// GET /api/v1/health
-router.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+export interface ModelSaveOptions {
+  cloud?: boolean;
+  target?: 'local' | 'cloud' | 'server';
+  modelId?: string;
+  modelName?: string;
+  description?: string;
+}
 
-// GET /api/v1/models (List)
-router.get('/models', async (_req, res) => {
-  try {
-    const db = await getDb();
-    const models = await db.all('SELECT id, name, version, created_at, updated_at FROM models ORDER BY updated_at DESC');
-    res.json(models);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+/**
+ * Transition a model from LocalStorage to Cloud.
+ * This is useful for P15-1e when an anonymous user logs in.
+ */
+export async function transitionLocalToCloud(): Promise<{ success: boolean; modelId?: string; error?: string }> {
+  const localModel = loadModelFromLocalStorage();
+  if (!localModel) {
+    return { success: false, error: "No local model found to transition." };
   }
-});
 
-// GET /api/v1/models/:id (Fetch)
-router.get('/models/:id', async (req, res) => {
+  return persistModel(localModel, { target: 'cloud', modelName: localModel.metadata.modelName });
+}
+
+/**
+ * Persist a model to the specified target.
+ * Defaults to 'local' if no target is specified.
+ */
+export async function persistModel(
+  model: PersistedModelV3,
+  options: ModelSaveOptions = {}
+): Promise<{ success: boolean; modelId?: string; error?: string }> {
   try {
-    const { id } = req.params;
-    const db = await getDb();
-    const model = await db.get('SELECT * FROM models WHERE id = ?', [id]);
-    if (!model) {
-      return res.status(404).json({ error: 'Model not found' });
-    }
-    res.json({
-      ...model,
-      data: JSON.parse(model.data)
-    });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
+    const target = options.target || (options.cloud ? 'cloud' : (options.modelId ? 'cloud' : 'local'));
 
-// POST /api/v1/models (Create)
-router.post('/models', async (req, res) => {
+    if (target === 'cloud') {
+      const modelId = await saveModelToSupabase(model, options.modelId);
+      return { success: true, modelId };
+    } else if (target === 'server') {
+      const id = options.modelId || crypto.randomUUID();
+      await saveServerModel(id, options.modelName || 'Untitled Model', model);
+      return { success: true, modelId: id };
+    } else {
+      const raw = JSON.stringify(model);
+      saveModelToLocalStorage(raw);
+      return { success: true };
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Load a model from a specific target or fallback chain.
+ */
+export async function fetchModel(
+  modelId?: string,
+  target: 'local' | 'cloud' | 'server' = 'local'
+): Promise<PersistedModelV3 | null> {
   try {
-    const { name, data } = req.body;
-    if (!name || !data) {
-      return res.status(400).json({ error: 'Name and data are required' });
+    if (target === 'cloud' && modelId) {
+      return await loadModelFromSupabase(modelId);
+    } else if (target === 'server' && modelId) {
+      return await fetchServerModel(modelId);
     }
-
-    // Validate data against PersistedModelV3 schema
-    try {
-      parseModelDocument(JSON.stringify(data));
-    } catch (validationError) {
-      return res.status(400).json({ error: `Invalid model schema: ${(validationError as Error).message}` });
-    }
-
-    const db = await getDb();
-    const id = uuidv4();
-    await db.run(
-      'INSERT INTO models (id, name, data, version) VALUES (?, ?, ?, ?)',
-      [id, name, JSON.stringify(data), 3]
-    );
-    res.status(201).json({ id, name, version: 3 });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+  } catch (err) {
+    console.error(`Failed to load model from ${target}:`, err);
+    return null;
   }
-});
 
-// PUT /api/v1/models/:id (Update)
-router.put('/models/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, data } = req.body;
-    
-    if (!name || !data) {
-      return res.status(400).json({ error: 'Name and data are required' });
-    }
+  return loadModelFromLocalStorage();
+}
 
-    // Validate data against PersistedModelV3 schema
-    try {
-      parseModelDocument(JSON.stringify(data));
-    } catch (validationError) {
-      return res.status(400).json({ error: `Invalid model schema: ${(validationError as Error).message}` });
-    }
-
-    const db = await getDb();
-    const result = await db.run(
-      'UPDATE models SET name = ?, data = ?, version = 3 WHERE id = ?',
-      [name, JSON.stringify(data), id]
-    );
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Model not found' });
-    }
-    
-    res.json({ id, name, version: 3 });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+/**
+ * List models from a specific target.
+ */
+export async function listModels(target: 'cloud' | 'server' = 'cloud'): Promise<any[]> {
+  if (target === 'cloud') {
+    return await listUserModels();
+  } else if (target === 'server') {
+    return await listServerModels();
   }
-});
+  return [];
+}
 
-// DELETE /api/v1/models/:id (Delete)
-router.delete('/models/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = await getDb();
-    const result = await db.run('DELETE FROM models WHERE id = ?', [id]);
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Model not found' });
-    }
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-export default router;
+export {
+  saveModelToLocalStorage,
+  loadModelFromLocalStorage,
+  saveModelToSupabase,
+  loadModelFromSupabase,
+  listUserModels,
+  parseModelDocument,
+  saveServerModel,
+  fetchServerModel,
+  listServerModels,
+  deleteServerModel,
+  type SupabaseModelMetadata,
+  type PersistedModelV3
+};

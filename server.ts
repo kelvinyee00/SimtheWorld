@@ -4,7 +4,7 @@ import next from "next";
 import { Server } from "socket.io";
 import express from "express";
 import { SimulationRuntimeSnapshot } from "./src/simulation/types";
-import apiRouter from "./src/persistence/api";
+import apiRouter from "./src/persistence/sqliteRouter";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
