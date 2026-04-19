@@ -48,14 +48,13 @@ import {
   TO_FILE_BLOCK_TYPE,
   toToFileState,
 } from "@/src/simulation/blocks/toFileBlock";
+import { GPS_BLOCK_TYPE } from "@/src/simulation/blocks/gpsBlock";
+import { ACCELEROMETER_BLOCK_TYPE } from "@/src/simulation/blocks/accelerometerBlock";
+import { ORIENTATION_BLOCK_TYPE } from "@/src/simulation/blocks/orientationBlock";
+import { SensorPermissionRequest } from "@/src/simulation/blocks/sensors";
+import { SensorManager } from "@/src/simulation/sensors/SensorManager";
 import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 
-/**
- * React Flow node `data` for simulation blocks.
- *
- * Keep this shape intentionally simple and serializable because node `data` is mirrored into
- * the runtime graph store. Avoiding non-serializable fields keeps runtime snapshots deterministic.
- */
 interface BlockNodeData {
   label?: string;
   gain?: number;
@@ -86,18 +85,8 @@ interface BlockNodeData {
 
 const SOURCE_ORANGE = "#f97316";
 const SINK_BLUE = "#0ea5e9";
+const SENSOR_AMBER = "#d97706";
 
-/**
- * Connection handle style policy for P2/P3.
- *
- * Product requirement:
- * - Make handle dots significantly larger and easier to latch while wiring.
- *
- * Implementation notes:
- * - The visible dot is enlarged (`22px`) and gets a colored ring to increase affordance.
- * - A transition + hover scale gives immediate user feedback when pointer approaches a latch point.
- * - We keep the shape circular and high-contrast for both light and dark edge strokes.
- */
 function buildHandleStyle(color: string): CSSProperties {
   return {
     width: 22,
@@ -110,7 +99,9 @@ function buildHandleStyle(color: string): CSSProperties {
     boxShadow:
       color === SOURCE_ORANGE
         ? "0 0 0 7px rgba(249,115,22,0.18)"
-        : "0 0 0 7px rgba(14,165,233,0.20)",
+        : color === SENSOR_AMBER
+          ? "0 0 0 7px rgba(217,119,6,0.18)"
+          : "0 0 0 7px rgba(14,165,233,0.20)",
   };
 }
 
@@ -121,12 +112,10 @@ function withTop(style: CSSProperties, top: string): CSSProperties {
   };
 }
 
-
 function sanitizeHandleName(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
-
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
@@ -136,17 +125,14 @@ function toSubsystemHandleList(params: {
   direction: "input" | "output";
 }): string[] {
   const { data, direction } = params;
-
   const handles = new Set<string>(["default"]);
   const maskRaw =
     typeof (data as Record<string, unknown>).mask === "object" &&
     (data as Record<string, unknown>).mask !== null
       ? ((data as Record<string, unknown>).mask as Record<string, unknown>)
       : null;
-
   const key = direction === "input" ? "inputs" : "outputs";
   const masked = Array.isArray(maskRaw?.[key]) ? (maskRaw?.[key] as unknown[]) : [];
-
   masked.forEach((entry, index) => {
     const sanitized = sanitizeHandleName(entry);
     if (sanitized) {
@@ -154,19 +140,9 @@ function toSubsystemHandleList(params: {
     }
     handles.add(direction === "input" ? `in${index + 1}` : `out${index + 1}`);
   });
-
   return Array.from(handles);
 }
 
-
-/**
- * Unified renderer for all simulation blocks on the canvas.
- *
- * Why centralized:
- * - Styling, handle policy, and modal launch behavior remain consistent and auditable.
- * - Block visual identity (source orange vs sink blue) can be updated in one place.
- * - Runtime subscriptions stay node-local for efficient incremental rendering.
- */
 export const CustomBlockNode = memo(function CustomBlockNode({
   id,
   data,
@@ -183,6 +159,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const [isSpectrumModalOpen, setIsSpectrumModalOpen] = useState(false);
   const [isScope3dModalOpen, setIsScope3dModalOpen] = useState(false);
   const [isRigidBodyModalOpen, setIsRigidBodyModalOpen] = useState(false);
+  const [sensorPermissions, setSensorPermissions] = useState<Record<string, string>>({});
 
   const isCounter = type === COUNTER_BLOCK_TYPE;
   const isDisplay = type === DISPLAY_BLOCK_TYPE;
@@ -216,6 +193,11 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   const isRigidBodySink = type === RIGID_BODY_SINK_BLOCK_TYPE;
   const isKnob = type === KNOB_BLOCK_TYPE;
   const isSlider = type === SLIDER_BLOCK_TYPE;
+  const isGps = type === GPS_BLOCK_TYPE;
+  const isAccelerometer = type === ACCELEROMETER_BLOCK_TYPE;
+  const isOrientation = type === ORIENTATION_BLOCK_TYPE;
+  const isSensor = isGps || isAccelerometer || isOrientation;
+
   const isMathNode =
     isGain ||
     isSum ||
@@ -233,10 +215,10 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     isDiscreteTransfer ||
     isLeadLag ||
     isGoto ||
-    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider || isRigidBodySink;
+    isFrom || isLut1D || isLut2D || isStateMachine || isTruthTable || isGauge || isLamp || isKnob || isSlider || isRigidBodySink || isSensor;
   const isSinkNode = isDisplay || isScope || isToFile || isGauge || isLamp || isSpectrum || isScope3d || isRigidBodySink;
 
-  const accentColor = (isCounter || isKnob || isSlider) ? SOURCE_ORANGE : SINK_BLUE;
+  const accentColor = (isCounter || isKnob || isSlider) ? SOURCE_ORANGE : isSensor ? SENSOR_AMBER : SINK_BLUE;
   const handleStyle = useMemo(() => buildHandleStyle(accentColor), [accentColor]);
 
   const subsystemInputHandles = useMemo(
@@ -259,69 +241,58 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     [data, isSubsystem]
   );
 
-  const containerClass = (isCounter || isKnob || isSlider)
+  const containerClass = (isCounter || isKnob || isSlider || isSensor)
     ? "group min-h-[82px] w-[88px] rounded-xl border-2 bg-white px-2 py-2 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.18)] transition-[border-color,box-shadow]"
     : "group min-w-[220px] rounded-xl border-2 bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.14)] transition-[border-color,box-shadow]";
 
-  const borderColorClass = (isCounter || isKnob || isSlider) ? "border-orange-500" : "border-sky-500";
+  const borderColorClass = (isCounter || isKnob || isSlider) ? "border-orange-500" : isSensor ? "border-amber-600" : "border-sky-500";
 
   const selectedClass = selected
     ? (isCounter || isKnob || isSlider)
       ? "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(249,115,22,0.35),0_8px_18px_rgba(194,65,12,0.24)]"
-      : "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(14,165,233,0.32),0_8px_18px_rgba(2,132,199,0.22)]"
+      : isSensor
+        ? "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(217,119,6,0.35),0_8px_18px_rgba(180,83,9,0.24)]"
+        : "shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_2px_rgba(14,165,233,0.32),0_8px_18px_rgba(2,132,199,0.22)]"
     : "";
 
-  const symbol = isGain
-    ? "×"
-    : isSum
-      ? "Σ"
-      : isProduct
-        ? "Π"
-        : isIntegrator
-          ? "∫"
-          : isUnitDelay
-            ? "z⁻¹"
-            : isCompare
-              ? "≷"
-              : isSwitch
-                ? "⇆"
-                : isSubsystem
-                  ? "📦"
-                  : isInport
-                    ? "⇥"
-                    : isOutport
-                      ? "↦"
-                      : isMux
-                        ? "⫴"
-                        : isDemux
-                          ? "⫶"
-                          : isPid
-                            ? "PID"
-                            : isDiscreteTransfer
-                              ? "H(z)"
-                              : isLeadLag
-                                ? "L/L"
-                                : isTruthTable
-                                  ? "TT"
-                                  : "";
-  const gainValue =
-    typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
+  const symbol = isGain ? "×" : isSum ? "Σ" : isProduct ? "Π" : isIntegrator ? "∫" : isUnitDelay ? "z⁻¹" : isCompare ? "≷" : isSwitch ? "⇆" : isSubsystem ? "📦" : isInport ? "⇥" : isOutport ? "↦" : isMux ? "⫴" : isDemux ? "⫶" : isPid ? "PID" : isDiscreteTransfer ? "H(z)" : isLeadLag ? "L/L" : isTruthTable ? "TT" : isGps ? "🛰️" : isAccelerometer ? "🚀" : isOrientation ? "🧭" : "";
+  const gainValue = typeof data.gain === "number" && Number.isFinite(data.gain) ? data.gain : 1;
+
+  const handleSensorGrant = async () => {
+    const manager = SensorManager.getInstance();
+    let status = 'denied';
+    if (isGps) status = await manager.requestGeolocationPermission();
+    if (isAccelerometer) status = await manager.requestDeviceMotionPermission();
+    if (isOrientation) status = await manager.requestDeviceOrientationPermission();
+    setSensorPermissions(prev => ({ ...prev, [type!]: status }));
+  };
+
+  const currentPermission = sensorPermissions[type!] || SensorManager.getInstance().getPermissionStatus(isGps ? 'geolocation' : isAccelerometer ? 'devicemotion' : 'deviceorientation');
 
   return (
     <>
       <div className={`${containerClass} ${borderColorClass} ${selectedClass}`}>
         {isCounter ? (
           <div className="grid h-full place-items-center rounded-md border border-orange-300 bg-orange-50">
-            {/*
-              Counter iconography requirement (P2):
-              - compact source block shape
-              - icon-only presentation (no subtext)
-            */}
             <span className="text-xl font-black leading-none text-orange-600">123</span>
           </div>
         ) : null}
 
-        {(isDisplay || isScope || isMathNode || isToFile) && (
+        {isSensor && (
+          <div className="flex flex-col h-full">
+            <div className="grid flex-1 place-items-center rounded-md border border-amber-300 bg-amber-50 mb-1">
+              <span className="text-xl leading-none">{symbol}</span>
+            </div>
+            {currentPermission !== 'granted' && (
+              <SensorPermissionRequest onGrant={handleSensorGrant} />
+            )}
+            {currentPermission === 'granted' && (
+              <p className="text-[8px] text-emerald-600 font-bold uppercase text-center">Live</p>
+            )}
+          </div>
+        )}
+
+        {(isDisplay || isScope || (isMathNode && !isSensor) || isToFile) && (
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-600">
             {data.label ?? type ?? "Block"}
           </p>
@@ -396,7 +367,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {isMathNode ? (
+        {isMathNode && !isSensor ? (
           <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2">
             <div className="flex items-center justify-between">
               <p className="text-2xl font-black leading-none text-sky-700">{symbol}</p>
@@ -427,13 +398,9 @@ export const CustomBlockNode = memo(function CustomBlockNode({
                   Kp={typeof data.kp === "number" && Number.isFinite(data.kp) ? data.kp : 1}
                 </p>
               ) : isDiscreteTransfer ? (
-                <p className="text-[11px] text-slate-500">
-                  num/den
-                </p>
+                <p className="text-[11px] text-slate-500">num/den</p>
               ) : isLeadLag ? (
-                <p className="text-[11px] text-slate-500">
-                  Tz/Tp
-                </p>
+                <p className="text-[11px] text-slate-500">Tz/Tp</p>
               ) : isLut1D || isLut2D ? (
                 <p className="text-[11px] text-slate-500">LUT</p>
               ) : isGoto || isFrom ? (
@@ -451,7 +418,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
           </div>
         ) : null}
 
-        {(isCounter || isMathNode || isInport || isMux || isStateMachine || isTruthTable) ? (
+        {(isCounter || isMathNode || isInport || isMux || isStateMachine || isTruthTable || isSensor) ? (
           <Handle
             type="source"
             id="default"
@@ -470,6 +437,31 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             className="transition-transform duration-150 hover:scale-125 group-hover:scale-110"
           />
         ) : null}
+
+        {isGps && (
+          <>
+            <Handle type="source" id="lat" position={Position.Right} style={withTop(handleStyle, "20%")} className="hover:scale-125" />
+            <Handle type="source" id="lon" position={Position.Right} style={withTop(handleStyle, "40%")} className="hover:scale-125" />
+            <Handle type="source" id="alt" position={Position.Right} style={withTop(handleStyle, "60%")} className="hover:scale-125" />
+            <Handle type="source" id="speed" position={Position.Right} style={withTop(handleStyle, "80%")} className="hover:scale-125" />
+          </>
+        )}
+
+        {isAccelerometer && (
+          <>
+            <Handle type="source" id="x" position={Position.Right} style={withTop(handleStyle, "25%")} className="hover:scale-125" />
+            <Handle type="source" id="y" position={Position.Right} style={withTop(handleStyle, "50%")} className="hover:scale-125" />
+            <Handle type="source" id="z" position={Position.Right} style={withTop(handleStyle, "75%")} className="hover:scale-125" />
+          </>
+        )}
+
+        {isOrientation && (
+          <>
+            <Handle type="source" id="alpha" position={Position.Right} style={withTop(handleStyle, "25%")} className="hover:scale-125" />
+            <Handle type="source" id="beta" position={Position.Right} style={withTop(handleStyle, "50%")} className="hover:scale-125" />
+            <Handle type="source" id="gamma" position={Position.Right} style={withTop(handleStyle, "75%")} className="hover:scale-125" />
+          </>
+        )}
 
         {(isSinkNode || isGain || isIntegrator || isUnitDelay || isOutport || isDemux || isPid || isDiscreteTransfer || isLeadLag || isGoto || isLut1D || isStateMachine) && (
           <Handle
