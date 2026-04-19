@@ -85,6 +85,7 @@ import {
   type PersistedModelV3,
   type SupabaseModelMetadata,
 } from "@/src/persistence/index";
+import { syncModels } from "@/src/persistence/sync";
 import {
   validateConnectionCandidate,
 } from "@/src/simulation/validation";
@@ -117,7 +118,6 @@ const INITIAL_NODES: Node[] = [
     data: { label: "Scope", maxPoints: 240 },
   },
 ];
-
 const INITIAL_EDGES: Edge[] = [
   {
     id: "counter-1->display-1",
@@ -820,6 +820,18 @@ export default function Home() {
     }
   }, [getCurrentModel, currentCloudModelId, refreshCloudModels, setModelId]);
 
+  const handleSync = useCallback(async () => {
+    const target = user ? "cloud" : "server";
+    try {
+      const result = await syncModels("local", target);
+      setModelActionMessage(`Sync to ${target} complete: ${result.synced.length} synced, ${result.skipped.length} skipped.`);
+      if (user) refreshCloudModels();
+      else refreshServerModels();
+    } catch (err) {
+      setModelActionMessage(`Sync failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [user, refreshCloudModels, refreshServerModels]);
+
   const loadFromCloud = useCallback(async (id: string) => {
     const p = await fetchModel(id, "cloud");
     if (p) {
@@ -910,6 +922,7 @@ export default function Home() {
                 <span className="text-slate-500">s</span>
               </label>
               <button onClick={() => { refreshServerModels(); setIsServerPanelOpen(true); }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edge Server</button>
+              <button onClick={handleSync} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">Sync</button>
               <button onClick={user ? saveToCloud : () => window.location.href="/login"} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">Save</button>
               <button onClick={() => { refreshCloudModels(); setIsCloudPanelOpen(true); }} className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700">Cloud</button>
               <button onClick={() => sendCommand("run")} className="rounded-lg border border-emerald-300 bg-emerald-100 px-3 py-2 text-sm font-bold text-emerald-800">RUN</button>
