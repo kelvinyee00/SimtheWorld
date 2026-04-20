@@ -242,8 +242,8 @@ export const CustomBlockNode = memo(function CustomBlockNode({
   );
 
   const containerClass = (isCounter || isKnob || isSlider || isSensor)
-    ? "group min-h-[82px] w-[88px] rounded-xl border-2 bg-white px-2 py-2 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.18)] transition-[border-color,box-shadow]"
-    : "group min-w-[220px] rounded-xl border-2 bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.92)_inset,0_0_0_1px_rgba(15,23,42,0.05),0_5px_12px_rgba(15,23,42,0.14)] transition-[border-color,box-shadow]";
+    ? "group min-h-[82px] w-[88px] rounded-xl border-2 bg-[var(--panel-bg)] px-2 py-2 shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_0_0_1px_rgba(0,0,0,0.1),0_5px_12px_rgba(0,0,0,0.2)] transition-[border-color,box-shadow]"
+    : "group min-w-[220px] rounded-xl border-2 bg-[var(--panel-bg)] px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_0_0_1px_rgba(0,0,0,0.1),0_5px_12px_rgba(0,0,0,0.15)] transition-[border-color,box-shadow]";
 
   const borderColorClass = (isCounter || isKnob || isSlider) ? "border-orange-500" : isSensor ? "border-amber-600" : "border-sky-500";
 
@@ -273,14 +273,14 @@ export const CustomBlockNode = memo(function CustomBlockNode({
     <>
       <div className={`${containerClass} ${borderColorClass} ${selectedClass}`}>
         {isCounter ? (
-          <div className="grid h-full place-items-center rounded-md border border-orange-300 bg-orange-50">
+          <div className="grid h-full place-items-center rounded-md border border-orange-300 bg-[var(--panel-bg)]">
             <span className="text-xl font-black leading-none text-orange-600">123</span>
           </div>
         ) : null}
 
         {isSensor && (
           <div className="flex flex-col h-full">
-            <div className="grid flex-1 place-items-center rounded-md border border-amber-300 bg-amber-50 mb-1">
+            <div className="grid flex-1 place-items-center rounded-md border border-amber-300 bg-[var(--panel-bg)] mb-1">
               <span className="text-xl leading-none">{symbol}</span>
             </div>
             {currentPermission !== 'granted' && (
@@ -304,7 +304,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             state={internalState} 
             params={data as Record<string, unknown>} 
             onUpdateValue={(val) => updateNodeInternalState(id, { value: val })}
-            className="border-orange-200 bg-orange-50/70" 
+            className="border-orange-200 bg-[var(--panel-bg)]/70" 
           />
         ) : null}
 
@@ -314,47 +314,47 @@ export const CustomBlockNode = memo(function CustomBlockNode({
             state={internalState} 
             params={data as Record<string, unknown>} 
             onUpdateValue={(val) => updateNodeInternalState(id, { value: val })}
-            className="border-orange-200 bg-orange-50/70" 
+            className="border-orange-200 bg-[var(--panel-bg)]/70" 
           />
         ) : null}
 
         {isGauge ? (
-          <GaugeBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-sky-50/70" />
+          <GaugeBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-[var(--panel-bg)]" />
         ) : null}
 
         {isSpectrum ? (
           <div onDoubleClick={() => setIsSpectrumModalOpen(true)} className="cursor-zoom-in">
-            <SpectrumAnalyzerView state={internalState} className="border-sky-200 bg-sky-50/70" />
+            <SpectrumAnalyzerView state={internalState} className="border-sky-200 bg-[var(--panel-bg)]" />
           </div>
         ) : null}
 
         {isRigidBodySink ? (
           <div onDoubleClick={() => setIsRigidBodyModalOpen(true)} className="cursor-zoom-in">
-            <RigidBodySinkView state={internalState} className="border-indigo-200 bg-indigo-50/70" />
+            <RigidBodySinkView state={internalState} className="border-indigo-200 bg-[var(--panel-bg)]" />
           </div>
         ) : null}
         {isScope3d ? (
           <div onDoubleClick={() => setIsScope3dModalOpen(true)} className="cursor-zoom-in">
-            <Scope3DView state={internalState} className="border-sky-200 bg-sky-50/70" />
+            <Scope3DView state={internalState} className="border-sky-200 bg-[var(--panel-bg)]" />
           </div>
         ) : null}
 
         {isLamp ? (
-          <LampBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-sky-50/70" />
+          <LampBlockView state={internalState} params={data as Record<string, unknown>} className="border-sky-200 bg-[var(--panel-bg)]" />
         ) : null}
 
         {isDisplay ? (
-          <DisplayBlockView state={internalState} className="border-sky-200 bg-sky-50/70" />
+          <DisplayBlockView state={internalState} className="border-sky-200 bg-[var(--panel-bg)]" />
         ) : null}
 
         {isScope ? (
           <div onDoubleClick={() => setIsScopeModalOpen(true)} className="cursor-zoom-in">
-            <ScopeBlockView state={internalState} className="border-sky-200 bg-sky-50/70" />
+            <ScopeBlockView state={internalState} className="border-sky-200 bg-[var(--panel-bg)]" />
           </div>
         ) : null}
 
         {isToFile ? (
-          <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2">
+          <div className="rounded-md border border-sky-200 bg-[var(--panel-bg)] px-3 py-2">
             <div className="flex items-center justify-between">
               <p className="text-xl font-black leading-none text-sky-700">⤓</p>
               <p className="text-[11px] text-slate-500 uppercase tracking-[0.08em]">
@@ -368,7 +368,7 @@ export const CustomBlockNode = memo(function CustomBlockNode({
         ) : null}
 
         {isMathNode && !isSensor ? (
-          <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2">
+          <div className="rounded-md border border-sky-200 bg-[var(--panel-bg)] px-3 py-2">
             <div className="flex items-center justify-between">
               <p className="text-2xl font-black leading-none text-sky-700">{symbol}</p>
               {isGain ? (

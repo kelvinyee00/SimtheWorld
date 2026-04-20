@@ -94,6 +94,8 @@ import { useSimulationRuntimeStore } from "@/src/store/simulationRuntimeStore";
 import { useCollaborationSync } from "@/src/collaboration/collaborationSync";
 import { createClient } from "@/src/utils/supabase/client";
 import { SweepManager } from "@/src/components/SweepManager";
+import { useThemeStore } from "@/src/store/themeStore";
+
 
 import { OfflineIndicator } from "@/src/components/offline/OfflineIndicator";
 import { User } from "@supabase/supabase-js";
@@ -328,10 +330,10 @@ const MIN_TIMING_SECONDS = 0.001;
 
 const CANVAS_STYLE: React.CSSProperties = {
   touchAction: "none",
-  backgroundColor: "#eceff3",
+  backgroundColor: "var(--canvas-bg)",
 };
 
-const CANVAS_GRID_COLOR = "#c2c9d2";
+const CANVAS_GRID_COLOR = "var(--grid-color)";
 const CANVAS_GRID_GAP = 20;
 const CANVAS_GRID_DOT_SIZE = 1.2;
 
@@ -473,6 +475,8 @@ export default function Home() {
   const [serverModels, setServerModels] = useState<Array<{ id: string; name: string; version: number; updated_at: string }>>([]);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
   const [isCloudPanelOpen, setIsCloudPanelOpen] = useState(false);
   const [isSweepModalOpen, setIsSweepModalOpen] = useState(false);
   const [currentCloudModelId, setCurrentCloudModelId] = useState<string | null>(null);
@@ -901,10 +905,10 @@ export default function Home() {
   }, [selectedNode, patchSelectedNodeData]);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <OfflineIndicator />
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col">
-        <header className="border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+        <header className="border-b border-[var(--border-color)] bg-[var(--panel-bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Web Simulink</p>
@@ -921,6 +925,20 @@ export default function Home() {
                 <input type="number" step="0.001" value={stepTimeInputValue} onFocus={() => setIsEditingStepTime(true)} onChange={e => setStepTimeSecondsInput(e.target.value)} onBlur={e => { commitTimingValue("step", e.target.value); setIsEditingStepTime(false); }} onKeyDown={e => onTimingInputKeyDown(e, "step")} className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700" />
                 <span className="text-slate-500">s</span>
               </label>
+                            <div className="flex items-center gap-1 rounded-lg border border-slate-300 bg-slate-50 p-1">
+                <button 
+                  onClick={() => setTheme("light")} 
+                  className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition-colors ${theme === "light" ? "bg-white text-sky-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                >
+                  Light
+                </button>
+                <button 
+                  onClick={() => setTheme("dark")} 
+                  className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition-colors ${theme === "dark" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                >
+                  Dark
+                </button>
+              </div>
               <button onClick={() => { refreshServerModels(); setIsServerPanelOpen(true); }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edge Server</button>
               <button onClick={handleSync} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">Sync</button>
               <button onClick={user ? saveToCloud : () => window.location.href="/login"} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">Save</button>
@@ -942,7 +960,7 @@ export default function Home() {
         </header>
 
         <main className="relative flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:flex-row">
-          <aside className="order-2 rounded-xl border border-slate-200 bg-white p-4 lg:order-1 lg:w-72">
+          <aside className="order-2 rounded-xl border border-[var(--border-color)] bg-[var(--panel-bg)] p-4 lg:order-1 lg:w-72">
             <h2 className="text-sm font-semibold text-slate-700">Collaboration (P15-2)</h2>
             <div className="mt-3 space-y-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                <div className="flex items-center justify-between">
@@ -972,7 +990,7 @@ export default function Home() {
             </div>
           </aside>
 
-          <section className="order-1 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-slate-300 bg-white lg:order-2 lg:min-h-[560px]">
+          <section className="order-1 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--panel-bg)] lg:order-2 lg:min-h-[560px]">
             <ReactFlow
               nodes={nodes}
               edges={styledEdges}
@@ -1000,7 +1018,7 @@ export default function Home() {
             </ReactFlow>
           </section>
 
-          <aside className="order-3 hidden rounded-xl border border-slate-200 bg-white p-4 lg:block lg:w-72">
+          <aside className="order-3 hidden rounded-xl border border-[var(--border-color)] bg-[var(--panel-bg)] p-4 lg:block lg:w-72">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4 border-b pb-2">Inspector</h2>
             <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
               {renderInspectorCore({ mobile: false })}
