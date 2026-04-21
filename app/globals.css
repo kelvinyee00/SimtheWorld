@@ -12,17 +12,29 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Light Mode Defaults (Tailwind 4 uses [data-theme='light'] or similar if configured, 
-   but here we'll just use a class-based approach) */
+/* Light Mode Defaults */
 :root, [data-theme='light'] {
   --background: #ffffff;
   --foreground: #171717;
   --canvas-bg: #eceff3;
   --panel-bg: #ffffff;
+  --panel-bg-secondary: #f8fafc;
+  --panel-bg-hover: #f1f5f9;
   --border-color: #e2e8f0;
+  --border-color-strong: #cbd5e1;
   --text-main: #1e293b;
+  --text-secondary: #475569;
   --text-muted: #64748b;
+  --text-placeholder: #94a3b8;
   --grid-color: #c2c9d2;
+  --accent-primary: #0ea5e9;
+  --accent-primary-light: #e0f2fe;
+  --accent-success: #10b981;
+  --accent-success-light: #d1fae5;
+  --accent-warning: #f59e0b;
+  --accent-warning-light: #fef3c7;
+  --accent-danger: #ef4444;
+  --accent-danger-light: #fee2e2;
 }
 
 /* Dark Mode Overrides */
@@ -31,14 +43,65 @@
   --foreground: #f8fafc;
   --canvas-bg: #020617;
   --panel-bg: #1e293b;
+  --panel-bg-secondary: #334155;
+  --panel-bg-hover: #475569;
   --border-color: #334155;
+  --border-color-strong: #475569;
   --text-main: #f1f5f9;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
+  --text-placeholder: #64748b;
   --grid-color: #334155;
+  --accent-primary: #38bdf8;
+  --accent-primary-light: #0c4a6e;
+  --accent-success: #34d399;
+  --accent-success-light: #064e3b;
+  --accent-warning: #fbbf24;
+  --accent-warning-light: #451a03;
+  --accent-danger: #f87171;
+  --accent-danger-light: #450a0a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-aware utility classes */
+.theme-bg-panel {
+  background-color: var(--panel-bg);
+}
+
+.theme-bg-panel-secondary {
+  background-color: var(--panel-bg-secondary);
+}
+
+.theme-bg-canvas {
+  background-color: var(--canvas-bg);
+}
+
+.theme-border {
+  border-color: var(--border-color);
+}
+
+.theme-border-strong {
+  border-color: var(--border-color-strong);
+}
+
+.theme-text-main {
+  color: var(--text-main);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-text-muted {
+  color: var(--text-muted);
+}
+
+/* Smooth theme transitions */
+.theme-transition {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
